@@ -9,6 +9,8 @@
         x:DataType="vm:MainViewModel"
         Icon="/Assets/GameStudio.ico"
         Title="{Binding Title}"
+        Background="{DynamicResource StudioBackgroundBrush}"
+        MinWidth="960" MinHeight="640"
         Width="1280" Height="900">
   <gsvw:MainView />
 </Window>

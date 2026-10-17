@@ -100,6 +100,11 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
         }
 
         var sessionResult = new PackageSessionResult();
+        sessionResult.MessageLogged += (_, e) =>
+        {
+            if (e.Message.Type >= Stride.Core.Diagnostics.LogMessageType.Warning)
+                Console.Error.WriteLine(e.Message);
+        };
         var loadedSession = await SessionViewModel.OpenSessionAsync(filePath, sessionResult, this, ServiceProvider, token);
 
         // Loading has failed

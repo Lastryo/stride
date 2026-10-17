@@ -2,52 +2,243 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
-             xmlns:vm="using:Stride.Assets.Editor.ViewModels"
-             xmlns:vm2="using:Stride.Assets.Presentation.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Stride.Assets.Editor.Avalonia.Views.EntityHierarchyEditorView"
-             x:DataType="vm:EntityHierarchyEditorViewModel">
-  <Grid ColumnDefinitions="*, 4, 3*">
-    <DockPanel Grid.Column="0">
-      <TreeView ItemsSource="{Binding HierarchyRoot, Mode=OneWay, Converter={sd:Yield}}"
+              xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+              xmlns:aec="using:Stride.Assets.Editor.Avalonia.Converters"
+              xmlns:vm="using:Stride.Assets.Editor.ViewModels"
+              xmlns:vm2="using:Stride.Assets.Presentation.ViewModels"
+              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+              x:Class="Stride.Assets.Editor.Avalonia.Views.EntityHierarchyEditorView"
+              x:DataType="vm:EntityHierarchyEditorViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+        <ResourceInclude Source="avares://Stride.Assets.Editor.Avalonia/Views/ImageDictionary.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+      <SolidColorBrush x:Key="LinkTextColor" Color="#FFB0D3FF"/>
+      <SolidColorBrush x:Key="PrefabTextColor" Color="#FFB0FFD3"/>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.hierarchyItemButton">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Margin" Value="4,0,0,0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Width" Value="16"/>
+      <Setter Property="Height" Value="16"/>
+      <Setter Property="MinWidth" Value="16"/>
+      <Setter Property="MinHeight" Value="16"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="*, 5, 3*" Background="{DynamicResource StudioBackgroundBrush}">
+    <DockPanel Grid.Column="0" Classes="studioPanel">
+      <Border DockPanel.Dock="Top" Classes="studioToolbar">
+        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+          <Menu Background="Transparent" VerticalAlignment="Center">
+            <MenuItem Padding="4,2" MinHeight="24" ToolTip.Tip="Create a new entity">
+              <MenuItem.Header>
+                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                  <Image Source="{StaticResource ImageAdd}" Width="16" Height="16" VerticalAlignment="Center"/>
+                  <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10" VerticalAlignment="Center"/>
+                </StackPanel>
+              </MenuItem.Header>
+              <MenuItem Header="Create" FontWeight="Bold" IsHitTestVisible="False"/>
+              <MenuItem Header="New folder" Command="{Binding CreateFolderInRootCommand}"/>
+              <MenuItem Header="Empty entity" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.EmptyEntity}"/>
+              <MenuItem Header="Audio">
+                <MenuItem Header="Audio emitter" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AudioEmitter}"/>
+                <MenuItem Header="Audio listener" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AudioListener}"/>
+              </MenuItem>
+              <MenuItem Header="Camera">
+                <MenuItem Header="Perspective camera" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.PerspectiveCamera}"/>
+                <MenuItem Header="Orthographic camera" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.OrthographicCamera}"/>
+              </MenuItem>
+              <MenuItem Header="Light">
+                <MenuItem Header="Directional light" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.DirectionalLight}"/>
+                <MenuItem Header="Point light" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.PointLight}"/>
+                <MenuItem Header="Spot light" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.SpotLight}"/>
+                <MenuItem Header="Ambient light" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AmbientLight}"/>
+                <MenuItem Header="Voxel light" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.VoxelLight}"/>
+                <MenuItem Header="Voxel volume" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.VoxelVolume}"/>
+                <MenuItem Header="Light probe" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.LightProbe}"/>
+              </MenuItem>
+              <MenuItem Header="Model">
+                <MenuItem Header="Model instance" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.ModelInstance}"/>
+              </MenuItem>
+              <MenuItem Header="Navigation">
+                <MenuItem Header="Bounding box" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.NavigationBoundingBox}"/>
+              </MenuItem>
+              <MenuItem Header="Particle system">
+                <MenuItem Header="Empty particle system" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.EmptyParticleSystem}"/>
+                <MenuItem Header="Simple particle system" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.SimpleParticleSystem}"/>
+                <MenuItem Header="Fountain particle system" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.FountainParticleSystem}"/>
+                <MenuItem Header="Ribbon particle system" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.RibbonParticleSystem}"/>
+              </MenuItem>
+              <MenuItem Header="2D">
+                <MenuItem Header="Sprite" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Sprite}"/>
+                <MenuItem Header="UI" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Ui}"/>
+                <MenuItem Header="Background" Command="{Binding CreateEntityInRootCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Background}"/>
+              </MenuItem>
+            </MenuItem>
+          </Menu>
+          <Separator Classes="studioToolSeparator"/>
+          <TextBox Width="120" PlaceholderText="Filter" Text="{Binding FilterPattern, Mode=TwoWay}" VerticalAlignment="Center"
+                   ToolTip.Tip="Filter entities by name"/>
+          <Separator Classes="studioToolSeparator"/>
+          <Button Classes="studioTool" ToolTip.Tip="Expand all entities" Click="ExpandAll_OnClick">
+            <Image Source="{StaticResource ImageExpandAllFolders}" Width="16" Height="16"/>
+          </Button>
+          <Button Classes="studioTool" ToolTip.Tip="Collapse all entities" Click="CollapseAll_OnClick">
+            <Image Source="{StaticResource ImageCollapseAllFolders}" Width="16" Height="16"/>
+          </Button>
+        </StackPanel>
+      </Border>
+      <TreeView x:Name="HierarchyTreeView" Classes="studioSceneTree" ItemsSource="{Binding HierarchyRoot, Mode=OneWay, Converter={sd:Yield}}"
                 SelectedItems="{Binding SelectedContent}"
-                SelectionMode="Multiple">
+                SelectionMode="Multiple"
+                BorderBrush="Black"
+                BorderThickness="0,1,0,0"
+                Margin="0">
+        <TreeView.ContextMenu>
+          <ContextMenu Opened="OnHierarchyContextMenuOpened">
+            <MenuItem Header="Create" FontWeight="Bold" IsHitTestVisible="False"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Folder" Command="{Binding CreateFolderInSelectionCommand}"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Empty entity" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.EmptyEntity}"/>
+            <MenuItem Header="Audio">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Audio emitter" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AudioEmitter}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Audio listener" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AudioListener}"/>
+            </MenuItem>
+            <MenuItem Header="Camera">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Perspective camera" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.PerspectiveCamera}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Orthographic camera" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.OrthographicCamera}"/>
+            </MenuItem>
+            <MenuItem Header="Light">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Directional light" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.DirectionalLight}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Point light" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.PointLight}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Spot light" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.SpotLight}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Ambient light" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.AmbientLight}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Voxel light" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.VoxelLight}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Voxel volume" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.VoxelVolume}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Light probe" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.LightProbe}"/>
+            </MenuItem>
+            <MenuItem Header="Model">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Model instance" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.ModelInstance}"/>
+            </MenuItem>
+            <MenuItem Header="Navigation">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Bounding box" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.NavigationBoundingBox}"/>
+            </MenuItem>
+            <MenuItem Header="Particle system">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Empty particle system" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.EmptyParticleSystem}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Simple particle system" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.SimpleParticleSystem}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Fountain particle system" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.FountainParticleSystem}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Ribbon particle system" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.RibbonParticleSystem}"/>
+            </MenuItem>
+            <MenuItem Header="2D">
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Sprite" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Sprite}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="UI" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Ui}"/>
+              <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Background" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Background}"/>
+            </MenuItem>
+          </ContextMenu>
+        </TreeView.ContextMenu>
         <Control.DataTemplates>
-          <!-- Default template -->
-          <TreeDataTemplate DataType="{x:Type vm2:EntityHierarchyItemViewModel}"
+          <!-- Folder template -->
+          <TreeDataTemplate DataType="{x:Type vm2:EntityFolderViewModel}"
                             ItemsSource="{Binding Children}">
-            <TextBlock Text="{Binding Name}" />
+            <StackPanel Orientation="Horizontal">
+              <Image Source="{StaticResource FolderIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center"/>
+            </StackPanel>
           </TreeDataTemplate>
           <!-- Entity template -->
           <TreeDataTemplate DataType="{x:Type vm2:EntityViewModel}"
                             ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal">
-              <!-- TODO icon -->
-              <TextBlock Text="{Binding Name}" />
-            </StackPanel>
+            <DockPanel LastChildFill="True">
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Focus on this entity (F)">
+                <Image Source="{StaticResource ImageFetchEntity}" Width="16" Height="16"/>
+              </Button>
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Lock/unlock this entity">
+                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
+              </Button>
+              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
+              <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding Components, Converter={aec:EntityComponentToResource}}" Width="16" Height="16" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Components, Converter={aec:EntityComponentToTransformLinkInfo}}"
+                           Foreground="{StaticResource LinkTextColor}"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding $self.Text, Converter={sd:ObjectToBool}}"/>
+              </StackPanel>
+            </DockPanel>
           </TreeDataTemplate>
           <!-- Scene template -->
           <TreeDataTemplate DataType="{x:Type vm2:SceneRootViewModel}"
                             ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal">
-              <!-- TODO icon -->
-              <TextBlock Text="{Binding Name}" />
-            </StackPanel>
+            <DockPanel LastChildFill="True">
+              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Lock/unlock all entities">
+                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
+              </Button>
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Load/unload all entities">
+                <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16"/>
+              </Button>
+              <StackPanel Orientation="Horizontal">
+                <Image Source="{StaticResource SceneIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Bold" VerticalAlignment="Center"/>
+              </StackPanel>
+            </DockPanel>
+          </TreeDataTemplate>
+          <!-- Prefab template -->
+          <TreeDataTemplate DataType="{x:Type vm2:PrefabRootViewModel}"
+                            ItemsSource="{Binding Children}">
+            <DockPanel LastChildFill="True">
+              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Lock/unlock all entities">
+                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
+              </Button>
+              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+                      ToolTip.Tip="Load/unload all entities">
+                <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16"/>
+              </Button>
+              <StackPanel Orientation="Horizontal">
+                <Image Source="{StaticResource PrefabIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Bold" VerticalAlignment="Center"/>
+              </StackPanel>
+            </DockPanel>
+          </TreeDataTemplate>
+          <!-- Default fallback template -->
+          <TreeDataTemplate DataType="{x:Type vm2:EntityHierarchyItemViewModel}"
+                            ItemsSource="{Binding Children}">
+            <TextBlock Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center"/>
           </TreeDataTemplate>
         </Control.DataTemplates>
         <StyledElement.Styles>
-          <Style Selector="TreeViewItem">
+          <Style Selector="TreeViewItem" x:CompileBindings="False">
             <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="IsVisible" Value="{Binding IsVisible}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+          </Style>
+          <Style Selector="TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
           </Style>
         </StyledElement.Styles>
       </TreeView>
     </DockPanel>
 
-    <GridSplitter Grid.Column="1" ResizeDirection="Auto" />
+    <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
 
-    <DockPanel Grid.Column="2">
-      <TextBlock Text="Scene View" />
+    <DockPanel Grid.Column="2" Classes="studioPanel">
+      <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
+        <TextBlock Text="Scene view"/>
+      </Border>
     </DockPanel>
   </Grid>
 </UserControl>

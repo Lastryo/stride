@@ -10,6 +10,8 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Stride.Core.Mathematics;
 
 namespace Stride.Core.Presentation.Avalonia.Controls;
@@ -24,6 +26,7 @@ public sealed class NumericTextBox : TemplatedControl
 
     static NumericTextBox()
     {
+        DecimalPlacesProperty.Changed.AddClassHandler<NumericTextBox>(OnDecimalPlacesPropertyChanged);
         MaximumProperty.Changed.AddClassHandler<NumericTextBox>(OnMaximumPropertyChanged);
         MinimumProperty.Changed.AddClassHandler<NumericTextBox>(OnMinimumPropertyChanged);
         TextProperty.Changed.AddClassHandler<NumericTextBox, string?>(OnTextPropertyChanged);
@@ -120,11 +123,34 @@ public sealed class NumericTextBox : TemplatedControl
         if (TextBox is not null)
         {
             textBoxTextChangedSubscription?.Dispose();
+            TextBox.GotFocus -= OnTextBoxGotFocus;
         }
         TextBox = e.NameScope.Find<TextBox>("PART_TextBox");
         if (TextBox is not null)
         {
-            textBoxTextChangedSubscription = TextBox.TextProperty.Changed.AddClassHandler<TextBox>((_, _) => TextBox_OnTextPropertyChanged());
+            TextBox.SetCurrentValue(TextBox.TextProperty, Text);
+            textBoxTextChangedSubscription = TextBox.TextProperty.Changed.AddClassHandler<TextBox>((sender, _) =>
+            {
+                if (ReferenceEquals(sender, TextBox))
+                {
+                    TextBox_OnTextPropertyChanged();
+                }
+            });
+            TextBox.GotFocus += OnTextBoxGotFocus;
+        }
+    }
+
+    private void OnTextBoxGotFocus(object? sender, FocusChangedEventArgs e)
+    {
+        if (TextBox is { } textBox)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (textBox.IsFocused)
+                {
+                    textBox.SelectAll();
+                }
+            }, DispatcherPriority.Input);
         }
     }
 
@@ -133,9 +159,32 @@ public sealed class NumericTextBox : TemplatedControl
         switch (e.Key)
         {
             case Key.Enter:
-                var commitSuccess = CommitInput();
-                e.Handled = !commitSuccess;
+                var commitSuccess = CommitInput(true);
+                if (commitSuccess)
+                {
+                    ClearTextBoxFocus();
+                }
+                e.Handled = true;
                 break;
+
+            case Key.Escape:
+                SyncTextAndValueProperties(false, null, true);
+                ClearTextBoxFocus();
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void ClearTextBoxFocus()
+    {
+        TextBox?.ClearSelection();
+        if (this.FindAncestorOfType<PropertyViewItem>() is { Focusable: true } propertyViewItem)
+        {
+            propertyViewItem.Focus();
+        }
+        else
+        {
+            TopLevel.GetTopLevel(this)?.FocusManager?.Focus(null);
         }
     }
 
@@ -165,11 +214,30 @@ public sealed class NumericTextBox : TemplatedControl
         if (Equals(currentValueText, text))
             return Value;
 
-        if (double.TryParse(text, NumberStyles.Any, NumberFormatInfo.CurrentInfo, out var result))
+        if (TryParseValue(text, out var result))
             return MathUtil.Clamp(result, Minimum, Maximum);
 
         throw new InvalidDataException("Input string was not in a correct format.");
+    }
 
+    private static bool TryParseValue(string text, out double value)
+    {
+        if (text.StartsWith('#') || text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            var span = text.AsSpan(text.StartsWith('#') ? 1 : 2);
+            if (long.TryParse(span, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var longValue))
+            {
+                value = longValue;
+                return true;
+            }
+            value = 0;
+            return false;
+        }
+
+        const NumberStyles style = NumberStyles.Any & ~NumberStyles.AllowThousands;
+        return double.TryParse(text, style, CultureInfo.CurrentCulture, out value)
+            || double.TryParse(text, style, CultureInfo.InvariantCulture, out value)
+            || double.TryParse(text, style, CultureInfo.GetCultureInfo("de-DE"), out value);
     }
 
     private string ConvertValueToText(double? value)
@@ -235,6 +303,10 @@ public sealed class NumericTextBox : TemplatedControl
                     {
                         SetCurrentValue(TextProperty, newText);
                     }
+                    if (TextBox is not null && !Equals(TextBox.Text, newText))
+                    {
+                        TextBox.SetCurrentValue(TextBox.TextProperty, newText);
+                    }
                 }
             }
         }
@@ -271,6 +343,14 @@ public sealed class NumericTextBox : TemplatedControl
         finally
         {
             isTextChangedFromUI = false;
+        }
+    }
+
+    private static void OnDecimalPlacesPropertyChanged(NumericTextBox sender, AvaloniaPropertyChangedEventArgs _)
+    {
+        if (sender.IsInitialized)
+        {
+            sender.SyncTextAndValueProperties(false, null, true);
         }
     }
 

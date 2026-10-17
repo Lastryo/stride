@@ -27,7 +27,7 @@ public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetProper
         componentsNodeBinding = new ObjectGraphNodeBinding<EntityComponentCollection>(assetNode[nameof(Entity.Components)].Target!, nameof(Components), OnPropertyChanging, OnPropertyChanged, ServiceProvider.TryGet<IUndoRedoService>(), false);
     }
 
-    public IEnumerable<EntityComponent> Components => componentsNodeBinding.GetNodeValue();
+    public IEnumerable<EntityComponent> Components => componentsNodeBinding.GetNodeValue()?.ToArray() ?? [];
 
     public Entity AssetSideEntity => EntityDesign.Entity;
 
@@ -49,6 +49,15 @@ public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetProper
     bool IPropertyProviderViewModel.CanProvidePropertiesViewModel => true;
 
     AssetViewModel IAssetPropertyProviderViewModel.RelatedAsset => Asset;
+
+    /// <inheritdoc/>
+    public override void Destroy()
+    {
+        EnsureNotDestroyed(nameof(EntityViewModel));
+        nameNodeBinding.Dispose();
+        componentsNodeBinding.Dispose();
+        base.Destroy();
+    }
 
     /// <inheritdoc/>
     public override GraphNodePath GetNodePath()

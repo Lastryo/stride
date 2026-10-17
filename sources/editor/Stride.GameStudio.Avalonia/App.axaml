@@ -14,27 +14,27 @@
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
           <SolidColorBrush x:Key="PropertyFocusedBackground"
-                           Color="#FF3E3E40"/>
+                           Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="#FF316B8F"/>
+                           Color="#FF252528"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
                            Color="#FF525252"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="PropertyFocusedBackground"
-                           Color="{DynamicResource SystemAccentColor}"/>
+                           Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="{DynamicResource SystemAccentColorDark1}"/>
+                           Color="#FF252528"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
-                           Color="{StaticResource SystemListMediumColor}"/>
+                           Color="#FF525252"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="PropertyFocusedBackground"
-                           Color="{DynamicResource SystemAccentColor}"/>
+                           Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="{DynamicResource SystemAccentColorLight1}"/>
+                           Color="#FFE5E5E8"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
-                           Color="{StaticResource SystemListMediumColor}"/>
+                           Color="#FFDADAE0"/>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
@@ -53,5 +53,6 @@
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/SearchComboBoxStyle.axaml"/>
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/TextLogViewerStyle.axaml"/>
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/ToolBarStyle.axaml"/>
+    <StyleInclude Source="avares://Stride.GameStudio.Avalonia/Themes/GameStudioTheme.axaml"/>
   </Application.Styles>
 </Application>

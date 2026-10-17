@@ -103,11 +103,18 @@ public class AddPrimitiveKeyCommand : SyncNodePresenterCommandBase
         // TODO: use a dialog service and popup a message when the given key is invalid
         var dictionaryDescriptor = descriptor as DictionaryDescriptor;
         var keyType = dictionaryDescriptor.KeyType;
-        var key = keyType.Default();
+        object? key;
 
-        key = TypeDescriptor.GetConverter(keyType).ConvertFrom(baseValue);
+        try
+        {
+            key = TypeDescriptor.GetConverter(keyType).ConvertFrom(baseValue);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
 
-        if (!dictionaryDescriptor.ContainsKey(dictionary, key))
+        if (key != null && !dictionaryDescriptor.ContainsKey(dictionary, key))
         {
             return new NodeIndex(key);
         }

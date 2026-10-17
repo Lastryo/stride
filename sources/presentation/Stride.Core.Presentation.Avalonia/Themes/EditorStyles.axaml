@@ -111,7 +111,11 @@
           <TextBox Grid.Column="1" x:Name="TextBox"
                    Margin="2" VerticalAlignment="Center"
                    Text="{Binding Value, Converter={sd:ColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
-                   PlaceholderText="{TemplateBinding PlaceholderText}"/>
+                   PlaceholderText="{TemplateBinding PlaceholderText}">
+            <Interaction.Behaviors>
+              <sd:TextBoxValidationBehavior/>
+            </Interaction.Behaviors>
+          </TextBox>
           <Popup Grid.Column="0"
                  IsOpen="{Binding #PickerToggleButton.IsChecked, Mode=TwoWay}" IsLightDismissEnabled="True">
             <Grid MinWidth="200" MinHeight="200"
@@ -169,7 +173,11 @@
           <TextBox Grid.Column="1" x:Name="TextBox"
                    Margin="2" VerticalAlignment="Center"
                    Text="{Binding Value, Converter={sd:ColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
-                   PlaceholderText="{TemplateBinding PlaceholderText}"/>
+                   PlaceholderText="{TemplateBinding PlaceholderText}">
+            <Interaction.Behaviors>
+              <sd:TextBoxValidationBehavior/>
+            </Interaction.Behaviors>
+          </TextBox>
           <Popup Grid.Column="0"
                  IsOpen="{Binding #PickerToggleButton.IsChecked, Mode=TwoWay}" IsLightDismissEnabled="True">
             <Grid MinWidth="200" MinHeight="200"
@@ -227,7 +235,11 @@
           <TextBox Grid.Column="1" x:Name="TextBox"
                    Margin="2" VerticalAlignment="Center"
                    Text="{Binding Value, Converter={sd:ColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
-                   PlaceholderText="{TemplateBinding PlaceholderText}"/>
+                   PlaceholderText="{TemplateBinding PlaceholderText}">
+            <Interaction.Behaviors>
+              <sd:TextBoxValidationBehavior/>
+            </Interaction.Behaviors>
+          </TextBox>
           <Popup Grid.Column="0"
                  IsOpen="{Binding #PickerToggleButton.IsChecked, Mode=TwoWay}" IsLightDismissEnabled="True">
             <Grid MinWidth="200" MinHeight="200"
@@ -281,6 +293,7 @@
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -293,6 +306,7 @@
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -316,6 +330,7 @@
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -328,6 +343,7 @@
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -340,6 +356,7 @@
             <DockPanel>
               <TextBlock Text="Z" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -363,6 +380,7 @@
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -375,6 +393,7 @@
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -387,18 +406,20 @@
             <DockPanel>
               <TextBlock Text="Z" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
           <!-- W component -->
-          <Border Grid.Column="5"
+          <Border Grid.Column="7"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="W" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -421,7 +442,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -433,7 +454,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -456,7 +477,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -468,7 +489,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -480,7 +501,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Z" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -503,7 +524,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -515,7 +536,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -527,19 +548,19 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Z" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
           <!-- W component -->
-          <Border Grid.Column="5"
+          <Border Grid.Column="7"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="W" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding W, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -561,29 +582,29 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding RectX, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
-          <Border Grid.Column="1"
+          <Border Grid.Column="3"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding RectY, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
-          <Border Grid.Column="1"
+          <Border Grid.Column="5"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="W" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding RectWidth, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -594,7 +615,7 @@
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="H" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
-              <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+              <sd:NumericTextBox Margin="-1" TextAlignment="Center" DecimalPlaces="0"
                                  Value="{Binding RectHeight, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -617,28 +638,31 @@
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding RectX, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
-          <Border Grid.Column="1"
+          <Border Grid.Column="3"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding RectY, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
           </Border>
-          <Border Grid.Column="1"
+          <Border Grid.Column="5"
                   CornerRadius="4" Margin="2,0,0,0"
                   Background="{DynamicResource AlphaBrush}"
                   BorderThickness="1" BorderBrush="{StaticResource TransparentBrush}">
             <DockPanel>
               <TextBlock Text="W" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding RectWidth, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -650,6 +674,7 @@
             <DockPanel>
               <TextBlock Text="H" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding RectHeight, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -674,6 +699,7 @@
             <DockPanel>
               <TextBlock Text="X" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding X, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -686,6 +712,7 @@
             <DockPanel>
               <TextBlock Text="Y" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Y, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -698,6 +725,7 @@
             <DockPanel>
               <TextBlock Text="Z" Margin="3,0" MinWidth="12" VerticalAlignment="Center" TextAlignment="Center" Foreground="{StaticResource WhiteBrush}"/>
               <sd:NumericTextBox Margin="-1" TextAlignment="Center"
+                                 DecimalPlaces="{TemplateBinding DecimalPlaces}"
                                  Value="{Binding Z, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                                  PlaceholderText="{TemplateBinding PlaceholderText}"/>
             </DockPanel>
@@ -715,58 +743,115 @@
         <UniformGrid Rows="4" Columns="4">
           <!-- first row -->
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M11, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M12, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M13, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M14, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <!-- second row -->
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M21, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M22, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M23, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M24, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <!-- third row -->
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M31, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M32, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M33, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M34, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <!-- fourth row -->
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M41, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M42, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M43, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
           <sd:NumericTextBox Margin="2" TextAlignment="Center"
+                             DecimalPlaces="{TemplateBinding DecimalPlaces}"
                              Value="{Binding M44, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=Explicit}"
                              PlaceholderText="{TemplateBinding PlaceholderText}"/>
         </UniformGrid>
       </ControlTemplate>
     </Setter>
   </Style>
+
+  <!-- Style for TagControl -->
+  <Style Selector="sd|TagControl">
+    <Setter Property="Background" Value="#FF708090"/>
+    <Setter Property="Template">
+      <ControlTemplate TargetType="sd:TagControl">
+        <DockPanel Background="Transparent">
+          <Border DockPanel.Dock="Left" Margin="0,0,-2,0">
+            <Path Stretch="Uniform"
+                  Fill="{TemplateBinding Background}"
+                  Stroke="{TemplateBinding Background}"
+                  StrokeThickness="4"
+                  StrokeJoin="Round"
+                  Data="F1 M 35,25L 46,14L 46,53L 35,42L 35,25 Z" />
+          </Border>
+          <Border Background="{TemplateBinding Background}" CornerRadius="0,3,3,0">
+            <DockPanel>
+              <Button DockPanel.Dock="Right"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Padding="0"
+                      Width="12" Height="12" Margin="2"
+                      Command="{TemplateBinding CloseTagCommand}"
+                      CommandParameter="{TemplateBinding DataContext}"
+                      IsVisible="{Binding CloseTagCommand.IsEnabled, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={sd:False}}">
+                <Path Width="8" Height="8" Stretch="Fill"
+                      Fill="{DynamicResource StudioTextBrush}"
+                      Data="F1 M 26.9166,22.1667L 37.9999,33.25L 49.0832,22.1668L 53.8332,26.9168L 42.7499,38L 53.8332,49.0834L 49.0833,53.8334L 37.9999,42.75L 26.9166,53.8334L 22.1666,49.0833L 33.25,38L 22.1667,26.9167L 26.9166,22.1667 Z"/>
+              </Button>
+              <ContentPresenter Content="{TemplateBinding Content}"
+                                Margin="{TemplateBinding Padding}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </DockPanel>
+          </Border>
+        </DockPanel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
 </Styles>
+

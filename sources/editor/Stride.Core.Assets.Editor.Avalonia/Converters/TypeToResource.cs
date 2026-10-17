@@ -18,9 +18,11 @@ public sealed class TypeToResource : OneWayValueConverter<TypeToResource>
         object? result = null;
         while (type is not null)
         {
-            // FIXME xplat-editor
-            //if (AssetsEditorPlugin.TypeImagesDictionary.TryGetValue(type, out result))
-            //    break;
+            if (AssetsEditorPlugin.TypeImagesDictionary.TryGetValue(type, out result))
+                break;
+
+            if (!tryBase)
+                break;
 
             type = type.BaseType;
         }

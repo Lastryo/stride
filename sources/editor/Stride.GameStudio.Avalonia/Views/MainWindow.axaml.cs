@@ -57,6 +57,8 @@ public partial class MainWindow : Window
 
     protected override void OnLoaded(RoutedEventArgs _)
     {
+        base.OnLoaded(_);
+
         // Notify the launcher that Game Studio is ready (no-op when not launched from the launcher).
         App.LauncherNotifier?.Invoke();
         App.LauncherNotifier = null; // fire once

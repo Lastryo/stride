@@ -136,7 +136,7 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
         initializationSignal.Set();
 
-        PreviewGame = new PreviewGame(AssetBuilderService.EffectCompiler);
+        PreviewGame = new EmbeddedPreviewGame(AssetBuilderService.EffectCompiler);
         var context = new GameContextSDL(gameForm) { InitializeDatabase = false };
 
         // Wait for shaders to be loaded
@@ -325,5 +325,15 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
     public void OnHidePreview()
     {
         PreviewGame.IsEditorHidden = true;
+    }
+
+    private sealed class EmbeddedPreviewGame : PreviewGame
+    {
+        public EmbeddedPreviewGame(Stride.Shaders.Compiler.IEffectCompiler effectCompiler) : base(effectCompiler)
+        {
+            // The preview belongs inside GameEngineHost. Until native hosting is
+            // implemented, keep its SDL window hidden instead of showing a 64x64 top-level window.
+            MakeWindowVisibleOnRun = false;
+        }
     }
 }

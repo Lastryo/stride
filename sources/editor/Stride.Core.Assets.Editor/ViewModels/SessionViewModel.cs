@@ -47,11 +47,16 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         // Make sure plugins are initialized
         PluginService.EnsureInitialized(logger);
 
+        serviceProvider.RegisterService(new UserDocumentationService(this));
+
         // Initialize the node container used for asset properties
         AssetNodeContainer = new SessionNodeContainer(serviceProvider) { NodeBuilder = { NodeFactory = new AssetNodeFactory() } };
 
         // Initialize the asset collection view model
         AssetCollection = new AssetCollectionViewModel(this);
+
+        // Initialize the tags view model
+        AssetTags = new TagsViewModel(AssetCollection);
 
         // Initialize the asset collection view model
         EditorCollection = new EditorCollectionViewModel(this);
@@ -142,6 +147,8 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     public AssetCollectionViewModel AssetCollection { get; }
 
+    public TagsViewModel AssetTags { get; }
+
     public AssetLogViewModel AssetLog { get; }
 
     public AssetNodeContainer AssetNodeContainer { get; }
@@ -226,6 +233,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         EnsureNotDestroyed(nameof(SessionViewModel));
 
         ActionHistory?.Destroy();
+        AssetTags.Destroy();
         AssetLog.Destroy();
         Thumbnails.Destroy();
 
@@ -417,6 +425,8 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
             if (!sessionStateUpdating)
                 return;
 
+            var asset = AssetCollection.SingleSelectedAsset;
+            EditSelectedContentCommand.IsEnabled = AssetCollection.SingleSelectedContent is DirectoryViewModel || asset is { IsEditable: true } && PluginService.GetEditorViewModelType(asset.GetType()) is not null;
             UpdateSelectionCommands();
 
             sessionStateUpdating = false;

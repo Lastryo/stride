@@ -63,16 +63,45 @@
                 MinHeight="26" Margin="4,4,1,8"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 ToolTip.Tip="{Binding [Documentation]}">
-          <!-- TODO AddEntityComponentUserControl -->
-          <ToggleButton x:Name="ToggleButton">
-            <DockPanel Margin="4">
-              <TextBlock DockPanel.Dock="Left"
-                         Width="16" Height="16"
-                         Text="➕"/>
-              <TextBlock Margin="4,0"
-                         Text="{sd:LocalizeString Add component}" FontStyle="Italic"/>
+          <Grid>
+          <ToggleButton x:Name="AddComponentButton" HorizontalAlignment="Left">
+            <DockPanel Margin="4" LastChildFill="True">
+              <Image DockPanel.Dock="Left" Source="{StaticResource ImageAdd}" Width="16" Height="16" Margin="0,0,4,0"/>
+              <TextBlock Text="{sd:LocalizeString Add component}" FontStyle="Italic"/>
             </DockPanel>
           </ToggleButton>
+          <Popup IsOpen="{Binding #AddComponentButton.IsChecked, Mode=TwoWay}"
+                 PlacementTarget="{Binding #AddComponentButton}"
+                 Placement="Bottom"
+                 IsLightDismissEnabled="True">
+            <Border Background="{DynamicResource StudioPanelBrush}"
+                    BorderBrush="{DynamicResource StudioBorderBrush}"
+                    BorderThickness="1"
+                    Padding="4"
+                    MaxHeight="420"
+                    MinWidth="240">
+              <ListBox x:Name="ComponentTypesList"
+                       ItemsSource="{Binding [EntityComponentAvailableTypes]}"
+                       MaxHeight="410"
+                       SelectionMode="Single">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="caeqnpc:AbstractNodeType">
+                    <TextBlock Text="{Binding DisplayValue}" Margin="4,2"/>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+                <Interaction.Behaviors>
+                  <EventTriggerBehavior EventName="SelectionChanged"
+                                        IsEnabled="{Binding #ComponentTypesList.SelectedItem, Converter={sd:ObjectToBool}}">
+                    <InvokeCommandAction Command="{Binding [AddNewItem]}"
+                                         CommandParameter="{Binding #ComponentTypesList.SelectedItem}"/>
+                    <ChangePropertyAction TargetObject="ComponentTypesList" PropertyName="SelectedItem" Value="{x:Null}"/>
+                    <ChangePropertyAction TargetObject="AddComponentButton" PropertyName="IsChecked" Value="{sd:False}"/>
+                  </EventTriggerBehavior>
+                </Interaction.Behaviors>
+              </ListBox>
+            </Border>
+          </Popup>
+          </Grid>
         </Border>
       </Border>
     </DataTemplate>

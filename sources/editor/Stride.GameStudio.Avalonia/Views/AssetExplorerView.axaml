@@ -189,7 +189,7 @@
       </ItemsControl>
     </DockPanel>
     <!-- Asset list -->
-    <ListBox ItemsSource="{Binding FilteredAssets}"
+    <ListBox Classes="studioAssetList" ItemsSource="{Binding FilteredAssets}"
              SelectedItems="{Binding SelectedContent}"
              SelectionMode="Multiple"
              Margin="4">
@@ -200,16 +200,22 @@
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
-          <StackPanel Orientation="Horizontal">
+          <StackPanel Width="104" Spacing="5" Margin="3">
             <Interaction.Behaviors>
               <EventTriggerBehavior EventName="DoubleTapped">
                 <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).EditSelectedContentCommand}" />
               </EventTriggerBehavior>
             </Interaction.Behaviors>
-            <TextBlock Text="Asset: " />
-            <TextBlock Text="{Binding Name}" />
-            <Image Source="{Binding ThumbnailData?.Presenter, Converter={gscv:StrideImage}}"
-                   Width="64" Height="64"/>
+            <Border Height="88" Classes="studioAssetThumbnail">
+              <Grid>
+                <Path Data="M3,1 L11,1 L15,5 L15,17 L3,17 Z M11,1 L11,5 L15,5 M6,9 L12,9 M6,12 L12,12"
+                      Stroke="{DynamicResource StudioMutedBrush}" StrokeThickness="1.2" Width="28" Height="34" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Image Source="{Binding ThumbnailData?.Presenter, Converter={gscv:StrideImage}}"
+                       Width="80" Height="80" Stretch="Uniform"/>
+              </Grid>
+            </Border>
+            <TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
           </StackPanel>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

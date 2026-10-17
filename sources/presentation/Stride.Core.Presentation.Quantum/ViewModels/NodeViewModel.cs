@@ -351,7 +351,7 @@ public class NodeViewModel : DispatcherViewModel, IDynamicMetaObjectProvider
         if (!changingProperties.Contains(propertyName))
         {
             changingProperties.Add(propertyName);
-            OnPropertyChanging(propertyName);
+            OnPropertyChanging(propertyName, $"Item[{propertyName}]");
         }
     }
 
@@ -359,7 +359,7 @@ public class NodeViewModel : DispatcherViewModel, IDynamicMetaObjectProvider
     {
         if (changingProperties.Remove(propertyName))
         {
-            OnPropertyChanged(propertyName);
+            OnPropertyChanged(propertyName, $"Item[{propertyName}]");
         }
     }
 
@@ -615,9 +615,9 @@ public class NodeViewModel : DispatcherViewModel, IDynamicMetaObjectProvider
         return convertedValue;
     }
 
-    private void AddChild(NodeViewModel child) => ChangeAndNotify(() => { child.Parent = this; ((ICollection<NodeViewModel>?)initializingChildren ?? children).Add(child); }, $"{GraphViewModel.HasChildPrefix}{child.Name}", child.Name);
+    private void AddChild(NodeViewModel child) => ChangeAndNotify(() => { child.Parent = this; ((ICollection<NodeViewModel>?)initializingChildren ?? children).Add(child); }, $"{GraphViewModel.HasChildPrefix}{child.Name}", child.Name, nameof(VisibleChildrenCount), nameof(Children));
 
-    private void RemoveChild(NodeViewModel child) => ChangeAndNotify(() => { child.Parent = null; ((ICollection<NodeViewModel>?)initializingChildren ?? children).Remove(child); }, $"{GraphViewModel.HasChildPrefix}{child.Name}", child.Name);
+    private void RemoveChild(NodeViewModel child) => ChangeAndNotify(() => { child.Parent = null; ((ICollection<NodeViewModel>?)initializingChildren ?? children).Remove(child); }, $"{GraphViewModel.HasChildPrefix}{child.Name}", child.Name, nameof(VisibleChildrenCount), nameof(Children));
 
     private void AddCommand(NodePresenterCommandWrapper command) => ChangeAndNotify(() => commands.Add(command), $"{GraphViewModel.HasCommandPrefix}{command.Name}", command.Name);
 

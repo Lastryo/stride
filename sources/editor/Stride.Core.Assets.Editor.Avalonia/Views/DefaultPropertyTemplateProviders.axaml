@@ -84,25 +84,23 @@
                         Focusable="False" BorderBrush="{TemplateBinding BorderBrush}"
                         IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press"
                         Tag="{TemplateBinding Tag}">
+            <ToggleButton.Styles>
+              <Style Selector="ToggleButton:pointerover /template/ Border#Border, ToggleButton:checked /template/ Border#Border">
+                <Setter Property="Background" Value="#FFAAAAAA"/>
+              </Style>
+              <Style Selector="ToggleButton:disabled">
+                <Setter Property="Foreground" Value="#FF656565"/>
+              </Style>
+              <Style Selector="ToggleButton:disabled /template/ Border#Border">
+                <Setter Property="Background" Value="#FF040404"/>
+                <Setter Property="Opacity" Value="0.8"/>
+              </Style>
+            </ToggleButton.Styles>
             <ToggleButton.Template>
               <ControlTemplate TargetType="ToggleButton">
                 <Border x:Name="Border"
                         Width="16" Height="16" Margin="2,0" Background="Transparent" Focusable="False">
                   <Image Source="{TemplateBinding Tag}" Width="16" Height="16"/>
-                  <!-- FIXME xplat-editor use style selectors instead -->
-                  <Interaction.Behaviors>
-                    <DataTriggerBehavior Binding="{TemplateBinding IsPointerOver}" Value="{sd:True}">
-                      <ChangePropertyAction PropertyName="Background" TargetObject="Border" Value="#FFAAAAAA"/>
-                    </DataTriggerBehavior>
-                    <DataTriggerBehavior Binding="{TemplateBinding IsChecked}" Value="{sd:True}">
-                      <ChangePropertyAction PropertyName="Background" TargetObject="Border" Value="#FFAAAAAA"/>
-                    </DataTriggerBehavior>
-                    <DataTriggerBehavior Binding="{TemplateBinding IsEnabled}" Value="{sd:False}">
-                      <ChangePropertyAction PropertyName="Foreground" Value="#FF656565"/>
-                      <ChangePropertyAction PropertyName="Background" TargetObject="Border" Value="#FF040404"/>
-                      <ChangePropertyAction PropertyName="Opacity" TargetObject="Border" Value="{sd:Double 0.8}"/>
-                    </DataTriggerBehavior>
-                  </Interaction.Behaviors>
                 </Border>
               </ControlTemplate>
             </ToggleButton.Template>
@@ -228,6 +226,8 @@
                    IsVisible="{Binding [HasCommand_RenameStringKey]}"
                    ContextMenu="{Binding $parent[sd:PropertyViewItem].ContextMenu}">
             <Interaction.Behaviors>
+              <sd:TextBoxValidationBehavior ValidateCommand="{Binding [RenameStringKey]}"
+                                            CancelOnLostFocus="True"/>
               <DataTriggerBehavior Binding="{Binding $parent[TextBox].IsKeyboardFocusWithin}" Value="{sd:False}">
                 <ChangePropertyAction PropertyName="Background" Value="Transparent"/>
                 <ChangePropertyAction PropertyName="BorderBrush" Value="Transparent"/>
@@ -392,8 +392,11 @@
                         ContentTemplate="{x:Static caev:PropertyViewHelper.EditorProviders}"
                         IsVisible="{Binding NodeValue, Converter={sd:Chained {sd:IsEqualToParam}, {sd:InvertBool}, Parameter1={x:Static cpqvm:NodeViewModel.DifferentValues}}}">
           <Interaction.Behaviors>
-            <DataTriggerBehavior Binding="{Binding NodeValue, Converter={sd:ObjectToBool}}">
+            <DataTriggerBehavior Binding="{Binding NodeValue, Converter={sd:ObjectToBool}}" Value="{sd:False}">
               <ChangePropertyAction TargetObject="ContentControl" PropertyName="Opacity" Value="{sd:Double 0.5}"/>
+            </DataTriggerBehavior>
+            <DataTriggerBehavior Binding="{Binding NodeValue, Converter={sd:ObjectToBool}}" Value="{sd:True}">
+              <ChangePropertyAction TargetObject="ContentControl" PropertyName="Opacity" Value="{sd:Double 1.0}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
         </ContentControl>
@@ -669,7 +672,8 @@
                   <Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/>
                 </ToggleButton>
                 <Popup x:Name="PART_Popup"
-                       IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Left"
+                       IsLightDismissEnabled="True"
+                       IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Placement="Left"
                        VerticalOffset="{Binding Bounds.Height, RelativeSource={RelativeSource TemplatedParent}}"
                        HorizontalOffset="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
                        PlacementTarget="{Binding #ToggleButton}">
@@ -677,10 +681,15 @@
                              Background="{DynamicResource ControlBackgroundBrush}" Margin="10">
                     <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" VerticalAlignment="Center"
                                Text="{sd:LocalizeString Key name:}"/>
-                    <!-- TODO validation commands -->
                     <TextBox x:Name="TextBox1"
                              Text="0"
-                             Margin="8" Width="160"/>
+                             Margin="8" Width="160">
+                      <Interaction.Behaviors>
+                        <sd:TextBoxValidationBehavior ValidateCommand="{Binding [AddPrimitiveKey]}"
+                                                      CancelOnLostFocus="True"
+                                                      ClosePopupOnValidateOrCancel="True"/>
+                      </Interaction.Behaviors>
+                    </TextBox>
                   </DockPanel>
                 </Popup>
                 <Interaction.Behaviors>
@@ -727,7 +736,8 @@
                   <Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/>
                 </ToggleButton>
                 <Popup x:Name="PART_Popup"
-                       IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Left"
+                       IsLightDismissEnabled="True"
+                       IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Placement="Left"
                        VerticalOffset="{Binding Bounds.Height, RelativeSource={RelativeSource TemplatedParent}}"
                        HorizontalOffset="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
                        PlacementTarget="{Binding #ToggleButton}">
@@ -735,10 +745,15 @@
                              Background="{DynamicResource ControlBackgroundBrush}" Margin="10">
                     <TextBlock DockPanel.Dock="Left" Margin="8,0,0,0" VerticalAlignment="Center"
                                Text="{sd:LocalizeString Key name:}"/>
-                    <!-- TODO validation commands -->
                     <TextBox x:Name="TextBox2"
                              Text="{sd:LocalizeString New key}"
-                             Margin="8" Width="160"/>
+                             Margin="8" Width="160">
+                      <Interaction.Behaviors>
+                        <sd:TextBoxValidationBehavior ValidateCommand="{Binding [AddPrimitiveKey]}"
+                                                      CancelOnLostFocus="True"
+                                                      ClosePopupOnValidateOrCancel="True"/>
+                      </Interaction.Behaviors>
+                    </TextBox>
                   </DockPanel>
                 </Popup>
                 <Interaction.Behaviors>
@@ -750,7 +765,7 @@
                     <ChangePropertyAction TargetObject="TextBox2" PropertyName="Text" Value=""/>
                   </DataTriggerBehavior>
                   <DataTriggerBehavior Binding="{Binding #PART_Popup.IsOpen}" Value="{sd:True}">
-                    <ChangePropertyAction TargetObject="TextBox2" PropertyName="Text" Value="0"/>
+                    <ChangePropertyAction TargetObject="TextBox2" PropertyName="Text" Value="{sd:LocalizeString New key}"/>
                   </DataTriggerBehavior>
                 </Interaction.Behaviors>
               </Grid>
@@ -785,7 +800,8 @@
                   <Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/>
                 </ToggleButton>
                 <Popup x:Name="PART_Popup"
-                       IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Left"
+                       IsLightDismissEnabled="True"
+                       IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Placement="Left"
                        VerticalOffset="{Binding Bounds.Height, RelativeSource={RelativeSource TemplatedParent}}"
                        HorizontalOffset="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
                        PlacementTarget="{Binding #ToggleButton1}">
@@ -838,14 +854,18 @@
       <Grid ColumnDefinitions="Auto, 3*">
         <TextBox Grid.Column="0" Margin="2" Width="40" TextAlignment="Center"
                  Text="{Binding NodeValue, Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:CharToString}}}"
-                 ToolTip.Tip="{sd:LocalizeString Character, Context=ToolTip}"/>
+                 ToolTip.Tip="{sd:LocalizeString Character, Context=ToolTip}">
+          <Interaction.Behaviors>
+            <sd:TextBoxValidationBehavior/>
+          </Interaction.Behaviors>
+        </TextBox>
         <sd:NumericTextBox x:Name="NumericTextBox"
-                           Grid.Column="1" Margin="2"
+                           Grid.Column="1" Margin="2" DecimalPlaces="0"
                            Value="{Binding NodeValue, Converter={sd:CharToUnicode}, UpdateSourceTrigger=Explicit}"
                            ToolTip.Tip="{sd:LocalizeString Unicode value, Context=ToolTip}">
           <Interaction.Behaviors>
             <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-              <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+              <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
         </sd:NumericTextBox>
@@ -861,7 +881,7 @@
                        Maximum="{Binding [Maximum], Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:ToDouble}}, FallbackValue={x:Static s:Decimal.MaxValue}}">
       <Interaction.Behaviors>
         <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-          <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+          <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
         </DataTriggerBehavior>
       </Interaction.Behaviors>
     </sd:NumericTextBox>
@@ -874,12 +894,13 @@
   <!-- Providers for fixed-point number -->
   <DataTemplate x:Key="IntEditorTemplate" DataType="cpqvm:NodeViewModel">
     <sd:NumericTextBox x:Name="NumericTextBox"
+                       DecimalPlaces="0"
                        Value="{Binding NodeValue, Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:ToDouble}}, UpdateSourceTrigger=Explicit}"
                        Minimum="{Binding [Minimum], Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:ToDouble}}, FallbackValue={x:Static s:Decimal.MinValue}}"
                        Maximum="{Binding [Maximum], Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:ToDouble}}, FallbackValue={x:Static s:Decimal.MaxValue}}">
       <Interaction.Behaviors>
         <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-          <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+          <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
         </DataTriggerBehavior>
       </Interaction.Behaviors>
     </sd:NumericTextBox>
@@ -925,7 +946,7 @@
                            Maximum="{Binding [Maximum], Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:ToDouble}}, FallbackValue={x:Static s:Decimal.MaxValue}}">
           <Interaction.Behaviors>
             <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-              <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+              <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
         </sd:NumericTextBox>
@@ -938,8 +959,9 @@
     <DataTemplate DataType="cpqvm:NodeViewModel">
       <TextBox Text="{Binding NodeValue, Converter={caec:DifferentValuesToString}}">
         <Interaction.Behaviors>
+          <sd:TextBoxValidationBehavior/>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </TextBox>
@@ -953,7 +975,7 @@
                          Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:DateTimeEditor>
@@ -967,7 +989,7 @@
                          Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="×"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="×"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:TimeSpanEditor>
@@ -981,7 +1003,7 @@
                       Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:ColorEditor>
@@ -995,7 +1017,7 @@
                        Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Color3Editor>
@@ -1009,7 +1031,7 @@
                        Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Color4Editor>
@@ -1024,7 +1046,7 @@
                         DecimalPlaces="3">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Vector2Editor>
@@ -1039,7 +1061,7 @@
                         DecimalPlaces="3">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Vector3Editor>
@@ -1054,7 +1076,7 @@
                         DecimalPlaces="3">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Vector4Editor>
@@ -1068,7 +1090,7 @@
                      Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Int2Editor>
@@ -1082,7 +1104,7 @@
                      Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Int3Editor>
@@ -1096,7 +1118,7 @@
                      Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:Int4Editor>
@@ -1110,7 +1132,7 @@
                           Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:RectangleEditor>
@@ -1124,7 +1146,7 @@
                            Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:RectangleFEditor>
@@ -1139,7 +1161,7 @@
                            DecimalPlaces="3">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:QuaternionEditor>
@@ -1154,7 +1176,7 @@
                        DecimalPlaces="3">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="≠"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="≠"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:MatrixEditor>
@@ -1168,7 +1190,7 @@
                          ToolTip.Tip="{sd:LocalizeString Angle in degrees, Context=Tooltip}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-            <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+            <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
           </DataTriggerBehavior>
         </Interaction.Behaviors>
       </sd:NumericTextBox>
@@ -1187,8 +1209,9 @@
         <TextBox Margin="2"
                  Text="{Binding NodeValue, Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:UDirectoryToString}}}">
           <Interaction.Behaviors>
+            <sd:TextBoxValidationBehavior/>
             <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-              <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+              <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
         </TextBox>
@@ -1208,8 +1231,9 @@
         <TextBox Margin="2"
                  Text="{Binding NodeValue, Converter={sd:Chained {caec:DifferentValuesToNull}, {sd:UFileToString}}}">
           <Interaction.Behaviors>
+            <sd:TextBoxValidationBehavior/>
             <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
-              <ChangePropertyAction PropertyName="Watermark" Value="{sd:LocalizeString (Different values)}"/>
+              <ChangePropertyAction PropertyName="PlaceholderText" Value="{sd:LocalizeString (Different values)}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
         </TextBox>
@@ -1416,7 +1440,11 @@
       <TextBox Margin="5"
                IsReadOnly="{Binding IsReadOnly}"
                Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}}"
-               ContextMenu="{StaticResource ReferenceContextMenu}"/>
+               ContextMenu="{StaticResource ReferenceContextMenu}">
+        <Interaction.Behaviors>
+          <sd:TextBoxValidationBehavior/>
+        </Interaction.Behaviors>
+      </TextBox>
     </DockPanel>
   </DataTemplate>
   <caev:ContentReferenceTemplateProvider x:Key="SimpleContentReferenceTemplateProvider" caev:PropertyViewHelper.TemplateCategory="PropertyEditor"
@@ -1470,7 +1498,11 @@
                    Margin="5"
                    IsReadOnly="{Binding IsReadOnly}"
                    Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}}"
-                   ContextMenu="{StaticResource ReferenceContextMenu}"/>
+                   ContextMenu="{StaticResource ReferenceContextMenu}">
+            <Interaction.Behaviors>
+              <sd:TextBoxValidationBehavior/>
+            </Interaction.Behaviors>
+          </TextBox>
           <UniformGrid Rows="1"
                        HorizontalAlignment="Right" VerticalAlignment="Top">
             <Button Theme="{StaticResource ImageButtonTheme}"

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../sources/presentation/Stride.Core.Presentation.Avalonia/Stride.Core.Presentation.Avalonia.csproj" />
+    <PackageReference Include="Xaml.Behaviors.Interactions" />
+    <None Include="../../../sources/editor/Stride.Core.Assets.Editor.Avalonia/Views/DefaultPropertyTemplateProviders.axaml"
+          Link="DefaultPropertyTemplateProviders.axaml" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+</Project>

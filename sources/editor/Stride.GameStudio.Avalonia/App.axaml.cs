@@ -110,6 +110,23 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
+            var initialPath = desktop.Args?.FirstOrDefault(path =>
+                (string.Equals(Path.GetExtension(path), ".sln", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(Path.GetExtension(path), ".sdpkg", StringComparison.OrdinalIgnoreCase))
+                && File.Exists(path));
+            if (initialPath is not null)
+            {
+                // Opening a session can show dialogs, so wait until the owner is loaded.
+                var fullPath = Path.GetFullPath(initialPath);
+                desktop.MainWindow.Loaded += OpenInitialSession;
+
+                void OpenInitialSession(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
+                {
+                    desktop.MainWindow.Loaded -= OpenInitialSession;
+                    if (desktop.MainWindow.DataContext is MainViewModel viewModel)
+                        viewModel.OpenCommand.Execute(new UFile(fullPath));
+                }
+            }
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {

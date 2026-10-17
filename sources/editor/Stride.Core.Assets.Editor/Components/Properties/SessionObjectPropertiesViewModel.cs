@@ -1,8 +1,10 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.ComponentModel;
 using Stride.Core.Assets.Editor.Quantum.NodePresenters.Commands;
 using Stride.Core.Assets.Editor.Quantum.NodePresenters.Updaters;
+using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Assets.Editor.ViewModels;
 using Stride.Core.Assets.Presentation.Components.Properties;
 using Stride.Core.Assets.Presentation.Quantum.NodePresenters;
@@ -25,6 +27,7 @@ public class SessionObjectPropertiesViewModel : PropertiesViewModel
     private string typeDescription;
     private string? name;
     private bool showOverridesOnly;
+    private Action? unsubscribeSelectionPropertyChanged;
 
     public SessionObjectPropertiesViewModel(SessionViewModel session)
         : base(session.ServiceProvider, session.AssetNodeContainer)
@@ -36,8 +39,7 @@ public class SessionObjectPropertiesViewModel : PropertiesViewModel
         ViewModelService.NodeViewModelFactory = new AssetNodeViewModelFactory();
 
         var dialogService = ServiceProvider.Get<IDialogService>();
-        // FIXME xplat-editor
-        //var documentationService = session.ServiceProvider.Get<UserDocumentationService>();
+        var documentationService = session.ServiceProvider.TryGet<UserDocumentationService>();
 
         RegisterNodePresenterCommand(new CopyPropertyCommand());
         RegisterNodePresenterCommand(new PastePropertyCommand());
@@ -50,10 +52,18 @@ public class SessionObjectPropertiesViewModel : PropertiesViewModel
         RegisterNodePresenterCommand(new ResetOverrideCommand());
 
         RegisterNodePresenterUpdater(new ArchetypeNodeUpdater());
-        // FIXME xplat-editor
-        //RegisterNodePresenterUpdater(new DocumentationNodeUpdater(documentationService));
+        if (documentationService is not null)
+            RegisterNodePresenterUpdater(new DocumentationNodeUpdater(documentationService));
         RegisterNodePresenterUpdater(new OwnerAssetUpdater());
         RegisterNodePresenterUpdater(new SessionNodeUpdater(session));
+    }
+
+    /// <inheritdoc/>
+    public override void Destroy()
+    {
+        unsubscribeSelectionPropertyChanged?.Invoke();
+        unsubscribeSelectionPropertyChanged = null;
+        base.Destroy();
     }
 
     /// <summary>
@@ -90,6 +100,9 @@ public class SessionObjectPropertiesViewModel : PropertiesViewModel
 
     public void UpdateTypeAndName<T>(IEnumerable<T> selection, int count, Func<T, string> getObjType, Func<T, string> getObjName, string objTypePlural)
     {
+        unsubscribeSelectionPropertyChanged?.Invoke();
+        unsubscribeSelectionPropertyChanged = null;
+
         switch (count)
         {
             case 0:
@@ -101,6 +114,16 @@ public class SessionObjectPropertiesViewModel : PropertiesViewModel
                 var obj = selection.First();
                 TypeDescription = getObjType(obj);
                 Name = getObjName(obj);
+                if (obj is INotifyPropertyChanged notifyPropertyChanged)
+                {
+                    void OnSelectedObjectPropertyChanged(object? sender, PropertyChangedEventArgs e)
+                    {
+                        TypeDescription = getObjType(obj);
+                        Name = getObjName(obj);
+                    }
+                    notifyPropertyChanged.PropertyChanged += OnSelectedObjectPropertyChanged;
+                    unsubscribeSelectionPropertyChanged = () => notifyPropertyChanged.PropertyChanged -= OnSelectedObjectPropertyChanged;
+                }
                 break;
 
             default:

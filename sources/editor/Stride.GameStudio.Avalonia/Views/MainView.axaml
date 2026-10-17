@@ -13,6 +13,7 @@
              xmlns:gsvw="using:Stride.GameStudio.Avalonia.Views"
              mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
              x:Class="Stride.GameStudio.Avalonia.Views.MainView"
+             Classes="editorShell"
              x:DataType="gsvm:MainViewModel">
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
@@ -27,8 +28,8 @@
     </ResourceDictionary>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto, *, 25"
-        Background="Transparent">
+  <Grid RowDefinitions="Auto, Auto, *, 24"
+        Background="{DynamicResource StudioBackgroundBrush}">
     <!-- Menus -->
     <Menu Grid.Row="0" Grid.Column="0"
           VerticalAlignment="Top">
@@ -88,138 +89,152 @@
       </MenuItem>
     </Menu>
 
+    <!-- Compact command strip, matching Game Studio's desktop layout. -->
+    <Border Grid.Row="1" Classes="studioToolbar">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <Button Classes="studioTool" Command="{Binding OpenCommand}" ToolTip.Tip="Open project (Ctrl+O)">
+          <Path Data="M1,4 L6,4 L8,6 L15,6 L13,13 L1,13 Z M1,4 L1,2 L6,2 L8,4 L14,4 L14,6"
+                Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="16" Height="16" Stretch="Uniform"/>
+        </Button>
+        <Separator Classes="studioToolSeparator"/>
+        <Button Classes="studioTool" Content="↶" FontSize="19" ToolTip.Tip="Undo (Ctrl+Z)"
+                Command="{Binding Session?.ActionHistory.UndoCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"/>
+        <Button Classes="studioTool" Content="↷" FontSize="19" ToolTip.Tip="Redo"
+                Command="{Binding Session?.ActionHistory.RedoCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"/>
+      </StackPanel>
+    </Border>
+
     <!-- Session area -->
-    <Grid Grid.Row="1"
-          RowDefinitions="2*, 2, *">
+    <Grid Grid.Row="2"
+          RowDefinitions="7*, 4, 3*">
       <Grid Grid.Row="0"
-            ColumnDefinitions="2*, 2, *">
+            ColumnDefinitions="4*, 4, *">
         <!-- Editors -->
-        <gsvw:EditorCollectionView Grid.Column="0"
-                                 BorderThickness="2"
-                                 BorderBrush="Red"
-                                 Padding="2"
+        <gsvw:EditorCollectionView Grid.Column="0" Classes="studioSurface"
+                                 BorderThickness="1"
+                                 BorderBrush="{DynamicResource StudioBorderBrush}"
+                                 Padding="0"
                                  DataContext="{Binding Session?.EditorCollection}"/>
         <GridSplitter Grid.Column="1" ResizeDirection="Auto"/>
         <Grid Grid.Column="2"
               RowDefinitions="Auto, *">
-          <StackPanel Grid.Row="0"
-                      Orientation="Horizontal">
-            <Button Content="{sd:LocalizeString Previous, Context=Button}"
-                    Command="{Binding Session?.PreviousSelectionCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"
-                    HotKey="Alt+Left" ToolTip.Tip="{Binding $self.HotKey, Mode=OneTime}"/>
-            <Button Content="{sd:LocalizeString Next, Context=Button}"
-                    Command="{Binding Session?.NextSelectionCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"
-                    HotKey="Alt+Right" ToolTip.Tip="{Binding $self.HotKey, Mode=OneTime}"/>
-          </StackPanel>
+          <Border Grid.Row="0" Classes="studioPanelHeader"><TextBlock Text="Property grid"/></Border>
           <!-- Property Grid -->
-          <gsvw:PropertyGridView Grid.Row="1"
-                               BorderThickness="2"
-                               BorderBrush="Orange"
-                               Padding="2"
+          <gsvw:PropertyGridView Grid.Row="1" Classes="studioSurface"
+                               BorderThickness="1"
+                               BorderBrush="{DynamicResource StudioBorderBrush}"
+                               Padding="0"
                                DataContext="{Binding Session?.ActiveProperties}"/>
         </Grid>
       </Grid>
       <GridSplitter Grid.Row="1" ResizeDirection="Auto"/>
       <Grid Grid.Row="2"
-            ColumnDefinitions="*, 2, 2*, 2, *">
+            ColumnDefinitions="*, 4, 3*, 4, *">
         <!-- Solution Explorer -->
-        <gsvw:SolutionExplorerView Grid.Column="0"
-                                 BorderThickness="2"
-                                 BorderBrush="Black"
-                                 Padding="2"
+        <gsvw:SolutionExplorerView Grid.Column="0" Classes="studioSurface"
+                                 BorderThickness="1"
+                                 BorderBrush="{DynamicResource StudioBorderBrush}"
+                                 Padding="0"
                                  DataContext="{Binding Session}"/>
         <GridSplitter Grid.Column="1" ResizeDirection="Auto"/>
         <!-- Asset view and logs -->
-        <TabControl Grid.Column="2">
-          <TabItem Header="Asset view">
-            <gsvw:AssetExplorerView BorderThickness="2"
-                                  BorderBrush="Blue"
-                                  Padding="2"
-                                  DataContext="{Binding Session?.AssetCollection}"/>
-          </TabItem>
-          <TabItem Header="Asset errors">
-            <sd:TextLogViewer LogMessages="{Binding Session?.AssetLog.FilteredMessages}"
-                              ShowDebugMessages="False" ShowVerboseMessages="False" ShowInfoMessages="False"/>
-          </TabItem>
-          <TabItem Header="Output">
-            <sd:TextLogViewer ShowDebugMessages="False" ShowVerboseMessages="False"/>
-          </TabItem>
-        </TabControl>
+        <DockPanel Grid.Column="2" Classes="studioPanel">
+          <Border DockPanel.Dock="Top" Classes="studioPanelHeader"><TextBlock Text="Asset view"/></Border>
+          <TabControl Classes="studioDockTabs" TabStripPlacement="Bottom">
+            <TabItem Header="Asset view">
+              <gsvw:AssetExplorerView BorderThickness="1"
+                                    BorderBrush="{DynamicResource StudioBorderBrush}"
+                                    Padding="0"
+                                    DataContext="{Binding Session?.AssetCollection}"/>
+            </TabItem>
+            <TabItem Header="Asset errors">
+              <sd:TextLogViewer LogMessages="{Binding Session?.AssetLog.FilteredMessages}"
+                                ShowDebugMessages="False" ShowVerboseMessages="False" ShowInfoMessages="False"/>
+            </TabItem>
+            <TabItem Header="Output">
+              <sd:TextLogViewer ShowDebugMessages="False" ShowVerboseMessages="False"/>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
         <GridSplitter Grid.Column="3" ResizeDirection="Auto"/>
         <!-- Asset preview, history and references -->
-        <TabControl Grid.Column="4">
-          <TabItem Header="Asset preview">
-            <gsvw:AssetPreviewView BorderThickness="2"
-                                 BorderBrush="Cyan"
-                                 Padding="2"/>
-          </TabItem>
-          <TabItem Header="Edit history">
-            <ListBox ItemsSource="{Binding Session?.ActionHistory?.Transactions}"
-                     HorizontalAlignment="Stretch">
-              <ListBox.ItemTemplate>
-                <DataTemplate DataType="caect:TransactionViewModel">
-                  <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" x:Name="Text"
-                               Text="{Binding Name}"/>
-                    <Image DockPanel.Dock="Right" x:Name="Image"
-                           HorizontalAlignment="Right"
-                           IsVisible="{Binding IsSavePoint, Mode=OneWay}"
-                           Source="{StaticResource ImageSave}"/>
-                  </DockPanel>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
-          </TabItem>
-          <TabItem Header="References">
-            <DockPanel>
-              <!-- Toolbar -->
-              <sd:ToolBar DockPanel.Dock="Top">
-                <ToggleButton IsChecked="{Binding !Session.References.ShowReferencers}" Content="{sd:LocalizeString References}" MinWidth="80"/>
-                <ToggleButton IsChecked="{Binding Session.References.ShowReferencers}" Content="{sd:LocalizeString Referenced by}" MinWidth="80"/>
-              </sd:ToolBar>
-              <!-- Asset references -->
-              <Border DockPanel.Dock="Bottom"
-                      Padding="8,4">
-                <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
-                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
-                  <ToolTip.Tip>
-                    <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
-                               TextTrimming="None" TextWrapping="Wrap"/>
-                  </ToolTip.Tip>
-                </TextBlock>
-              </Border>
-              <ListBox ItemsSource="{Binding Session.References.DisplayedReferences.Assets}"
-                       Margin="4">
-                <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate>
-                    <WrapPanel />
-                  </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
-                    <StackPanel Orientation="Horizontal">
-                      <Interaction.Behaviors>
-                        <EventTriggerBehavior EventName="DoubleTapped">
-                          <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.SelectAssetCommand}"
-                                               CommandParameter="{Binding}"/>
-                        </EventTriggerBehavior>
-                      </Interaction.Behaviors>
-                      <TextBlock Text="Asset: " />
-                      <TextBlock Text="{Binding Name}" />
-                      <Image Source="{Binding ThumbnailData.Presenter, Converter={gsc:StrideImage}, FallbackValue={x:Static AvaloniaProperty.UnsetValue}}"
-                             Width="64" Height="64"/>
-                    </StackPanel>
+        <DockPanel Grid.Column="4" Classes="studioPanel">
+          <Border DockPanel.Dock="Top" Classes="studioPanelHeader"><TextBlock Text="Asset preview"/></Border>
+          <TabControl Classes="studioDockTabs" TabStripPlacement="Bottom">
+            <TabItem Header="Asset preview">
+              <gsvw:AssetPreviewView BorderThickness="1"
+                                   BorderBrush="{DynamicResource StudioBorderBrush}"
+                                   Padding="0"/>
+            </TabItem>
+            <TabItem Header="Edit history">
+              <ListBox ItemsSource="{Binding Session?.ActionHistory?.Transactions}"
+                       HorizontalAlignment="Stretch">
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="caect:TransactionViewModel">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Left" x:Name="Text"
+                                 Text="{Binding Name}"/>
+                      <Image DockPanel.Dock="Right" x:Name="Image"
+                             HorizontalAlignment="Right"
+                             IsVisible="{Binding IsSavePoint, Mode=OneWay}"
+                             Source="{StaticResource ImageSave}"/>
+                    </DockPanel>
                   </DataTemplate>
-                </ItemsControl.ItemTemplate>
+                </ListBox.ItemTemplate>
               </ListBox>
-            </DockPanel>
-          </TabItem>
-        </TabControl>
+            </TabItem>
+            <TabItem Header="References">
+              <DockPanel>
+                <!-- Toolbar -->
+                <sd:ToolBar DockPanel.Dock="Top">
+                  <ToggleButton IsChecked="{Binding !Session.References.ShowReferencers}" Content="{sd:LocalizeString References}" MinWidth="80"/>
+                  <ToggleButton IsChecked="{Binding Session.References.ShowReferencers}" Content="{sd:LocalizeString Referenced by}" MinWidth="80"/>
+                </sd:ToolBar>
+                <!-- Asset references -->
+                <Border DockPanel.Dock="Bottom"
+                        Padding="8,4">
+                  <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
+                             TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                    <ToolTip.Tip>
+                      <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
+                                 TextTrimming="None" TextWrapping="Wrap"/>
+                    </ToolTip.Tip>
+                  </TextBlock>
+                </Border>
+                <ListBox ItemsSource="{Binding Session.References.DisplayedReferences.Assets}"
+                         Margin="4">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
+                      <StackPanel Orientation="Horizontal">
+                        <Interaction.Behaviors>
+                          <EventTriggerBehavior EventName="DoubleTapped">
+                            <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.SelectAssetCommand}"
+                                                 CommandParameter="{Binding}"/>
+                          </EventTriggerBehavior>
+                        </Interaction.Behaviors>
+                        <TextBlock Text="Asset: " />
+                        <TextBlock Text="{Binding Name}" />
+                        <Image Source="{Binding ThumbnailData.Presenter, Converter={gsc:StrideImage}, FallbackValue={x:Static AvaloniaProperty.UnsetValue}}"
+                               Width="64" Height="64"/>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ListBox>
+              </DockPanel>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
       </Grid>
     </Grid>
 
     <!-- Status bar -->
-    <Grid Grid.Row="2"
+    <Grid Grid.Row="3"
+          Background="{DynamicResource StudioStatusBrush}"
           IsVisible="{Binding Session, Converter={sd:ObjectToBool}}"
           ColumnDefinitions="2*, Auto, *, Auto, *, 100">
       <TextBlock Grid.Column="0"
@@ -229,7 +244,7 @@
       <Border Grid.Column="1"
               Margin="2"
               BorderThickness="1"
-              BorderBrush="Gray"/>
+              BorderBrush="{DynamicResource StudioBorderBrush}"/>
       <TextBlock Grid.Column="2"
                  Margin="8,0"
                  VerticalAlignment="Center">
@@ -239,7 +254,7 @@
       <Border Grid.Column="3"
               Margin="2"
               BorderThickness="1"
-              BorderBrush="Gray"/>
+              BorderBrush="{DynamicResource StudioBorderBrush}"/>
       <TextBlock Grid.Column="4"
                  Margin="8,0"
                  HorizontalAlignment="Right"

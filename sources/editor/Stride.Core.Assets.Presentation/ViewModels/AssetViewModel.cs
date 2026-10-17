@@ -1,10 +1,12 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Collections.Specialized;
 using System.Reflection;
 using Stride.Core.Assets.Presentation.Components.Properties;
 using Stride.Core.Assets.Presentation.Quantum;
 using Stride.Core.Assets.Quantum;
+using Stride.Core.Extensions;
 using Stride.Core.Presentation.Collections;
 using Stride.Core.Presentation.Dirtiables;
 using Stride.Core.Presentation.Quantum;
@@ -47,6 +49,10 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
         var forcedRoot = AssetType.GetCustomAttribute<AssetDescriptionAttribute>()?.AlwaysMarkAsRoot ?? false;
         Dependencies = new AssetDependenciesViewModel(this, forcedRoot);
         Sources = new AssetSourcesViewModel(this);
+
+        Tags.AddRange(assetItem.Asset.Tags);
+        RegisterMemberCollectionForActionStack(nameof(Tags), Tags);
+        Tags.CollectionChanged += TagsCollectionChanged;
 
         InitialUndelete(parameters.CanUndoRedoCreation);
 
@@ -236,6 +242,28 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
         // FIXME xplat-editor this method was marked as obsolete
         //var memberName = (node as IMemberNode)?.Name;
         //OnAssetPropertyChanged(memberName, node, index, e.OldValue, e.NewValue);
+    }
+
+    private void TagsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Reset)
+        {
+            throw new InvalidOperationException("Reset is not supported on the tag collection.");
+        }
+        if (e.OldItems != null)
+        {
+            foreach (string oldItem in e.OldItems)
+            {
+                assetItem.Asset.Tags.Remove(oldItem);
+            }
+        }
+        if (e.NewItems != null)
+        {
+            foreach (string newItem in e.NewItems)
+            {
+                assetItem.Asset.Tags.Add(newItem);
+            }
+        }
     }
 
     AssetViewModel IAssetPropertyProviderViewModel.RelatedAsset => this;

@@ -12,6 +12,10 @@ namespace Stride.Core.Assets.Editor;
 
 public abstract class AssetsEditorPlugin : AssetsPlugin
 {
+    protected static readonly Dictionary<Type, object> TypeImages = [];
+
+    public static IReadOnlyDictionary<Type, object> TypeImagesDictionary => TypeImages;
+
     public void RegisterAssetEditorViewModelTypes(IDictionary<Type, Type> assetEditorViewModelTypes)
     {
         var pluginAssembly = GetType().Assembly;
