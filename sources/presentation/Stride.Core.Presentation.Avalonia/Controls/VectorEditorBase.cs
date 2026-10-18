@@ -40,6 +40,7 @@ public abstract class VectorEditorBase : TemplatedControl
 public abstract class VectorEditorBase<T> : VectorEditorBase
 {
     private bool interlock;
+    private bool dataContextUpdating;
     private bool templateApplied;
     private AvaloniaProperty? initializingProperty;
 
@@ -76,6 +77,18 @@ public abstract class VectorEditorBase<T> : VectorEditorBase
     public override void SetVectorFromValue(float value)
     {
         Value = UpateValueFromFloat(value);
+    }
+
+    protected override void OnDataContextBeginUpdate()
+    {
+        dataContextUpdating = true;
+        base.OnDataContextBeginUpdate();
+    }
+
+    protected override void OnDataContextEndUpdate()
+    {
+        base.OnDataContextEndUpdate();
+        dataContextUpdating = false;
     }
 
     /// <inheritdoc/>
@@ -127,6 +140,7 @@ public abstract class VectorEditorBase<T> : VectorEditorBase
 
     private void OnComponentPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
+        if (dataContextUpdating) return;
         var isInitializing = !templateApplied && initializingProperty == null;
         if (isInitializing)
             initializingProperty = e.Property;
@@ -150,7 +164,7 @@ public abstract class VectorEditorBase<T> : VectorEditorBase
     /// <param name="property">The dependency property.</param>
     private void UpdateBinding(AvaloniaProperty property)
     {
-        if (property != initializingProperty)
+        if (!dataContextUpdating && property != initializingProperty)
         {
             BindingOperations.GetBindingExpressionBase(this, property)?.UpdateSource();
         }

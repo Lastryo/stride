@@ -4,6 +4,7 @@
 using System.Reflection;
 using global::Avalonia.Threading;
 using Stride.Assets.Editor.Avalonia.Views;
+using Stride.Assets.Editor.Avalonia.GameEditor;
 using Stride.Core.Assets.Editor;
 using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Assets.Presentation.ViewModels;
@@ -59,6 +60,7 @@ public sealed class StrideEditorViewPlugin : AssetsEditorPlugin
 
     public override void InitializeSession(ISessionViewModel session)
     {
+        session.ServiceProvider.RegisterService(new EditorGameViewFactory());
         var pluginService = session.ServiceProvider.Get<IAssetsPluginService>();
         var previewFactories = new Dictionary<Type, AssetPreviewFactory>();
         foreach (var stridePlugin in pluginService.Plugins.OfType<AssetsEditorPlugin>())

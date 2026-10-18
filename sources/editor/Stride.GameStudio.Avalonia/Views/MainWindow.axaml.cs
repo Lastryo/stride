@@ -10,6 +10,7 @@ using Stride.Core.Assets.Editor.Settings;
 using Stride.Core.Extensions;
 using Stride.Core.Presentation.Avalonia.Extensions;
 using Stride.GameStudio.Avalonia.Settings;
+using Stride.GameStudio.Avalonia.ViewModels;
 
 namespace Stride.GameStudio.Avalonia.Views;
 
@@ -114,7 +115,8 @@ public partial class MainWindow : Window
             // TODO asks editors to save their modified assets
             // if cancel: closingTask?.SetResult(false); return;
 
-            // TODO force all editors and secondary windows to close
+            if (DataContext is MainViewModel viewModel)
+                await viewModel.CloseSessionAsync();
 
             // Internal settings
             SaveInternalSettings();

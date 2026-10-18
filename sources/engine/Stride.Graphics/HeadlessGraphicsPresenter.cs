@@ -9,7 +9,7 @@ namespace Stride.Graphics;
 /// </summary>
 internal class HeadlessGraphicsPresenter : GraphicsPresenter
 {
-    private Texture backBuffer;
+    private readonly Texture backBuffer;
 
     public HeadlessGraphicsPresenter(GraphicsDevice device, PresentationParameters presentationParameters)
         : base(device, presentationParameters)
@@ -28,21 +28,26 @@ internal class HeadlessGraphicsPresenter : GraphicsPresenter
 
     protected override void ResizeBackBuffer(int width, int height, PixelFormat format)
     {
-        backBuffer?.Dispose();
-        backBuffer = Texture.New2D(GraphicsDevice, width, height, format,
-            TextureFlags.ShaderResource | TextureFlags.RenderTarget);
+        ResizeTexture(backBuffer, width, height, format);
     }
 
     protected override void ResizeDepthStencilBuffer(int width, int height, PixelFormat format)
     {
-        DepthStencilBuffer?.Dispose();
-        // Expose the depth buffer as a shader resource so scene passes that sample depth
-        // (soft-edge particles, SSAO, light shafts, ...) get a valid SRV view. Without it,
-        // Vulkan leaves NativeImageView = Null and descriptor writes hit VUID 02997.
-        var flags = TextureFlags.DepthStencil;
-        if (GraphicsDevice.Features.HasDepthAsSRV)
-            flags |= TextureFlags.ShaderResource;
-        DepthStencilBuffer = Texture.New2D(GraphicsDevice, width, height, format, flags);
+        ResizeTexture(DepthStencilBuffer, width, height, format);
+    }
+
+    private void ResizeTexture(Texture texture, int width, int height, PixelFormat format)
+    {
+        // Renderers retain these objects and their views across frames, like swap-chain buffers.
+        var children = DestroyChildrenTextures(texture);
+        var description = texture.Description;
+        description.Width = width;
+        description.Height = height;
+        description.Format = format;
+        texture.OnDestroyed(true);
+        texture.InitializeFrom(description);
+        foreach (var child in children)
+            child.InitializeFrom(texture, child.ViewDescription);
     }
 
     protected override void Destroy()

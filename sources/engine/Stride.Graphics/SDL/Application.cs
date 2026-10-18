@@ -3,6 +3,7 @@
 #if STRIDE_UI_SDL
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Stride.Core.Mathematics;
 using Silk.NET.SDL;
 using Point = Stride.Core.Mathematics.Point;
@@ -12,6 +13,52 @@ namespace Stride.Graphics.SDL
     public unsafe static class Application
     {
         private static Sdl SDL => Window.SDL;
+        internal static readonly object EventPumpLock = new();
+        private static int eventPumpThread;
+
+        /// <summary>Use one host UI thread to pump SDL, while game threads consume their own window events.</summary>
+        public static void UseExternalEventPump()
+        {
+            lock (EventPumpLock)
+            {
+                if (eventPumpThread != 0 && eventPumpThread != Environment.CurrentManagedThreadId)
+                    throw new InvalidOperationException("SDL event pumping already belongs to another thread.");
+                Window.EnsureInitialized();
+                Volatile.Write(ref eventPumpThread, Environment.CurrentManagedThreadId);
+            }
+        }
+
+        /// <summary>Process input on the owning game thread. Returns false after a quit event.</summary>
+        public static bool ProcessWindowEvents(Window window)
+        {
+            if (Volatile.Read(ref eventPumpThread) == 0)
+            {
+                lock (EventPumpLock)
+                {
+                    Event e;
+                    while (SDL.PollEvent(&e) != 0)
+                    {
+                        ProcessEvent(e);
+                        if ((EventType)e.Type == EventType.Quit) return false;
+                    }
+                }
+                return true;
+            }
+
+            while (window.PendingEvents.TryDequeue(out var e))
+            {
+                if ((EventType)e.Type == EventType.Quit) return false;
+                if (!window.IsDisposed) window.ProcessEvent(e);
+            }
+            return !window.IsDisposed;
+        }
+
+        private static void DispatchEvent(Window window, Event e)
+        {
+            if (window is null || window.IsDisposed) return;
+            if (Volatile.Read(ref eventPumpThread) != 0) window.PendingEvents.Enqueue(e);
+            else window.ProcessEvent(e);
+        }
 
         /// <summary>
         /// Initialize Application for handling events and available windows.
@@ -116,14 +163,12 @@ namespace Stride.Graphics.SDL
         /// </summary>
         public static void ProcessEvents()
         {
-            Event e;
-            while (SDL.PollEvent(&e) > 0)
+            var owner = Volatile.Read(ref eventPumpThread);
+            if (owner != 0 && owner != Environment.CurrentManagedThreadId) return;
+            lock (EventPumpLock)
             {
-                // Handy for debugging
-                //if (e.type == EventType.WINDOWEVENT)
-                //    Debug.WriteLine(e.window.windowEvent);
-
-                Application.ProcessEvent(e);
+                Event e;
+                while (SDL.PollEvent(&e) > 0) ProcessEvent(e);
             }
         }
 
@@ -185,10 +230,13 @@ namespace Stride.Graphics.SDL
                     }
                     break;
                 }
+                case EventType.Quit:
+                    Windows.ForEach(x => DispatchEvent(x, e));
+                    break;
                 case EventType.Joydeviceadded:
                 case EventType.Joydeviceremoved:
                     // Send these events to all the windows
-                    Windows.ForEach(x => x.ProcessEvent(e));
+                    Windows.ForEach(x => DispatchEvent(x, e));
                     break;
                 
                 case EventType.Droptext:
@@ -196,7 +244,7 @@ namespace Stride.Graphics.SDL
                     ctrl = WindowFromSdlHandle(SDL.GetWindowFromID(e.Drop.WindowID));
                     break;
             }
-            ctrl?.ProcessEvent(e);
+            DispatchEvent(ctrl, e);
         }
 
         /// <summary>

@@ -84,6 +84,7 @@ public sealed class PropertyView : ItemsControl
         var property = (PropertyViewItem)container;
         RaiseEvent(new PropertyViewItemEventArgs(ClearItemEvent, this, property));
         properties.Remove(property);
+        ClearInteraction();
         base.ClearContainerForItemOverride(container);
     }
 
@@ -104,6 +105,12 @@ public sealed class PropertyView : ItemsControl
         var property = (PropertyViewItem)container;
         properties.Add(property);
         RaiseEvent(new PropertyViewItemEventArgs(PrepareItemEvent, this, property));
+    }
+
+    internal void ClearInteraction()
+    {
+        HighlightItem(null);
+        HoverItem(null);
     }
 
     internal void ItemMouseMove(PropertyViewItem item)

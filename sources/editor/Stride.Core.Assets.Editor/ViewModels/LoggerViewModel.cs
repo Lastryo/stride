@@ -195,6 +195,7 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
     /// <param name="args">The event argument.</param>
     private void MessageLogged(object? sender, MessageLoggedEventArgs args)
     {
+        var scheduleUpdate = false;
         lock (pendingMessages)
         {
             if (sender is Logger logger && args.Message.IsAtLeast(MinLevel))
@@ -203,10 +204,12 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
                 if (!updatePending)
                 {
                     updatePending = true;
-                    Dispatcher.Invoke(UpdateMessagesAsync);
+                    scheduleUpdate = true;
                 }
             }
         }
+        // Logger invokes subscribers under its global lock; never wait for the UI here.
+        if (scheduleUpdate) _ = Dispatcher.InvokeTask(UpdateMessagesAsync);
     }
 
     /// <summary>

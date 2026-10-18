@@ -73,10 +73,10 @@ public class StrideShaderImporter
         foreach (var package in systemPackages)
         {
             var mapPackage = new Package { FullPath = package.PackagePath };
-            foreach (var asset in package.Assets)
+            foreach (var asset in package.Package.Assets)
             {
-                if (typeof(EffectShaderAsset).IsAssignableFrom(asset.AssetType))
-                    mapPackage.Assets.Add(new AssetItem(asset.Url, asset.Asset) { SourceFolder = asset.AssetItem.SourceFolder, AlternativePath = asset.AssetItem.AlternativePath });
+                if (asset.Asset is EffectShaderAsset)
+                    mapPackage.Assets.Add(new AssetItem(asset.Location, asset.Asset) { SourceFolder = asset.SourceFolder, AlternativePath = asset.AlternativePath });
             }
 
             importShadersProjectSession.Projects.Add(new StandalonePackage(mapPackage));
@@ -108,11 +108,11 @@ public class StrideShaderImporter
         foreach (var package in packages)
         {
             var mapPackage = new Package { FullPath = package.PackagePath };
-            foreach (var asset in package.Assets)
+            foreach (var asset in package.Package.Assets)
             {
-                if (typeof(EffectShaderAsset).IsAssignableFrom(asset.AssetType))
+                if (asset.Asset is EffectShaderAsset)
                 {
-                    mapPackage.Assets.Add(new AssetItem(asset.Url, asset.Asset) { SourceFolder = asset.AssetItem.SourceFolder, AlternativePath = asset.AssetItem.AlternativePath });
+                    mapPackage.Assets.Add(new AssetItem(asset.Location, asset.Asset) { SourceFolder = asset.SourceFolder, AlternativePath = asset.AlternativePath });
                 }
             }
 

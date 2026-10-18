@@ -3,17 +3,21 @@
 
 using System.Runtime.CompilerServices;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Stride.Core.Presentation.Avalonia.Views;
 using Stride.Core.Presentation.Quantum.ViewModels;
 
 namespace Stride.Core.Assets.Editor.Avalonia.Views;
 
-public sealed class PropertyTemplateProviderSelector : TemplateProviderSelector
+public sealed class PropertyTemplateProviderSelector : TemplateProviderSelector, IRecyclingDataTemplate
 {
     private readonly ConditionalWeakTable<NodeViewModel, List<string>> usedProviders = new();
     private readonly ConditionalWeakTable<NodeViewModel, WeakReference> lastControls = new();
+    private readonly ConditionalWeakTable<Control, TemplateProviderBase> controlProviders = new();
 
-    public override Control? Build(object? item)
+    public override Control? Build(object? item) => Build(item, null);
+
+    public Control? Build(object? item, Control? existing)
     {
         if (item is NodeViewModel node)
         {
@@ -32,11 +36,19 @@ public sealed class PropertyTemplateProviderSelector : TemplateProviderSelector
             lastControls.Remove(node);
             
             var availableSelectors = templateProviders.Where(x => x.Match(item)).ToList();
-            var provider = availableSelectors.FirstOrDefault(x => !usedProvidersForItem.Contains(x.Name));
+            var provider = existing != null && controlProviders.TryGetValue(existing, out var recycledProvider)
+                && usedProvidersForItem.Contains(recycledProvider.Name) && recycledProvider.Match(item)
+                ? recycledProvider : availableSelectors.FirstOrDefault(x => !usedProvidersForItem.Contains(x.Name));
             if (provider != null)
             {
-                usedProvidersForItem.Add(provider.Name);
+                if (!usedProvidersForItem.Contains(provider.Name)) usedProvidersForItem.Add(provider.Name);
+                if (existing != null && controlProviders.TryGetValue(existing, out var previous) && previous == provider)
+                {
+                    lastControls.Add(node, new WeakReference(existing));
+                    return existing;
+                }
                 var newControl = provider.Template.Build(item);
+                if (newControl != null) controlProviders.Add(newControl, provider);
                 lastControls.Add(node, new WeakReference(newControl));
                 return newControl;
             }

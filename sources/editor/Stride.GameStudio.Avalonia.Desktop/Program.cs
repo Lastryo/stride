@@ -129,6 +129,8 @@ internal sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            // Keep scene rendering and composition on Vulkan to avoid flickering in Vulkan/GLX texture interop.
+            .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Vulkan, X11RenderingMode.Glx, X11RenderingMode.Software] })
             .WithInterFont()
             .LogToTrace();
 

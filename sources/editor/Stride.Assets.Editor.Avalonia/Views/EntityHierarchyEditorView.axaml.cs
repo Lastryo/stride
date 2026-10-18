@@ -18,6 +18,24 @@ public partial class EntityHierarchyEditorView : UserControl, IAssetEditorView
         InitializeComponent();
     }
 
+    protected override async void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        if (DataContext is not EntityHierarchyEditorViewModel editor) return;
+        try { await editor.OpenViewport(); }
+        catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            if (editor.Viewport != null) editor.Viewport.LastException = exception;
+        }
+    }
+
+    protected override void OnUnloaded(RoutedEventArgs e)
+    {
+        if (DataContext is EntityHierarchyEditorViewModel editor) editor.Viewport?.HideGame();
+        base.OnUnloaded(e);
+    }
+
     private void OnHierarchyContextMenuOpened(object? sender, RoutedEventArgs e)
     {
         if (sender is ContextMenu contextMenu)

@@ -3,6 +3,7 @@
 
 using Stride.Core.Presentation.Avalonia.Controls;
 using Stride.Games;
+using Avalonia.Threading;
 
 namespace Stride.Editor.Avalonia.Engine;
 
@@ -12,9 +13,22 @@ namespace Stride.Editor.Avalonia.Engine;
 [System.ComponentModel.DesignerCategory("")]
 public class EmbeddedGameForm : GameFormSDL
 {
+    private static DispatcherTimer? eventPump;
+
+    public static void InitializeEventLoop()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        if (eventPump != null) return;
+        Stride.Graphics.SDL.Application.UseExternalEventPump();
+        eventPump = new DispatcherTimer(TimeSpan.FromMilliseconds(8), DispatcherPriority.Input,
+            (_, _) => Stride.Graphics.SDL.Application.ProcessEvents());
+        eventPump.Start();
+    }
+
     public EmbeddedGameForm()
     {
         IsFullScreen = false;
+        FormBorderStyle = Stride.Graphics.SDL.FormBorderStyle.None;
     }
 
     /// <summary>

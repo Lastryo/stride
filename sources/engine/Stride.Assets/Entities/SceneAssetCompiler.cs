@@ -28,13 +28,15 @@ namespace Stride.Assets.Entities
             {
                 var assetManager = new ContentManager(MicrothreadLocalDatabases.ProviderService);
 
+                // Compiling must not attach live asset entities to the temporary runtime scene.
+                var asset = AssetCloner.Clone(Parameters);
                 var scene = new Scene
                 {
-                    Parent = Parameters.Parent,
-                    Offset = Parameters.Offset
+                    Parent = asset.Parent,
+                    Offset = asset.Offset
                 };
 
-                foreach (var rootEntity in Parameters.Hierarchy.RootParts)
+                foreach (var rootEntity in asset.Hierarchy.RootParts)
                 {
                     scene.Entities.Add(rootEntity);
                 }

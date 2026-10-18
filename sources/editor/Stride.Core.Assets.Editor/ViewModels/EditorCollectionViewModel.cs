@@ -22,9 +22,23 @@ public sealed class EditorCollectionViewModel : DispatcherViewModel, IAssetEdito
         ServiceProvider.RegisterService(this);
     }
 
+    public async Task CloseEditorsAsync()
+    {
+        ActiveEditor = null;
+        foreach (var editor in editors.ToArray())
+            await editor.DestroyAsync();
+        editors.Clear();
+        openedAssets.Clear();
+    }
+
     public override void Destroy()
     {
         EnsureNotDestroyed(nameof(EditorCollectionViewModel));
+        foreach (var editor in editors.ToArray())
+            editor.Destroy();
+        editors.Clear();
+        openedAssets.Clear();
+        ActiveEditor = null;
         ServiceProvider.UnregisterService(this);
         base.Destroy();
     }

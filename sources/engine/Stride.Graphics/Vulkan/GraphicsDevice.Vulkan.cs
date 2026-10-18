@@ -42,6 +42,7 @@ namespace Stride.Graphics
         private VkDeviceApi nativeDeviceApi;
         internal VkQueue NativeCommandQueue;
         internal object QueueLock = new object();
+        internal bool SupportsExternalGpuMemory { get; private set; }
 
         internal ThreadLocal<CommandBufferPool> NativeCopyCommandPools;
         private NativeResourceCollector nativeResourceCollector;
@@ -422,6 +423,8 @@ namespace Stride.Graphics
             {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                 VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+                VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+                VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
             };
 
             var availableExtensionProperties = GetAvailableExtensionProperties(supportedExtensionProperties);
@@ -431,6 +434,15 @@ namespace Stride.Graphics
             // Swapchain extension is only needed for presentation (not for headless/asset compilation)
             if (availableExtensionProperties.Contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
                 desiredExtensionProperties.Add(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+            SupportsExternalGpuMemory = OperatingSystem.IsLinux()
+                && availableExtensionProperties.Contains(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)
+                && availableExtensionProperties.Contains(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+            if (SupportsExternalGpuMemory)
+            {
+                desiredExtensionProperties.Add(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+                desiredExtensionProperties.Add(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+            }
 
             // Vulkan portability spec: if VK_KHR_portability_subset is advertised, the app MUST enable it.
             // MoltenVK is the only ICD that advertises it; conformant drivers do not.

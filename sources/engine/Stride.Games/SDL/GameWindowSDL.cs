@@ -61,6 +61,7 @@ namespace Stride.Games
             if (!deviceChangeWillBeFullScreen.HasValue)
                 return;
 
+            var wasFullScreen = isFullScreenMaximized;
             isFullScreenMaximized = deviceChangeWillBeFullScreen.Value;
             if (window != null)
             {
@@ -74,10 +75,16 @@ namespace Stride.Games
                 {
                     window.IsFullScreen = false;
                     window.ClientSize = new Size2(clientWidth, clientHeight);
-                    window.Location = savedFormLocation;
+                    if (wasFullScreen)
+                    {
+                        window.Location = savedFormLocation;
+                    }
                     UpdateFormBorder();
                 }
-                window.BringToFront();
+                if (wasFullScreen != isFullScreenMaximized)
+                {
+                    window.BringToFront();
+                }
             }
 
             deviceChangeWillBeFullScreen = null;
@@ -91,6 +98,7 @@ namespace Stride.Games
         protected override void Initialize(GameContext<Window> gameContext)
         {
             window = gameContext.Control;
+            isBorderLess = window.FormBorderStyle == FormBorderStyle.None;
 
             // Setup the initial size of the window
             var width = gameContext.RequestedWidth;

@@ -39,7 +39,7 @@ public sealed class StrideEditorPlugin : AssetsEditorPlugin
             if (package != null)
             {
                 // In package, we override editor build directory to be per-project and be shared with game build directory
-                buildDirectory = $"{package.PackagePath.GetFullDirectory().ToOSPath()}\\obj\\stride\\assetbuild\\data";
+                buildDirectory = Path.Combine(package.PackagePath.GetFullDirectory().ToOSPath(), "obj", "stride", "assetbuild", "data");
             }
 
             // Attempt to create the directory to ensure it is valid.
@@ -56,6 +56,7 @@ public sealed class StrideEditorPlugin : AssetsEditorPlugin
 
         var builderService = new GameStudioBuilderService((SessionViewModel)session, settingsProvider, buildDirectory);
         session.ServiceProvider.RegisterService(builderService);
+        session.ServiceProvider.RegisterService(builderService.Database);
 
         //var thumbnailService = new GameStudioThumbnailService((SessionViewModel)session, settingsProvider, builderService);
         //session.ServiceProvider.RegisterService(thumbnailService);

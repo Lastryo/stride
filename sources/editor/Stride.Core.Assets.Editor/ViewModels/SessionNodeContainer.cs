@@ -7,7 +7,7 @@ using Stride.Core.Presentation.ViewModels;
 
 namespace Stride.Core.Assets.Editor.ViewModels;
 
-internal sealed class SessionNodeContainer : AssetNodeContainer
+public sealed class SessionNodeContainer : AssetNodeContainer
 {
     private readonly IReadOnlyList<Type> additionalPrimitiveTypes;
 

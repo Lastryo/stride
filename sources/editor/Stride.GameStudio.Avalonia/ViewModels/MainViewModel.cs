@@ -21,6 +21,7 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
 {
     private static readonly string baseTitle = $"Stride Game Studio {StrideVersion.NuGetVersion} ({RuntimeInformation.FrameworkDescription})";
     private SessionViewModel? session;
+    private Task? closingSession;
     private string title = baseTitle;
 
 #if DEBUG
@@ -34,7 +35,7 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
         : base(serviceProvider)
     {
         AboutCommand = new AnonymousTaskCommand(serviceProvider, OnAbout, () => DialogService.HasMainWindow);
-        CloseCommand = new AnonymousCommand(serviceProvider, OnClose);
+        CloseCommand = new AnonymousTaskCommand(serviceProvider, OnClose);
 #if DEBUG
         CrashCommand = new AnonymousCommand(serviceProvider, () => throw new Exception("Boom!"));
 #else
@@ -94,7 +95,7 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
         // We have a session, let's restart cleanly
         if (session is not null)
         {
-            session = null;
+            await CloseSessionAsync();
             (Application.Current as App)?.Restart(filePath);
             return true;
         }
@@ -131,13 +132,24 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
         await DialogService.ShowAboutWindowAsync();
     }
 
-    private void OnClose()
+    private async Task OnClose()
     {
         // We have a session, let's restart empty
         if (session is not null && Application.Current is App app)
         {
-            session = null;
+            await CloseSessionAsync();
             app.Restart();
+        }
+    }
+
+    public Task CloseSessionAsync() => closingSession ??= CloseSessionCore();
+
+    private async Task CloseSessionCore()
+    {
+        if (Session is not null)
+        {
+            await Session.CloseAsync();
+            Session = null;
         }
     }
 

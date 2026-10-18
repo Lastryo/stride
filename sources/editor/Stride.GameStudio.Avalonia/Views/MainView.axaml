@@ -164,7 +164,8 @@
             <TabItem Header="Asset preview">
               <gsvw:AssetPreviewView BorderThickness="1"
                                    BorderBrush="{DynamicResource StudioBorderBrush}"
-                                   Padding="0"/>
+                                   Padding="0"
+                                   DataContext="{Binding Session}"/>
             </TabItem>
             <TabItem Header="Edit history">
               <ListBox ItemsSource="{Binding Session?.ActionHistory?.Transactions}"

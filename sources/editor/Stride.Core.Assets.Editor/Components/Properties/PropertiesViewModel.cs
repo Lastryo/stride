@@ -71,7 +71,15 @@ public abstract class PropertiesViewModel : DispatcherViewModel
     /// <summary>
     /// Gets the current instance of <see cref="GraphViewModel"/> contained in the <see cref="PropertiesViewModel"/>.
     /// </summary>
-    public GraphViewModel? ViewModel { get { return viewModel; } private set { SetValue(ref viewModel, value); } }
+    public GraphViewModel? ViewModel
+    {
+        get => viewModel;
+        private set
+        {
+            var previous = viewModel;
+            if (SetValue(ref viewModel, value)) previous?.Destroy();
+        }
+    }
 
     public bool CanDisplayProperties { get { return canDisplayProperties; } set { SetValue(ref canDisplayProperties, value); } }
 
@@ -112,12 +120,8 @@ public abstract class PropertiesViewModel : DispatcherViewModel
 
         Selection = selectedObjects.ToList();
 
+        // Keep the old graph visible but disabled until its replacement is ready.
         CanDisplayProperties = false;
-
-        ViewModel?.Destroy();
-
-        // We set to null now, in case this async method is invoked again while not being finished (otherwise it would dispose twice!)
-        ViewModel = null;
 
         // No selection, just clean up
         if (Selection.Count == 0)
@@ -139,13 +143,17 @@ public abstract class PropertiesViewModel : DispatcherViewModel
             FallbackMessage = Tr._p("Properties", "Loading properties...");
             var newViewModel = await InitializeViewModel(Selection, localToken);
             if (localToken != currentToken)
+            {
+                newViewModel?.Destroy();
                 return null;
+            }
 
             ViewModel = newViewModel;
             CanDisplayProperties = true;
         }
         catch (Exception exception)
         {
+            if (localToken != currentToken) return null;
             FeedbackException(Selection, exception, out message);
             FallbackMessage = message;
             ViewModel = null;

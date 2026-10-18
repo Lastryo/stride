@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Vortice.Vulkan;
 using Stride.Shaders;
 using Stride.Core.Serialization;
@@ -35,9 +36,6 @@ namespace Stride.Graphics
             VkDynamicState.StencilReference
         };
 
-        // GLSL converter always outputs entry point main()
-        private static readonly byte[] defaultEntryPoint = Encoding.UTF8.GetBytes("main\0");
-
         internal PipelineState(GraphicsDevice graphicsDevice, PipelineStateDescription pipelineStateDescription) : base(graphicsDevice)
         {
             Description = pipelineStateDescription.Clone();
@@ -46,16 +44,23 @@ namespace Stride.Graphics
 
         private unsafe void Recreate()
         {
-            // Note: important to pin this so that stages[x].Name is valid during this whole function
+            var entryPointPins = new GCHandle[Description.EffectBytecode?.Stages?.Length ?? 0];
             try
             {
-                fixed (void* defaultEntryPointData = defaultEntryPoint) // null if array is empty or null
-                    RecreateInner();
+                // Vulkan reads pName after CreateShaderStages returns; keep the actual entry points pinned through creation.
+                for (var i = 0; i < entryPointPins.Length; i++)
+                    entryPointPins[i] = GCHandle.Alloc(Description.EffectBytecode.Stages[i].EntryPoint, GCHandleType.Pinned);
+                RecreateInner();
             }
             catch (InvalidOperationException ex) when (Description.EffectBytecode?.Stages is { Length: > 0 } stages)
             {
                 var entryPoints = string.Join(", ", stages.Select(s => $"{s.Stage}:{Encoding.UTF8.GetString(s.EntryPoint).TrimEnd('\0')}"));
                 throw new InvalidOperationException($"{ex.Message} (bytecode {stages[0].Id} [{entryPoints}])", ex);
+            }
+            finally
+            {
+                foreach (var pin in entryPointPins)
+                    if (pin.IsAllocated) pin.Free();
             }
         }
 

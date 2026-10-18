@@ -71,14 +71,22 @@ public class TexturePreview : PreviewFromSpriteBatch<TextureAsset>
 
     public override void DisplayMipMap(int level)
     {
-        var samplerDescrition = new SamplerStateDescription(TextureFilter.ComparisonPoint, TextureAddressMode.Clamp)
+        // UI attachment can request a mip while the preview is drawing with its current sampler.
+        Game.Script.AddTask(() =>
         {
-            MinMipLevel = level,
-            MaxMipLevel = level
-        };
-
-        specificMipmapSamplerState.Dispose();
-        specificMipmapSamplerState = SamplerState.New(Game.GraphicsDevice, samplerDescrition);
+            if (IsRunning)
+            {
+                var description = new SamplerStateDescription(TextureFilter.ComparisonPoint, TextureAddressMode.Clamp)
+                {
+                    MinMipLevel = level,
+                    MaxMipLevel = level
+                };
+                var sampler = SamplerState.New(Game.GraphicsDevice, description);
+                specificMipmapSamplerState.Dispose();
+                specificMipmapSamplerState = sampler;
+            }
+            return Task.CompletedTask;
+        });
     }
 
     /// <inheritdoc/>

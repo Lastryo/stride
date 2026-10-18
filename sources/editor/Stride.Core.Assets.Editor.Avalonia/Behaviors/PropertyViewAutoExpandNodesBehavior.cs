@@ -1,9 +1,10 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 using Stride.Core.Assets.Editor.Quantum.NodePresenters.Keys;
 using Stride.Core.Extensions;
@@ -15,6 +16,8 @@ namespace Stride.Core.Assets.Editor.Avalonia.Behaviors;
 public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<PropertyView>
 {
     private readonly List<PropertyViewItem> expandedItems = [];
+    private sealed record RowKey(string Name, Type Type, Type? ValueType);
+    private readonly ConditionalWeakTable<PropertyViewItem, RowKey> rowKeys = new();
     // These are static so that we remember their state for the entire session.
     private static readonly HashSet<string> expandedPropertyPaths = [];
     private static readonly HashSet<string> collapsedPropertyPaths = [];
@@ -52,6 +55,7 @@ public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<
         {
             propertyView.PrepareItem += PrepareItem;
             propertyView.ClearItem += ClearItem;
+            RefreshRows();
         }
     }
 
@@ -67,6 +71,39 @@ public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<
         {
             ViewModel.NodeValueChanged -= NodeValueChanged;
         }
+    }
+
+    private void RefreshRows()
+    {
+        if (AssociatedObject is not { } view) return;
+        UpdateRows(view, ViewModel?.RootNode.Children ?? [], 0);
+        foreach (var row in view.Items.OfType<PropertyViewItem>()) ExpandSingleProperties(row);
+    }
+
+    private void UpdateRows(ItemsControl parent, IReadOnlyCollection<NodeViewModel> nodes, double offset)
+    {
+        var previous = new Dictionary<RowKey, PropertyViewItem>();
+        foreach (var row in parent.Items.OfType<PropertyViewItem>())
+            if (rowKeys.TryGetValue(row, out var key)) previous.Add(key, row);
+        var index = 0;
+        foreach (var node in nodes)
+        {
+            var key = new RowKey(node.Name, node.Type, node.NodeValue?.GetType());
+            var row = previous.GetValueOrDefault(key) ?? new PropertyViewItem(AssociatedObject!, offset);
+            rowKeys.GetValue(row, _ => key);
+            // Rebind attached rows in place so their ContentPresenters can recycle editor templates.
+            row.DataContext = node;
+            row.Header = node;
+            if (index >= parent.Items.Count || !ReferenceEquals(parent.Items[index], row))
+            {
+                parent.Items.Remove(row);
+                parent.Items.Insert(index, row);
+            }
+            row.ApplyStyling();
+            UpdateRows(row, node.Children, row.Offset + row.Increment);
+            index++;
+        }
+        while (parent.Items.Count > index) parent.Items.RemoveAt(parent.Items.Count - 1);
     }
 
     private void ClearItem(object? sender, PropertyViewItemEventArgs e)
@@ -203,6 +240,7 @@ public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<
 
     private void NodeValueChanged(object? sender, NodeViewModelValueChangedArgs e)
     {
+        RefreshRows();
         var rule = GetRule(e.Node);
         if (rule == ExpandRule.Never)
             return;
@@ -218,6 +256,7 @@ public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<
 
         if (e.NewValue.Value is { } newViewModel)
             newViewModel.NodeValueChanged += sender.NodeValueChanged;
+        sender.RefreshRows();
     }
 
     private void PrepareItem(object? sender, PropertyViewItemEventArgs e)
@@ -231,7 +270,7 @@ public sealed class PropertyViewAutoExpandNodesBehavior : StyledElementBehavior<
         {
             propertyItem.IsExpanded = false;
         }
-        Dispatcher.UIThread.InvokeAsync(() => ExpandSingleProperties(e.Container));
+        ExpandSingleProperties(e.Container);
     }
 
     private static void RegisterItem(PropertyViewItem item)

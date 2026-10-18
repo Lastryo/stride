@@ -55,6 +55,17 @@ public enum EntityFactoryKind
 
 public abstract class EntityHierarchyEditorViewModel : AssetCompositeHierarchyEditorViewModel<EntityDesign, Entity, EntityHierarchyViewModel, EntityHierarchyItemViewModel>
 {
+    private SceneViewportViewModel? viewport;
+    private int propertiesRefreshVersion;
+    public SceneViewportViewModel? Viewport { get => viewport; private set => SetValue(ref viewport, value); }
+
+    public async Task OpenViewport()
+    {
+        Viewport ??= new SceneViewportViewModel(this);
+        await Viewport.Initialize();
+        Viewport.ShowGame();
+    }
+
     private string filterPattern = string.Empty;
     protected EntityHierarchyEditorViewModel(EntityHierarchyViewModel asset)
         : base(asset)
@@ -92,14 +103,26 @@ public abstract class EntityHierarchyEditorViewModel : AssetCompositeHierarchyEd
 
     public override void Destroy()
     {
+        Viewport?.Destroy();
         Asset.AssetHierarchyPropertyGraph.PartAdded -= HierarchyPartChanged;
         Asset.AssetHierarchyPropertyGraph.PartRemoved -= HierarchyPartChanged;
         base.Destroy();
     }
 
+    public override async Task DestroyAsync()
+    {
+        Destroy();
+        if (Viewport != null) await Viewport.Controller.GameStopped;
+    }
+
     /// <inheritdoc />
     protected override async Task RefreshEditorProperties()
     {
+        // Selection replacement clears and adds items in the same UI turn.
+        var version = ++propertiesRefreshVersion;
+        await Task.Yield();
+        if (IsDestroyed || version != propertiesRefreshVersion) return;
+
         EditorProperties.UpdateTypeAndName(SelectedItems, x => "Entity", x => x.Name, "entities");
         await EditorProperties.GenerateSelectionPropertiesAsync(SelectedItems.OfType<EntityViewModel>());
     }
@@ -341,6 +364,8 @@ public abstract class EntityHierarchyEditorViewModel : AssetCompositeHierarchyEd
     private void HierarchyPartChanged(object? sender, AssetPartChangeEventArgs args)
     {
         HierarchyRoot.RefreshChildren();
+        if (Viewport?.SceneInitialized == true)
+            _ = Viewport.ReloadContent();
         UpdateVisibilities();
     }
 

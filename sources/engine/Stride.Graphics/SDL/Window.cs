@@ -2,6 +2,8 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 #if STRIDE_UI_SDL
 using System;
+using System.Collections.Concurrent;
+using Silk.NET.Core.Contexts;
 using Stride.Core;
 using Stride.Core.Mathematics;
 using Silk.NET.SDL;
@@ -12,6 +14,8 @@ namespace Stride.Graphics.SDL
     public unsafe class Window : IDisposable
     {
         public static Sdl SDL;
+
+        internal readonly ConcurrentQueue<Event> PendingEvents = new();
 
         private Silk.NET.SDL.Window* sdlHandle;
 
@@ -39,14 +43,18 @@ namespace Stride.Graphics.SDL
 
         private static void InitializeSDL()
         {
-            var sdl = Silk.NET.SDL.Sdl.GetApi();
+            // Keep SDL on the shipped implementation instead of loading a system SDL2 compatibility shim.
+            var sdl = OperatingSystem.IsLinux()
+                ? new Sdl(new DefaultNativeContext(NativeLibraryHelper.LocateExecutable("libSDL2-2.0.so", typeof(Window))))
+                : Silk.NET.SDL.Sdl.GetApi();
 
             // jklawreszuk: Workaround for wayland (see #2487 for more details)
             // TODO: Wayland SDL_EGL_MakeCurrent does not cover multi-context scenario (https://github.com/libsdl-org/SDL/issues/9072)
             if (OperatingSystem.IsLinux())
                 sdl.SetHint("SDL_VIDEODRIVER", "x11");
 
-            sdl.Init(Sdl.InitEverything);
+            if (sdl.Init(Sdl.InitEverything) != 0)
+                throw new InvalidOperationException("Cannot initialize SDL: " + sdl.GetErrorS());
 
             // Pass first mouse event when user clicked on window
             sdl.SetHint(Sdl.HintMouseFocusClickthrough, "1");
@@ -70,6 +78,12 @@ namespace Stride.Graphics.SDL
         /// <param name="title">Title of the window, see Text property.</param>
         /// <param name="parent">Parent window handle</param>
         public Window(string title, IntPtr parent)
+        {
+            lock (Application.EventPumpLock)
+                CreateWindow(title, parent);
+        }
+
+        private void CreateWindow(string title, IntPtr parent)
         {
             EnsureInitialized();
 
@@ -388,7 +402,10 @@ namespace Stride.Graphics.SDL
                 // FIXME: On Windows you do this by using AdjustWindowRect.
                 // SDL.SDL_GetWindowBordersSize(sdlHandle, out var top, out var left, out var bottom, out var right);
                 // From SDL documentation: Use this function to set the size of a window's client area.
-                SDL.SetWindowSize(sdlHandle, value.Width, value.Height);
+                if (ClientSize != value)
+                {
+                    SDL.SetWindowSize(sdlHandle, value.Width, value.Height);
+                }
             }
         }
 
@@ -463,8 +480,11 @@ namespace Stride.Graphics.SDL
             }
             set
             {
-                SDL.SetWindowBordered(sdlHandle, value == FormBorderStyle.None ? SdlBool.False : SdlBool.True);
-                SDL.SetWindowResizable(sdlHandle, value == FormBorderStyle.Sizable ? SdlBool.True : SdlBool.False);
+                if (FormBorderStyle != value)
+                {
+                    SDL.SetWindowBordered(sdlHandle, value == FormBorderStyle.None ? SdlBool.False : SdlBool.True);
+                    SDL.SetWindowResizable(sdlHandle, value == FormBorderStyle.Sizable ? SdlBool.True : SdlBool.False);
+                }
             }
         }
 
@@ -696,6 +716,12 @@ namespace Stride.Graphics.SDL
         /// </summary>
         /// <param name="disposing">If <c>false</c> we are being called from the Finalizer.</param>
         protected virtual void Dispose(bool disposing)
+        {
+            lock (Application.EventPumpLock)
+                DestroyWindow(disposing);
+        }
+
+        private void DestroyWindow(bool disposing)
         {
             if (sdlHandle != null)
             {

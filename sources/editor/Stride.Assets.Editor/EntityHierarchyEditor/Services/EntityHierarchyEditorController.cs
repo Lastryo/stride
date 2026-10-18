@@ -1,0 +1,66 @@
+// Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
+// Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Stride.Core.Assets.Editor.ViewModels;
+using Stride.Core.Assets.Presentation.ViewModels;
+using Stride.Core.Assets.Quantum;
+using Stride.Core.Assets.Quantum.Visitors;
+using Stride.Core;
+using Stride.Core.Annotations;
+using Stride.Core.Extensions;
+using Stride.Assets.Entities;
+using Stride.Assets.Presentation.ViewModels;
+using Stride.Assets.Editor.GameEditor.Services;
+using Stride.Assets.Editor.EntityHierarchyEditor.Game;
+using Stride.Assets.Editor.ViewModels;
+using Stride.Assets.Editor.GameEditor.Game;
+
+using Stride.Editor.EditorGame.Game;
+using Stride.Engine;
+
+namespace Stride.Assets.Editor.EntityHierarchyEditor.Services
+{
+    public abstract class EntityHierarchyEditorController : AssetCompositeHierarchyEditorController<EntityHierarchyEditorGame, EntityDesign, Entity, EntityHierarchyItemViewModel>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EntityHierarchyEditorController"/> class.
+        /// </summary>
+        /// <param name="asset">The scene associated with this instance.</param>
+        /// <param name="editor">The editor associated with this instance.</param>
+        /// <param name="gameFactory">The factory to create the editor game.</param>
+        protected EntityHierarchyEditorController([NotNull] AssetViewModel asset, [NotNull] GameEditorViewModel editor, [NotNull] EditorGameFactory<EntityHierarchyEditorGame> gameFactory)
+            : base(asset, editor, gameFactory)
+        {
+        }
+
+
+        /// <inheritdoc />
+        public override async Task<bool> CreateScene()
+        {
+            await InvokeAsync(Game.InitializeContentScene);
+            RecoveryService!.IsActive = true;
+            return true;
+        }
+
+        public abstract AbsoluteId GetAbsoluteId([NotNull] Entity entity);
+
+        /// <inheritdoc/>
+        protected override Dictionary<Guid, IIdentifiable> CollectIdentifiableObjects()
+        {
+            var allEntities = new[] { Game.ContentScene }.BreadthFirst(x => x.Children).SelectMany(x => x.Entities).BreadthFirst(x => x.Transform.Children.Select(y => y.Entity));
+            var definition = AssetQuantumRegistry.GetDefinition(Asset.Asset.GetType());
+            var identifiableObjects = new Dictionary<Guid, IIdentifiable>();
+            foreach (var entityNode in allEntities.Select(x => GameSideNodeContainer.GetOrCreateNode(x)))
+            {
+                foreach (var identifiable in IdentifiableObjectCollector.Collect(definition!, entityNode))
+                {
+                    identifiableObjects.Add(identifiable.Key, identifiable.Value);
+                }
+            }
+            return identifiableObjects;
+        }
+    }
+}

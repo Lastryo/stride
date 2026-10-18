@@ -5,7 +5,7 @@ using Stride.Core.Assets.Presentation.ViewModels;
 
 namespace Stride.Core.Assets.Editor.Services;
 
-public interface IAssetPreviewService : IDisposable
+public interface IAssetPreviewService : IDisposable, IAsyncDisposable
 {
     void SetAssetToPreview(AssetViewModel asset);
 

@@ -3,209 +3,58 @@
 
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Stride.Core.Mathematics;
-using Point = Avalonia.Point;
+using Avalonia.Platform;
 
 namespace Stride.Core.Presentation.Avalonia.Controls;
 
 /// <summary>
-/// A <see cref="Control"/> that can host a game engine window. This control is faster than <see cref="HwndHost"/> but might behave
-/// a bit less nicely on certain cases (such as resize, etc.).
+/// A <see cref="NativeControlHost"/> that can host a game engine window.
 /// </summary>
-public class GameEngineHost : Control, IDisposable /*, IWin32Window, IKeyboardInputSink*/
+public class GameEngineHost : NativeControlHost, IDisposable
 {
-    // FIXME xplat-editor
-    //private readonly List<HwndSource> contextMenuSources = new List<HwndSource>();
-    private bool updateRequested;
-    private int mouseMoveCount;
-    private Point contextMenuPosition;
-    private Vector dpiScale;
-    private Int4 lastBoundingBox;
-    private bool attached;
     private bool isDisposed;
 
     static GameEngineHost()
     {
         FocusableProperty.OverrideMetadata(typeof(GameEngineHost), new StyledPropertyMetadata<bool>(true));
-        IsVisibleProperty.Changed.AddClassHandler<GameEngineHost>(OnIsVisibleChanged);
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GameEngineHost"/> class.
     /// </summary>
-    /// <param name="childHandle">The hwnd of the child (hosted) window.</param>
+    /// <param name="childHandle">The native handle of the child (hosted) window.</param>
     public GameEngineHost(IntPtr childHandle)
     {
         Handle = childHandle;
         MinWidth = 32;
         MinHeight = 32;
-        Loaded += OnLoaded;
-        Unloaded += OnUnloaded;
-        LayoutUpdated += OnLayoutUpdated;
     }
 
     public IntPtr Handle { get; }
-    
-    // FIXME xplat-editor
-    //IKeyboardInputSite IKeyboardInputSink.KeyboardInputSite { get; set; }
 
     public void Dispose()
     {
         if (isDisposed)
             return;
 
-        Loaded -= OnLoaded;
-        Unloaded -= OnUnloaded;
-        LayoutUpdated -= OnLayoutUpdated;
-        // TODO: This seems to be blocking when exiting the Game Studio, but doesn't seem to be necessary
-        //NativeHelper.SetParent(Handle, IntPtr.Zero);        
-        // FIXME xplat-editor
-        //NativeHelper.DestroyWindow(Handle);
         isDisposed = true;
     }
-    
-    // FIXME xplat-editor
-    ///// <inheritdoc />
-    //protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
-    //{
-    //    dpiScale = newDpi;
-    //    UpdateWindowPosition();
-    //}
 
-    private void OnLoaded(object? sender, RoutedEventArgs routedEventArgs)
+    /// <inheritdoc />
+    protected override IPlatformHandle CreateNativeControlCore(IPlatformHandle parent)
     {
-        Attach();
-        UpdateWindowPosition();
+        return Handle != IntPtr.Zero
+            ? new PlatformHandle(Handle, parent.HandleDescriptor)
+            : base.CreateNativeControlCore(parent);
     }
 
-    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    /// <inheritdoc />
+    protected override void DestroyNativeControlCore(IPlatformHandle control)
     {
-        Detach();
-    }
-
-    private void OnLayoutUpdated(object? sender, EventArgs e)
-    {
-        // Remark: this callback is invoked a lot. It is critical to do minimum work if no update is needed.
-        UpdateWindowPosition();
-    }
-
-    private static void OnIsVisibleChanged(GameEngineHost @this, AvaloniaPropertyChangedEventArgs e)
-    {
-        var newValue = (bool)e.NewValue;
-        if (newValue)
+        if (Handle == IntPtr.Zero)
         {
-            @this.Attach();
-            @this.UpdateWindowPosition();
+            base.DestroyNativeControlCore(control);
         }
-        else
-        {
-            @this.Detach();
-        }
-    }
-
-    private void Attach()
-    {
-        if (attached)
-            return;
-
-        //var hwndSource = GetHwndSource();
-        //if (hwndSource == null)
-        //    return;
-
-        //var hwndParent = hwndSource.Handle;
-        //if (hwndParent == IntPtr.Zero)
-        //    return;
-
-        //// Get current DPI
-        //dpiScale = VisualTreeHelper.GetDpi(this);
-
-        //var style = NativeHelper.GetWindowLong(Handle, NativeHelper.GWL_STYLE);
-        //// Removes Caption bar and the sizing border
-        //// Must be a child window to be hosted
-        //style |= NativeHelper.WS_CHILD;
-
-        //NativeHelper.SetWindowLong(Handle, NativeHelper.GWL_STYLE, style);
-        //NativeHelper.ShowWindow(Handle, NativeHelper.SW_HIDE);
-
-        //// Update the parent to be the parent of the host
-        //NativeHelper.SetParent(Handle, hwndParent);
-
-        //// Register keyboard sink to make shortcuts work
-        //((IKeyboardInputSink)this).KeyboardInputSite = ((IKeyboardInputSink)hwndSource).RegisterKeyboardInputSink(this);
-        attached = true;
-    }
-
-    private void Detach()
-    {
-        if (!attached)
-            return;
-
-        //// Hide window, clear parent
-        //NativeHelper.ShowWindow(Handle, NativeHelper.SW_HIDE);
-        //NativeHelper.SetParent(Handle, IntPtr.Zero);
-
-        //// Unregister keyboard sink
-        //var site = ((IKeyboardInputSink)this).KeyboardInputSite;
-        //((IKeyboardInputSink)this).KeyboardInputSite = null;
-        //site?.Unregister();
-
-        // Make sure we will actually attach next time Attach() is called
-        lastBoundingBox = Int4.Zero;
-        attached = false;
-    }
-
-    private void UpdateWindowPosition()
-    {
-        if (updateRequested || !attached)
-            return;
-
-        updateRequested = true;
-
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            updateRequested = false;
-            Visual? root = null;
-            var shouldShow = true;
-            var parent = this.GetVisualParent();
-            while (parent != null)
-            {
-                root = parent;
-
-                if (parent is Control parentElement)
-                {
-                    if (!parentElement.IsLoaded || !parentElement.IsVisible)
-                        shouldShow = false;
-                }
-
-                parent = root.GetVisualParent();
-            }
-
-            if (root == null)
-                return;
-            
-            // FIXME xplat-editor
-            //// Find proper position for the game
-            //var positionTransform = TransformToAncestor(root);
-            //var areaPosition = positionTransform.Transform(new Point(0, 0));
-            //var boundingBox = new Int4((int)(areaPosition.X * dpiScale.DpiScaleX), (int)(areaPosition.Y * dpiScale.DpiScaleY), (int)(ActualWidth * dpiScale.DpiScaleX), (int)(ActualHeight * dpiScale.DpiScaleY));
-            //if (boundingBox != lastBoundingBox)
-            //{
-            //    lastBoundingBox = boundingBox;
-            //    // Move the window asynchronously, without activating it, without touching the Z order
-            //    // TODO: do we want SWP_NOCOPYBITS?
-            //    const int flags = NativeHelper.SWP_ASYNCWINDOWPOS | NativeHelper.SWP_NOACTIVATE | NativeHelper.SWP_NOZORDER;
-            //    NativeHelper.SetWindowPos(Handle, NativeHelper.HWND_TOP, boundingBox.X, boundingBox.Y, boundingBox.Z, boundingBox.W, flags);
-            //}
-
-            if (attached)
-            {
-                // FIXME xplat-editor
-                //NativeHelper.ShowWindow(Handle, shouldShow ? NativeHelper.SW_SHOWNOACTIVATE : NativeHelper.SW_HIDE);
-            }
-        }, DispatcherPriority.Input); // This code must be dispatched after the DispatcherPriority.Loaded to properly work since it's checking the IsLoaded flag!
     }
 
     /// <summary>
@@ -217,7 +66,6 @@ public class GameEngineHost : Control, IDisposable /*, IWin32Window, IKeyboardIn
     /// <param name="lParam">The long parameter of the message.</param>
     public void ForwardMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam)
     {
-        DispatcherOperation task;
         // FIXME xplat-editor
         //switch (msg)
         //{

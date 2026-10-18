@@ -227,11 +227,21 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         return result;
     }
 
+    public async Task CloseAsync()
+    {
+        await EditorCollection.CloseEditorsAsync();
+        if (ServiceProvider.TryGet<IAssetPreviewService>() is { } preview)
+            await preview.DisposeAsync();
+        Destroy();
+    }
+
     /// <inheritdoc />
     public override void Destroy()
     {
         EnsureNotDestroyed(nameof(SessionViewModel));
 
+        EditorCollection.Destroy();
+        ServiceProvider.TryGet<IAssetPreviewService>()?.Dispose();
         ActionHistory?.Destroy();
         AssetTags.Destroy();
         AssetLog.Destroy();

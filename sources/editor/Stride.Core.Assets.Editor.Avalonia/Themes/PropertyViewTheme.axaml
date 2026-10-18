@@ -80,10 +80,11 @@
       </ContextMenu>
     </Setter>
     <Setter Property="HeaderTemplate">
-      <TreeDataTemplate ItemsSource="{Binding Children, Mode=OneWay}" DataType="cpqvm:NodeViewModel">
-        <ContentPresenter Content="{Binding}"
-                          ContentTemplate="{x:Static caev:PropertyViewHelper.HeaderProviders}"/>
-      </TreeDataTemplate>
+      <DataTemplate DataType="cpqvm:NodeViewModel">
+        <ContentControl Content="{Binding}"
+                        ContentTemplate="{x:Static caev:PropertyViewHelper.HeaderProviders}"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Focusable="False"/>
+      </DataTemplate>
     </Setter>
     <Setter Property="Template">
       <ControlTemplate>

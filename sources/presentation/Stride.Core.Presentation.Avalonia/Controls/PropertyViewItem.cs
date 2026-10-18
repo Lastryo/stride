@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Stride.Core.Presentation.Avalonia.Extensions;
+using Stride.Core.Extensions;
 using Stride.Core.Presentation.Collections;
 
 namespace Stride.Core.Presentation.Avalonia.Controls;
@@ -37,10 +38,13 @@ public sealed class PropertyViewItem : ExpandableItemsControl
     public static readonly StyledProperty<double> OffsetProperty =
         AvaloniaProperty.Register<PropertyView, double>(nameof(Offset));
 
-    public PropertyViewItem(PropertyView propertyView)
+    public PropertyViewItem(PropertyView propertyView) : this(propertyView, 0) { }
+
+    public PropertyViewItem(PropertyView propertyView, double offset)
     {
         ArgumentNullException.ThrowIfNull(propertyView);
         PropertyView = propertyView;
+        Offset = offset;
         Focusable = true;
 
         AddHandler(PointerMovedEvent, OnPreviewPointerMoved, RoutingStrategies.Tunnel);
@@ -95,6 +99,7 @@ public sealed class PropertyViewItem : ExpandableItemsControl
         var property = (PropertyViewItem)container;
         RaiseEvent(new PropertyViewItemEventArgs(PropertyView.ClearItemEvent, this, property));
         properties.Remove(property);
+        PropertyView.ClearInteraction();
         base.ClearContainerForItemOverride(container);
     }
 
@@ -114,7 +119,10 @@ public sealed class PropertyViewItem : ExpandableItemsControl
     private static void OnIncrementChanged(PropertyViewItem sender, AvaloniaPropertyChangedEventArgs<double> e)
     {
         var delta = e.NewValue.Value - e.OldValue.Value;
-        var subItems = sender.FindVisualChildrenOfType<PropertyViewItem>();
+        // Reconciled child rows may not have reached the visual tree yet.
+        var children = sender.Items.OfType<PropertyViewItem>();
+        var subItems = children.Any() ? children.SelectDeep(row => row.Items.OfType<PropertyViewItem>())
+            : sender.FindVisualChildrenOfType<PropertyViewItem>();
         foreach (var subItem in subItems)
         {
             subItem.Offset += delta;

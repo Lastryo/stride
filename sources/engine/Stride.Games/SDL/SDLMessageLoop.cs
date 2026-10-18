@@ -2,7 +2,6 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 #if STRIDE_UI_SDL
 using System;
-using Silk.NET.SDL;
 using Stride.Graphics.SDL;
 using Window = Stride.Graphics.SDL.Window;
 
@@ -28,8 +27,6 @@ namespace Stride.Games
     /// </remarks>
     internal unsafe class SDLMessageLoop : IMessageLoop
     {
-        private static Sdl SDL => Window.SDL;
-
         private Window control;
         private bool isControlAlive;
         private bool switchControl;
@@ -92,15 +89,7 @@ namespace Stride.Games
 
             if (isControlAlive)
             {
-                Event e;
-                while (SDL.PollEvent(&e) != 0)
-                {
-                    Application.ProcessEvent(e);
-                    if ((EventType)e.Type == EventType.Quit)
-                    {
-                        isControlAlive = false;
-                    }
-                }
+                isControlAlive = Application.ProcessWindowEvents(control);
             }
 
             return isControlAlive || switchControl;

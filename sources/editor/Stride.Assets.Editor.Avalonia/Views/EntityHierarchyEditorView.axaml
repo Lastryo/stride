@@ -236,9 +236,25 @@
     <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
 
     <DockPanel Grid.Column="2" Classes="studioPanel">
-      <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-        <TextBlock Text="Scene view"/>
+      <Border DockPanel.Dock="Top" Classes="studioToolbar">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <TextBlock Text="Scene" VerticalAlignment="Center" Margin="4,0,8,0"/>
+          <Button Content="Move" Command="{Binding Viewport.TranslateCommand}" ToolTip.Tip="Translate (W)"/>
+          <Button Content="Rotate" Command="{Binding Viewport.RotateCommand}" ToolTip.Tip="Rotate (E)"/>
+          <Button Content="Scale" Command="{Binding Viewport.ScaleCommand}" ToolTip.Tip="Scale (R)"/>
+          <Separator Classes="studioToolSeparator"/>
+          <ComboBox ItemsSource="{Binding Viewport.Spaces}" SelectedItem="{Binding Viewport.Space, Mode=TwoWay}" MinWidth="115"/>
+          <CheckBox Content="Snap" IsChecked="{Binding Viewport.Snap, Mode=TwoWay}" ToolTip.Tip="Snap: 1 unit / 15 degrees / 0.1 scale; hold Shift temporarily"/>
+          <Button Content="Frame" Command="{Binding Viewport.FrameSelectionCommand}" ToolTip.Tip="Frame selection (F)"/>
+        </StackPanel>
       </Border>
+      <Border DockPanel.Dock="Bottom" Padding="6,3" Background="{DynamicResource StudioBackgroundBrush}">
+        <StackPanel>
+          <TextBlock Text="RMB + WASD: fly · Q/E: down/up · MMB: pan · Wheel: zoom · F: frame" FontSize="11" Opacity="0.7"/>
+          <TextBlock Text="{Binding Viewport.LastException.Message}" Foreground="#FFCC6666" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+      <ContentControl Content="{Binding Viewport.EditorHost}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </DockPanel>
   </Grid>
 </UserControl>

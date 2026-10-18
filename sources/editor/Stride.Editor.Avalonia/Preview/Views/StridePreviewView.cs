@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Interactivity;
 using Stride.Editor.Preview;
 using Stride.Editor.Preview.Views;
@@ -17,6 +18,13 @@ public class StridePreviewView : TemplatedControl, IPreviewView
     private IPreviewBuilder? builder;
     private IAssetPreview? previewer;
     private ContentPresenter? presenter;
+
+    static StridePreviewView()
+    {
+        TemplateProperty.OverrideDefaultValue<StridePreviewView>(
+            new FuncControlTemplate<StridePreviewView>((_, scope) =>
+                new ContentPresenter { Name = "PART_StrideView" }.RegisterInNameScope(scope)));
+    }
 
     public void InitializeView(IPreviewBuilder previewBuilder, IAssetPreview assetPreview)
     {
@@ -62,6 +70,10 @@ public class StridePreviewView : TemplatedControl, IPreviewView
         if (presenter != null && builder != null)
         {
             var strideView = builder.GetStrideView();
+            if ((strideView as Control)?.Parent is ContentPresenter oldPresenter && oldPresenter != presenter)
+            {
+                oldPresenter.Content = null;
+            }
             presenter.Content = strideView;
         }
     }

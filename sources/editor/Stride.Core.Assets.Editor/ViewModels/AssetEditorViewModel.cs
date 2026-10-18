@@ -49,6 +49,13 @@ public abstract class AssetEditorViewModel : DispatcherViewModel
         Asset = asset;
     }
 
+    /// <summary>Closes the editor and waits for any background work to stop.</summary>
+    public virtual Task DestroyAsync()
+    {
+        Destroy();
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// The asset related to this editor.
     /// </summary>

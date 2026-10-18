@@ -285,7 +285,7 @@
               MinHeight="20" Margin="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
               ToolTip.Tip="{Binding [Documentation]}"/>
       <DockPanel x:Name="HeaderDockPanel"
-                 Margin="10,8">
+                 MinHeight="32" Margin="10,8">
         <StackPanel DockPanel.Dock="Right"
                     Orientation="Horizontal" VerticalAlignment="Center">
           <Button Theme="{StaticResource RemoveItemButtonTheme}"/>
@@ -1439,7 +1439,7 @@
       </UniformGrid>
       <TextBox Margin="5"
                IsReadOnly="{Binding IsReadOnly}"
-               Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}}"
+               Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}, UpdateSourceTrigger=Explicit}"
                ContextMenu="{StaticResource ReferenceContextMenu}">
         <Interaction.Behaviors>
           <sd:TextBoxValidationBehavior/>
@@ -1497,7 +1497,7 @@
           <TextBox DockPanel.Dock="Top"
                    Margin="5"
                    IsReadOnly="{Binding IsReadOnly}"
-                   Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}}"
+                   Text="{Binding NodeValue, Converter={caec:ContentReferenceToUrl}, UpdateSourceTrigger=Explicit}"
                    ContextMenu="{StaticResource ReferenceContextMenu}">
             <Interaction.Behaviors>
               <sd:TextBoxValidationBehavior/>

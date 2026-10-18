@@ -53,8 +53,7 @@
 
       <GridSplitter Grid.Column="1" ResizeBehavior="PreviousAndNext" VerticalAlignment="Stretch" />
 
-      <sd:PropertyView Grid.Column="2"
-                       ItemsSource="{Binding ViewModel?.RootNode.Children}">
+      <sd:PropertyView Grid.Column="2">
         <Interaction.Behaviors>
           <caeb:PropertyViewAutoExpandNodesBehavior ViewModel="{Binding ViewModel, Mode=OneWay}" />
         </Interaction.Behaviors>

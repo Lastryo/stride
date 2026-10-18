@@ -117,7 +117,7 @@
               Command="{Binding Session.EditSelectedContentCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}"
               IsVisible="{Binding Session.EditSelectedContentCommand.IsEnabled, FallbackValue={sd:False}}">
         <Grid>
-          <DockPanel IsVisible="{Binding CanDisplayProperties}">
+          <DockPanel IsVisible="{Binding #AssetPropertyView.IsVisible}">
             <Image Source="{StaticResource ImageEditAsset}"
                    Margin="4"
                    DockPanel.Dock="Left"
@@ -129,10 +129,10 @@
           <TextBlock Text="{sd:LocalizeString Show this asset in editor}"
                      Margin="0,4,4,4"
                      VerticalAlignment="Center"
-                     IsVisible="{Binding !CanDisplayProperties}"/>
+                     IsVisible="{Binding #AssetPropertyView.IsVisible, Converter={sd:InvertBool}}"/>
         </Grid>
       </Button>
-      <DockPanel IsVisible="{Binding CanDisplayProperties}">
+      <DockPanel IsVisible="{Binding #AssetPropertyView.IsVisible}">
         <!-- Disabling this button for now, matching WPF GameStudioWindow.xaml -->
         <ToggleButton Margin="4,0"
                       Height="22" Width="22"
@@ -152,15 +152,16 @@
     <Border Grid.Row="3" Background="{DynamicResource StudioPanelBrush}">
       <Grid>
         <sd:PropertyView x:Name="AssetPropertyView"
-                         ItemsSource="{Binding ViewModel?.RootNode.Children}"
-                         IsVisible="{Binding CanDisplayProperties}">
+                         ScrollViewer.VerticalScrollBarVisibility="Visible"
+                         IsEnabled="{Binding CanDisplayProperties}"
+                         IsVisible="{Binding ViewModel, Converter={sd:ObjectToBool}}">
           <Interaction.Behaviors>
             <caeb:PropertyViewAutoExpandNodesBehavior ViewModel="{Binding ViewModel, Mode=OneWay}" />
             <caeb:PropertyViewFilteringBehavior FilterToken="{Binding #PropertyFilterTextBox.Text, Mode=OneWay}" />
           </Interaction.Behaviors>
         </sd:PropertyView>
         <TextBlock Text="{Binding FallbackMessage}"
-                   IsVisible="{Binding CanDisplayProperties, Converter={sd:InvertBool}}"
+                   IsVisible="{Binding #AssetPropertyView.IsVisible, Converter={sd:InvertBool}}"
                    Foreground="{DynamicResource StudioMutedBrush}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"

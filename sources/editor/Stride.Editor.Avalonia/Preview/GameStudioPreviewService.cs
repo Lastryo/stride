@@ -10,12 +10,10 @@ using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Assets.Presentation.ViewModels;
 using Stride.Core.Diagnostics;
 using Stride.Core.Extensions;
-using Stride.Core.Presentation.Avalonia.Controls;
 using Stride.Core.Presentation.Services;
 using Stride.Editor.Avalonia.Engine;
 using Stride.Editor.Build;
 using Stride.Editor.Preview;
-using Stride.Games;
 using Stride.Graphics;
 
 namespace Stride.Editor.Avalonia.Preview;
@@ -26,21 +24,20 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
     private readonly ISessionViewModel session;
 
-    private readonly AutoResetEvent initializationSignal = new(false);
-    private readonly GameEngineHost host;
+    private readonly AvaloniaGameView host;
     private readonly IDebugPage? loggerDebugPage;
     private IAssetPreview currentPreview;
-    private IntPtr windowHandle;
-    private EmbeddedGameForm gameForm;
     private object previewView;
 
     private AssetViewModel previewBuildQueue;
+    private bool previewChangePending;
     private readonly SemaphoreSlim previewChangeLock = new(1, 1);
     /// <summary>
     /// A lock used to access the <see cref="currentPreview"/> and <see cref="previewBuildQueue"/> fields safely.
     /// </summary>
     private readonly object previewLock = new();
     private readonly Thread previewGameThread;
+    private volatile bool stopping;
     private readonly Dictionary<Type, AssetPreviewFactory> assetPreviewFactories = new();
 
     private readonly AssetCompilerContext previewCompileContext = new() { Platform = PlatformType.Windows };
@@ -65,16 +62,13 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
         previewCompileContext.SetGameSettingsAsset(previewGameSettings);
         previewCompileContext.CompilationContext = typeof(PreviewCompilationContext);
 
+        host = Dispatcher.Invoke(() => new AvaloniaGameView());
         previewGameThread = new Thread(SafeAction.Wrap(StrideUIThread)) { IsBackground = true, Name = "PreviewGame Thread" };
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             previewGameThread.SetApartmentState(ApartmentState.STA);
         }
         previewGameThread.Start();
-
-        // Wait for the window handle to be generated on the proper thread
-        initializationSignal.WaitOne();
-        host = Dispatcher.Invoke(() =>  new GameEngineHost(windowHandle));
 
         session.AssetPropertiesChanged += OnAssetPropertyChanged;
         gameSettingsProvider.GameSettingsChanged += OnGameSettingsChanged;
@@ -95,30 +89,33 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
     public event EventHandler<EventArgs> PreviewAssetUpdated;
 
-    public void Dispose()
+    private Task? disposal;
+
+    public void Dispose() => _ = DisposeAsync();
+
+    public ValueTask DisposeAsync() => new(disposal ??= DisposeCoreAsync());
+
+    private async Task DisposeCoreAsync()
     {
         if (!IsDisposed)
         {
-            // Terminate preview control thread
+            // Stop before the desktop tears down the graphics context, including startup races.
+            stopping = true;
             previewBuildQueue = null;
 
             session.AssetPropertiesChanged -= OnAssetPropertyChanged;
             gameSettingsProvider.GameSettingsChanged -= OnGameSettingsChanged;
 
-            if (PreviewGame.IsRunning)
+            if (PreviewGame?.IsRunning == true)
             {
                 PreviewGame.Exit();
             }
 
-            // Wait for the game thread to terminate
-            previewGameThread.Join();
+            await host.DisposeAsync();
+            // Imported images must be released before their Vulkan device is destroyed.
+            await Task.Run(previewGameThread.Join);
 
-
-            //Game = null;
             host.Dispose();
-            //host = null;
-            //gameForm = null;
-            //windowHandle = IntPtr.Zero;
             previewCompileContext?.Dispose();
 
             session.ServiceProvider.TryGet<IEditorDebugService>()?.UnregisterDebugPage(loggerDebugPage);
@@ -129,25 +126,29 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
     private void StrideUIThread()
     {
-        // FIXME xplat-editor
-        //gameForm = new EmbeddedGameForm { TopLevel = false, Visible = false };
-        gameForm = new EmbeddedGameForm { Visible = false };
-        windowHandle = gameForm.Handle;
-
-        initializationSignal.Set();
-
-        PreviewGame = new EmbeddedPreviewGame(AssetBuilderService.EffectCompiler);
-        var context = new GameContextSDL(gameForm) { InitializeDatabase = false };
+        PreviewGame = new PreviewGame(AssetBuilderService.EffectCompiler);
+        PreviewGame.WindowCreated += (_, _) =>
+        {
+            if (stopping) PreviewGame.Exit();
+        };
+        host.AttachGame(PreviewGame);
+        var context = host.Context;
 
         // Wait for shaders to be loaded
         AssetBuilderService.WaitForShaders();
 
         // TODO: For now we stop if there is an exception
         // Ideally, we should try to recreate the game.
-        if (!DisablePreview)
+        try
         {
-            PreviewGame.GraphicsDeviceManager.DeviceCreated += GraphicsDeviceManagerDeviceCreated;
-            PreviewGame.Run(context);
+            if (!DisablePreview && !stopping)
+            {
+                PreviewGame.GraphicsDeviceManager.DeviceCreated += GraphicsDeviceManagerDeviceCreated;
+                PreviewGame.Run(context);
+            }
+        }
+        finally
+        {
             PreviewGame.Dispose();
         }
     }
@@ -186,9 +187,11 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
     public void SetAssetToPreview(AssetViewModel asset)
     {
+        if (stopping || IsDisposed) return;
         lock (previewLock)
         {
             previewBuildQueue = asset;
+            previewChangePending = true;
         }
         PreviewGame.Script.AddTask(ChangePreviewAsset);
     }
@@ -230,13 +233,17 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
     private async Task ChangePreviewAsset()
     {
-        if (!previewChangeLock.Wait(0))
-            return;
+        if (stopping) return;
+        await previewChangeLock.WaitAsync();
 
         AssetViewModel asset = null;
         IAssetPreview nextPreview = null;
         try
         {
+            lock (previewLock)
+            {
+                if (stopping || !previewChangePending) return;
+            }
             if (currentPreview != null)
             {
                 IAssetPreview previousPreview;
@@ -253,6 +260,7 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
 
             lock (previewLock)
             {
+                previewChangePending = false;
                 if (previewBuildQueue != null)
                 {
                     asset = previewBuildQueue;
@@ -327,13 +335,4 @@ public class GameStudioPreviewService : IAssetPreviewService, IPreviewBuilder
         PreviewGame.IsEditorHidden = true;
     }
 
-    private sealed class EmbeddedPreviewGame : PreviewGame
-    {
-        public EmbeddedPreviewGame(Stride.Shaders.Compiler.IEffectCompiler effectCompiler) : base(effectCompiler)
-        {
-            // The preview belongs inside GameEngineHost. Until native hosting is
-            // implemented, keep its SDL window hidden instead of showing a 64x64 top-level window.
-            MakeWindowVisibleOnRun = false;
-        }
-    }
 }
