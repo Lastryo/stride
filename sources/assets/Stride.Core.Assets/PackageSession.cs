@@ -1053,7 +1053,7 @@ public sealed partial class PackageSession : IDisposable, IAssetFinder
                         {
                             var generatedAbsolutePath = assetItem.GetGeneratedAbsolutePath().ToOSPath();
 
-                            File.Delete(generatedAbsolutePath);
+                            saveParameters.DeleteFile(generatedAbsolutePath);
 
                             var generatedInclude = assetItem.GetGeneratedInclude();
                             var generatedItem = project.Items.FirstOrDefault(x => (x.ItemType == "Compile" || x.ItemType == "None" || x.ItemType == "AdditionalFiles") && x.EvaluatedInclude == generatedInclude);
@@ -1064,7 +1064,7 @@ public sealed partial class PackageSession : IDisposable, IAssetFinder
                         }
                     }
 
-                    File.Delete(assetPath);
+                    saveParameters.DeleteFile(assetPath);
                 }
                 catch (Exception ex)
                 {
@@ -1080,6 +1080,7 @@ public sealed partial class PackageSession : IDisposable, IAssetFinder
             }
 
             // Save all dirty assets
+            if (loggerResult.HasErrors) return;
             packagesCopy.Clear();
             foreach (var package in LocalPackages)
             {

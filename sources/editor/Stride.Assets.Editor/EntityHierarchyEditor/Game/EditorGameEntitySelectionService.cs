@@ -36,6 +36,7 @@ public sealed class EditorGameEntitySelectionService(SceneViewportController con
     {
         game = (SceneViewportGame)editorGame;
         editor.Dispatcher.Invoke(() => editor.SelectedItems.CollectionChanged += SelectionChanged);
+        EntityHierarchyItemViewModel.LockStateChanged += OnLockStateChanged;
         game.ContentReloaded += ContentReloaded;
         game.Script.AddTask(Update, 2);
         return Task.FromResult(true);
@@ -49,9 +50,18 @@ public sealed class EditorGameEntitySelectionService(SceneViewportController con
 
     private void SelectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => QueueSelection();
 
+    private void OnLockStateChanged(EntityHierarchyItemViewModel item)
+    {
+        if (item is EntityHierarchyRootViewModel root)
+        {
+            _ = controller.InvokeAsync(() => game.SetContentLoaded(root.IsLoaded));
+        }
+        editor.Dispatcher.Invoke(QueueSelection);
+    }
+
     private void QueueSelection()
     {
-        var ids = editor.SelectedItems.OfType<EntityViewModel>().Select(item => item.Id).ToArray();
+        var ids = editor.SelectedItems.OfType<EntityViewModel>().Where(item => item.IsSelectable).Select(item => item.Id).ToArray();
         _ = controller.InvokeAsync(() => { selectedIds = ids; RefreshSelection(); });
     }
 
@@ -116,13 +126,13 @@ public sealed class EditorGameEntitySelectionService(SceneViewportController con
                 if (IsMouseAvailable && input.IsMouseButtonReleased(MouseButton.Left) && !input.IsMouseButtonDown(MouseButton.Right)
                     && distance.Length() < TransformationGizmo.TransformationStartPixelThreshold)
                 {
-                    var entity = picker?.Pick().Entity;
+                    var entity = game.EditorServices.Get<IEditorGameComponentGizmoService>()?.GetContentEntityUnderMouse() ?? picker?.Pick().Entity;
                     var id = entity is null ? (AbsoluteId?)null : controller.GetAbsoluteId(entity);
                     var add = input.IsKeyDown(Keys.LeftCtrl) || input.IsKeyDown(Keys.RightCtrl);
                     await editor.Dispatcher.InvokeAsync(() =>
                     {
                         if (!add) editor.SelectedContent.Clear();
-                        if (id is { } value && editor.FindPartViewModel(value) is EntityViewModel item)
+                        if (id is { } value && editor.FindPartViewModel(value) is EntityViewModel item && item.IsSelectable)
                         {
                             if (add && editor.SelectedContent.Contains(item)) editor.SelectedContent.Remove(item);
                             else editor.SelectedContent.Add(item);
@@ -137,6 +147,7 @@ public sealed class EditorGameEntitySelectionService(SceneViewportController con
     public override ValueTask DisposeAsync()
     {
         editor.Dispatcher.Invoke(() => editor.SelectedItems.CollectionChanged -= SelectionChanged);
+        EntityHierarchyItemViewModel.LockStateChanged -= OnLockStateChanged;
         game.ContentReloaded -= ContentReloaded;
         return base.DisposeAsync();
     }

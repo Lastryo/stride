@@ -8,6 +8,10 @@ namespace Stride.Core.Assets.Presentation.ViewModels;
 
 public interface IAssetSourceTrackerViewModel
 {
+    Stride.Core.Presentation.Commands.ICommandBase UpdateAllAssetsWithModifiedSourceCommand { get; }
+
+    Stride.Core.Presentation.Collections.IReadOnlyObservableCollection<AssetViewModel> AssetsToUpdate { get; }
+
     ObjectId GetCurrentHash(UFile file);
 
     void UpdateAssetStatus(AssetViewModel asset);

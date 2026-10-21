@@ -60,14 +60,14 @@
       <Border caev:PropertyViewHelper.Increment="0" caev:PropertyViewHelper.IsExpanded="True"
               IsVisible="{Binding IsVisible}">
         <Border x:Name="PART_Name"
-                MinHeight="26" Margin="4,4,1,8"
+                MinHeight="24" Margin="4,2,1,4"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 ToolTip.Tip="{Binding [Documentation]}">
           <Grid>
-          <ToggleButton x:Name="AddComponentButton" HorizontalAlignment="Left">
-            <DockPanel Margin="4" LastChildFill="True">
+          <ToggleButton x:Name="AddComponentButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+            <DockPanel Margin="2,0" LastChildFill="True">
               <Image DockPanel.Dock="Left" Source="{StaticResource ImageAdd}" Width="16" Height="16" Margin="0,0,4,0"/>
-              <TextBlock Text="{sd:LocalizeString Add component}" FontStyle="Italic"/>
+              <TextBlock Text="{sd:LocalizeString Add component}"/>
             </DockPanel>
           </ToggleButton>
           <Popup IsOpen="{Binding #AddComponentButton.IsChecked, Mode=TwoWay}"

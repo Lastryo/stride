@@ -20,21 +20,15 @@
     </ResourceDictionary>
   </UserControl.Resources>
   <UserControl.Styles>
-    <Style Selector="sd|PropertyViewItem[IsHovered=True]">
-      <Setter Property="Background" Value="{DynamicResource PropertyHoveredBackground}"/>
-    </Style>
-    <Style Selector="sd|PropertyViewItem[IsFocused=True]">
-      <Setter Property="Background" Value="{DynamicResource PropertyFocusedBackground}"/>
-    </Style>
     <Style Selector="TextBox.propertyFilterBox.hasFilter">
       <Setter Property="BorderBrush" Value="SteelBlue"/>
       <Setter Property="BorderThickness" Value="2"/>
     </Style>
   </UserControl.Styles>
-  <Grid RowDefinitions="Auto, Auto, Auto, *, 5, 70"
+  <Grid RowDefinitions="Auto, Auto, Auto, *, 4, 60"
         Background="{DynamicResource StudioHeaderBrush}">
     <!-- Row 0: Navigation, selection description, and Add new tag -->
-    <DockPanel Grid.Row="0" Margin="6,6,6,2" LastChildFill="True">
+    <DockPanel Grid.Row="0" Margin="6,2" LastChildFill="True">
       <!-- Adding tag -->
       <TextBox x:Name="NewTagTextBox"
                DockPanel.Dock="Right"
@@ -113,7 +107,7 @@
       <Button DockPanel.Dock="Top"
               HorizontalAlignment="Stretch"
               HorizontalContentAlignment="Center"
-              Margin="0,0,0,8"
+              Margin="0,0,0,4"
               Command="{Binding Session.EditSelectedContentCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}"
               IsVisible="{Binding Session.EditSelectedContentCommand.IsEnabled, FallbackValue={sd:False}}">
         <Grid>
@@ -123,11 +117,11 @@
                    DockPanel.Dock="Left"
                    Width="16" Height="16"/>
             <TextBlock Text="{sd:LocalizeString Open this asset in editor}"
-                       Margin="0,4,4,4"
+                       Margin="0,1,4,1"
                        VerticalAlignment="Center"/>
           </DockPanel>
           <TextBlock Text="{sd:LocalizeString Show this asset in editor}"
-                     Margin="0,4,4,4"
+                     Margin="0,1,4,1"
                      VerticalAlignment="Center"
                      IsVisible="{Binding #AssetPropertyView.IsVisible, Converter={sd:InvertBool}}"/>
         </Grid>
@@ -174,7 +168,7 @@
     <!-- Row 4: Splitter -->
     <GridSplitter Grid.Row="4"
                   HorizontalAlignment="Stretch"
-                  Height="5"
+                  Height="4"
                   ResizeDirection="Rows"
                   ResizeBehavior="PreviousAndNext"/>
 

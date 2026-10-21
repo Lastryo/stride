@@ -180,6 +180,10 @@ public sealed partial class AvaloniaGameView : global::Avalonia.Controls.Image, 
         base.OnKeyDown(e);
         if (!Enum.TryParse<Keys>(e.Key.ToString(), out var key)) return;
         if (keys.Add(key)) input.Enqueue((_, keyboard) => keyboard.SimulateDown(key));
+        if (e.KeyModifiers != KeyModifiers.None
+            || e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
+            || e.Key is Key.Delete or Key.Back or (>= Key.F1 and <= Key.F24))
+            return;
         e.Handled = true;
     }
 
@@ -189,6 +193,10 @@ public sealed partial class AvaloniaGameView : global::Avalonia.Controls.Image, 
         if (!Enum.TryParse<Keys>(e.Key.ToString(), out var key)) return;
         keys.Remove(key);
         input.Enqueue((_, keyboard) => keyboard.SimulateUp(key));
+        if (e.KeyModifiers != KeyModifiers.None
+            || e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
+            || e.Key is Key.Delete or Key.Back or (>= Key.F1 and <= Key.F24))
+            return;
         e.Handled = true;
     }
 

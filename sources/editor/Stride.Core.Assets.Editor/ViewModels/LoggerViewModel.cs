@@ -22,6 +22,7 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
 
     private int updateInterval = DefaultUpdateInterval;
     private bool updatePending;
+    private bool stopped;
     private bool hasNewMessages;
 
     public LoggerViewModel(IViewModelServiceProvider serviceProvider)
@@ -115,6 +116,7 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
     {
         Loggers.Remove(logger);
         logger.MessageLogged -= MessageLogged;
+        lock (pendingMessages) pendingMessages.RemoveAll(x => x.Item1 == logger);
     }
 
     /// <summary>
@@ -127,6 +129,14 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
             logger.Key.MessageLogged -= MessageLogged;
         }
         Loggers.Clear();
+        lock (pendingMessages) pendingMessages.Clear();
+    }
+
+    public override void Destroy()
+    {
+        lock (pendingMessages) stopped = true;
+        ClearLoggers();
+        base.Destroy();
     }
 
     /// <summary>
@@ -140,7 +150,9 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
             {
                 messages.Remove(messageToRemove);
             }
+            messagesToRemove.Clear();
         }
+        lock (pendingMessages) pendingMessages.RemoveAll(x => x.Item1 == logger);
     }
 
     /// <summary>
@@ -198,6 +210,7 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
         var scheduleUpdate = false;
         lock (pendingMessages)
         {
+            if (stopped) return;
             if (sender is Logger logger && args.Message.IsAtLeast(MinLevel))
             {
                 pendingMessages.Add((logger, args.Message));
@@ -222,6 +235,7 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
         List<(Logger, ILogMessage)>? messagesToAdd = null;
         lock (pendingMessages)
         {
+            if (stopped) return;
             if (pendingMessages.Count > 0)
             {
                 messagesToAdd = pendingMessages.ToList();
@@ -233,9 +247,9 @@ public class LoggerViewModel : DispatcherViewModel, IDebugPage
         {
             foreach (var messageToAdd in messagesToAdd)
             {
-                messages.Add(messageToAdd.Item2);
                 if (Loggers.TryGetValue(messageToAdd.Item1, out var logger))
                 {
+                    messages.Add(messageToAdd.Item2);
                     logger.Add(messageToAdd.Item2);
                 }
             }

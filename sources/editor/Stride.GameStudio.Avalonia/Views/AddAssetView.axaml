@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Stride.GameStudio.Avalonia.Views"
+             x:Class="Stride.GameStudio.Avalonia.Views.AddAssetView"
+             Classes="addAssetBrowser" FontWeight="Normal" x:CompileBindings="False" Width="660" Height="344" KeyDown="OnKeyDown"
+             Background="{DynamicResource StudioBorderBrush}" Foreground="{DynamicResource StudioTextBrush}">
+  <UserControl.Styles>
+    <Style Selector=".addAssetBrowser ListBox">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+    </Style>
+    <Style Selector=".addAssetBrowser ListBoxItem">
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="TemplatePresenter" Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" Background="{TemplateBinding Background}"/>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector=".addAssetBrowser ListBoxItem:pointerover, .addAssetBrowser ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource StudioHoverBrush}"/>
+    </Style>
+    <Style Selector="ListBoxItem Path.categoryArrow"><Setter Property="IsVisible" Value="False"/></Style>
+    <Style Selector="ListBoxItem:selected Path.categoryArrow, ListBoxItem:pointerover Path.categoryArrow">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="168,1,*">
+    <DockPanel Margin="4">
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,28" Margin="4,4,4,6">
+        <TextBox x:Name="SearchBox" PlaceholderText="Search" TextChanged="SearchChanged"
+                 MinHeight="22" Height="22" FontSize="11" Padding="5,0" VerticalContentAlignment="Center"/>
+        <Button x:Name="ImportButton" Grid.Column="1" Classes="studioTool" Margin="8,0,0,0"
+                MinWidth="20" Width="20" MinHeight="20" Height="20" Padding="2"
+                Click="ImportClicked" ToolTip.Tip="Import directly from files">
+          <Image Source="avares://Stride.GameStudio.Avalonia/Assets/import-24.png" Width="16" Height="16"/>
+        </Button>
+      </Grid>
+      <ListBox x:Name="CategoryList" SelectionChanged="CategoryChanged" FontSize="12">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <DockPanel Margin="16,3,8,3" Background="Transparent" PointerEntered="CategoryHovered">
+              <Path DockPanel.Dock="Right" Classes="categoryArrow" Data="M0,0 L0,8 L4,4 Z"
+                    Fill="{DynamicResource StudioTextBrush}" VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding}"/>
+            </DockPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <Border Grid.Column="1" Background="{DynamicResource StudioMutedBrush}" Opacity="0.5"/>
+    <ListBox x:Name="TemplateList" Grid.Column="2" Margin="4" PointerReleased="TemplateReleased">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="views:AddAssetTemplateItem">
+          <Grid ColumnDefinitions="52,*" MinHeight="62" Margin="6,0">
+            <Image Source="{Binding Icon}" Width="48" Height="48" Margin="2" VerticalAlignment="Top"/>
+            <StackPanel Grid.Column="1" Margin="18,4,8,2" Spacing="2">
+              <TextBlock Text="{Binding Name}" FontSize="16"/>
+              <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"/>
+            </StackPanel>
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </Grid>
+</UserControl>

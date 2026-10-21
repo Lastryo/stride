@@ -102,6 +102,7 @@ partial class SessionViewModel
 
         // Copy the result of the asset loading to the log panel.
         sessionViewModel?.AssetLog.AddLogger(LogKey.Get("Session"), sessionResult);
+        sessionViewModel?.InitializeOutputLog(sessionResult);
 
         // Notify that the task is finished
         sessionResult.OperationCancelled = token.IsCancellationRequested;

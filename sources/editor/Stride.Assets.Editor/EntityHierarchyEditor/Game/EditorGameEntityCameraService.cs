@@ -16,6 +16,7 @@ namespace Stride.Assets.Editor.EntityHierarchyEditor.Game;
 
 public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, IEditorGameCameraService
 {
+    private static readonly float[] MovementSpeeds = [.05f, .1f, .5f, 1, 1.5f, 2.5f, 5, 10, 15, 30, 45, 60, 80, 100, 130, 180, 250, 400, 500, 700, 1000];
     private SceneViewportGame game = null!;
     private float yaw = MathUtil.PiOverFour;
     private float pitch = -MathUtil.Pi / 8;
@@ -25,6 +26,20 @@ public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, 
     public Vector3 Position { get; private set; } = new(4, 3, 6);
     public bool IsMoving => IsControllingMouse;
     public override bool IsControllingMouse { get; protected set; }
+    public override bool IsActive
+    {
+        get => base.IsActive;
+        set
+        {
+            base.IsActive = value;
+            if (!value && IsControllingMouse)
+            {
+                IsControllingMouse = false;
+                game.Input.UnlockMousePosition();
+                game.IsMouseVisible = true;
+            }
+        }
+    }
     public bool IsOrthographic { get => Component.Projection == CameraProjectionMode.Orthographic; set => Component.Projection = value ? CameraProjectionMode.Orthographic : CameraProjectionMode.Perspective; }
     public float AspectRatio => Component.AspectRatio;
     public float VerticalFieldOfView => Component.VerticalFieldOfView;
@@ -32,6 +47,22 @@ public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, 
     public float FarPlane => Component.FarClipPlane;
     public float SceneUnit => 1;
     public float MoveSpeed { get; private set; } = 3;
+    private ViewportCameraSettings publishedSettings;
+    public event Action<ViewportCameraSettings>? SettingsChanged;
+
+    public ViewportCameraSettings GetSettings() => new(IsOrthographic, NearPlane, FarPlane, VerticalFieldOfView, Component.OrthographicSize, MoveSpeed);
+
+    public void ApplySettings(ViewportCameraSettings settings)
+    {
+        settings.Validate();
+        IsOrthographic = settings.Orthographic;
+        Component.NearClipPlane = settings.NearPlane;
+        Component.FarClipPlane = settings.FarPlane;
+        Component.VerticalFieldOfView = settings.FieldOfView;
+        Component.OrthographicSize = settings.OrthographicSize;
+        MoveSpeed = settings.MoveSpeed;
+        Component.Update();
+    }
 
     protected override Task<bool> Initialize(EditorServiceGame editorGame)
     {
@@ -59,7 +90,7 @@ public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, 
         var radius = spheres.Max(sphere => Vector3.Distance(sphere.Center, center) + sphere.Radius);
         var direction = Vector3.TransformNormal(-Vector3.UnitZ, Matrix.RotationYawPitchRoll(yaw, pitch, 0));
         Position = center - direction * Math.Max(radius * 3, 2);
-        MoveSpeed = Math.Max(radius, 1) * 2;
+        MoveSpeed = Math.Clamp(Math.Max(radius, 1) * 2, MovementSpeeds[0], MovementSpeeds[^1]);
         UpdateView();
     }
 
@@ -98,6 +129,10 @@ public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, 
                 {
                     if (right)
                     {
+                        if (input.MouseWheelDelta > 0)
+                            MoveSpeed = MovementSpeeds.FirstOrDefault(speed => speed > MoveSpeed, MovementSpeeds[^1]);
+                        else if (input.MouseWheelDelta < 0)
+                            MoveSpeed = MovementSpeeds.LastOrDefault(speed => speed < MoveSpeed, MovementSpeeds[0]);
                         yaw -= input.MouseDelta.X * MathUtil.TwoPi;
                         pitch = MathUtil.Clamp(pitch - input.MouseDelta.Y * MathUtil.TwoPi, -1.55f, 1.55f);
                         var movement = new Vector3((input.IsKeyDown(Keys.D) ? 1 : 0) - (input.IsKeyDown(Keys.A) ? 1 : 0),
@@ -109,9 +144,23 @@ public sealed class EditorGameEntityCameraService : EditorGameMouseServiceBase, 
                     }
                     else Position += Vector3.TransformNormal(new Vector3(-input.MouseDelta.X, input.MouseDelta.Y, 0), rotation) * MoveSpeed;
                 }
-                else if (IsMouseAvailable && game.IsActive)
-                    Position += Vector3.TransformNormal(-Vector3.UnitZ, rotation) * input.MouseWheelDelta * MoveSpeed * .2f;
+                else if (IsMouseAvailable && game.IsActive && float.IsFinite(input.MouseWheelDelta) && input.MouseWheelDelta != 0)
+                {
+                    if (IsOrthographic)
+                    {
+                        var step = MoveSpeed * .2f * (input.IsKeyDown(Keys.LeftShift) || input.IsKeyDown(Keys.RightShift) ? 10 : 1);
+                        Component.OrthographicSize = Math.Clamp(Component.OrthographicSize - input.MouseWheelDelta * step, .001f, 1_000_000f);
+                    }
+                    else
+                        Position += Vector3.TransformNormal(-Vector3.UnitZ, rotation) * input.MouseWheelDelta * 1.2f;
+                }
                 UpdateView();
+                var settings = GetSettings();
+                if (settings != publishedSettings)
+                {
+                    publishedSettings = settings;
+                    SettingsChanged?.Invoke(settings);
+                }
             }
             await game.Script.NextFrame();
         }

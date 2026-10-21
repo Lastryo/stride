@@ -55,7 +55,7 @@ public class TemplateProviderSelector : IDataTemplate
     }
 
     /// <inheritdoc/>
-    public bool Match(object? data)
+    public virtual bool Match(object? data)
     {
         return templateProviders.Any(x => x.Match(data));
     }

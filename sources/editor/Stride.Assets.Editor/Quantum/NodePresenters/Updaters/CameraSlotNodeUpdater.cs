@@ -18,9 +18,12 @@ internal sealed class CameraSlotNodeUpdater : AssetNodePresenterUpdaterBase
     {
         if (node.Value is SceneCameraSlot value)
         {
-            // Hide children
-            node.Children.ForEach(x => x.IsVisible = false);
-            node.AttachedProperties.Set(DisplayData.AttributeDisplayNameKey, value.Name);
+            if (node.Parent != null)
+            {
+                // Hide children when used as a nested reference property
+                node.Children.ForEach(x => x.IsVisible = false);
+                node.AttachedProperties.Set(DisplayData.AttributeDisplayNameKey, value.Name);
+            }
         }
         else if (node.Value is SceneCameraSlotId)
         {

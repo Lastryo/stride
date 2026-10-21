@@ -22,4 +22,7 @@ public class PackageSaveParameters
     }
 
     public Func<AssetItem, bool>? AssetFilter;
+
+    /// <summary>Deletes obsolete asset files. Editors can supply a system trash implementation.</summary>
+    public Action<string> DeleteFile { get; set; } = File.Delete;
 }

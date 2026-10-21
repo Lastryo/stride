@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+             x:Class="Stride.Core.Presentation.Avalonia.Controls.ColorPicker"
+             x:Name="Picker" Focusable="True">
+  <UserControl.Styles>
+    <Style Selector="sd|ColorPicker TextBlock">
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="sd|ColorPicker sd|NumericTextBox">
+      <Setter Property="Height" Value="22"/>
+      <Setter Property="DecimalPlaces" Value="0"/>
+      <Setter Property="Margin" Value="0"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="Auto,120" VerticalAlignment="Top">
+    <StackPanel Margin="2" VerticalAlignment="Top">
+      <Canvas x:Name="HueSurface" Width="160" Height="22"
+              PointerPressed="SurfacePressed" PointerMoved="SurfaceMoved" PointerReleased="SurfaceReleased" PointerCaptureLost="SurfaceCaptureLost">
+        <Canvas.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="Red" Offset="0"/><GradientStop Color="Yellow" Offset="0.166666666667"/>
+            <GradientStop Color="Lime" Offset="0.333333333333"/><GradientStop Color="Cyan" Offset="0.5"/>
+            <GradientStop Color="Blue" Offset="0.666666666667"/><GradientStop Color="Fuchsia" Offset="0.88888888883"/>
+            <GradientStop Color="Red" Offset="1"/>
+          </LinearGradientBrush>
+        </Canvas.Background>
+        <Rectangle x:Name="HueSelector" Width="2" Height="22" IsHitTestVisible="False">
+          <Rectangle.Fill>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="Black" Offset="0"/><GradientStop Color="White" Offset="1"/>
+            </LinearGradientBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+      </Canvas>
+      <Canvas x:Name="ColorSurface" Width="160" Height="160" Margin="2"
+              PointerPressed="SurfacePressed" PointerMoved="SurfaceMoved" PointerReleased="SurfaceReleased" PointerCaptureLost="SurfaceCaptureLost">
+        <Rectangle Width="160" Height="160" IsHitTestVisible="False">
+          <Rectangle.Fill>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+              <GradientStop Color="White" Offset="0"/><GradientStop Color="#00FFFFFF" Offset="1"/>
+            </LinearGradientBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle Width="160" Height="160" IsHitTestVisible="False">
+          <Rectangle.Fill>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="Black" Offset="0"/><GradientStop Color="Transparent" Offset="1"/>
+            </LinearGradientBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+        <Canvas x:Name="ColorSelector" Width="0" Height="0" IsHitTestVisible="False">
+          <Ellipse Width="10" Height="10" Canvas.Left="-5" Canvas.Top="-5" StrokeThickness="2">
+            <Ellipse.Stroke>
+              <LinearGradientBrush StartPoint="100%,100%" EndPoint="0%,0%">
+                <GradientStop Color="Black" Offset="0"/><GradientStop Color="White" Offset="1"/>
+              </LinearGradientBrush>
+            </Ellipse.Stroke>
+          </Ellipse>
+        </Canvas>
+      </Canvas>
+      <Grid Height="22" Margin="2">
+        <Rectangle>
+          <Rectangle.Fill>
+            <DrawingBrush DestinationRect="0,0,14,14" TileMode="Tile" Stretch="Fill">
+              <DrawingBrush.Drawing>
+                <DrawingGroup>
+                  <GeometryDrawing Brush="White" Geometry="M0,0 H2 V2 H0 Z"/>
+                  <GeometryDrawing Brush="Black" Geometry="M0,0 H1 V1 H0 Z M1,1 H2 V2 H1 Z"/>
+                </DrawingGroup>
+              </DrawingBrush.Drawing>
+            </DrawingBrush>
+          </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle x:Name="ColorPreview"/>
+      </Grid>
+    </StackPanel>
+    <Grid Grid.Column="1" Margin="2" RowDefinitions="*,*" VerticalAlignment="Stretch">
+      <StackPanel Grid.Row="0" Margin="2" VerticalAlignment="Top">
+        <TextBlock Text="RGBA" Margin="4,0,0,2"/>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="R:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Red"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="RedTextBox" Minimum="0" Maximum="255" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="RedRatio" Height="3" Fill="{DynamicResource RedBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="G:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Green"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="GreenTextBox" Minimum="0" Maximum="255" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="GreenRatio" Height="3" Fill="{DynamicResource GreenBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="B:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Blue"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="BlueTextBox" Minimum="0" Maximum="255" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="BlueRatio" Height="3" Fill="{DynamicResource BlueBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ShowAlpha, ElementName=Picker}">
+          <TextBlock Text="A:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Alpha"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="AlphaTextBox" Minimum="0" Maximum="255" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="AlphaRatio" Height="3" Fill="{DynamicResource AlphaBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+      <StackPanel Grid.Row="1" Margin="2" VerticalAlignment="Top">
+        <TextBlock Text="HSB" Margin="4,0,0,2"/>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="H:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Hue"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="HueTextBox" Minimum="0" Maximum="360" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="HueRatio" Height="3" Fill="{DynamicResource AlphaBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="S:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Saturation"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="SaturationTextBox" Minimum="0" Maximum="100" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="SaturationRatio" Height="3" Fill="{DynamicResource AlphaBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*">
+          <TextBlock Text="B:" Margin="4,0" VerticalAlignment="Center" ToolTip.Tip="Value"/>
+          <StackPanel Grid.Column="1" Margin="0,2">
+            <sd:NumericTextBox x:Name="BrightnessTextBox" Minimum="0" Maximum="100" ValueChanged="ChannelChanged"/>
+            <Rectangle x:Name="BrightnessRatio" Height="3" Fill="{DynamicResource AlphaBrush}" RenderTransformOrigin="0%,0%">
+              <Rectangle.RenderTransform><ScaleTransform ScaleX="0"/></Rectangle.RenderTransform>
+            </Rectangle>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

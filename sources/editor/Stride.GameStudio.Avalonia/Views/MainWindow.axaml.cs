@@ -22,6 +22,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Restore before the first Vulkan frame, so its backing image has the final window size.
+        InitializeWindowSize();
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime)
         {
             lifetime.ShutdownRequested += OnShutdownRequested;
@@ -63,36 +65,32 @@ public partial class MainWindow : Window
         // Notify the launcher that Game Studio is ready (no-op when not launched from the launcher).
         App.LauncherNotifier?.Invoke();
         App.LauncherNotifier = null; // fire once
+    }
 
-        // Size the window to best fit the current screen size
-        InitializeWindowSize();
-        return;
+    private void InitializeWindowSize()
+    {
+        var previousWorkAreaWidth = GameStudioInternalSettings.WorkAreaWidth.GetValue();
+        var previousWorkAreaHeight = GameStudioInternalSettings.WorkAreaHeight.GetValue();
+        var wasWindowMaximized = GameStudioInternalSettings.WindowMaximized.GetValue();
+        var (workArea, scaling) = this.GetWorkingArea();
 
-        void InitializeWindowSize()
+        if (wasWindowMaximized || previousWorkAreaWidth > workArea.Width || previousWorkAreaHeight > workArea.Height)
         {
-            var previousWorkAreaWidth = GameStudioInternalSettings.WorkAreaWidth.GetValue();
-            var previousWorkAreaHeight = GameStudioInternalSettings.WorkAreaHeight.GetValue();
-            var wasWindowMaximized = GameStudioInternalSettings.WindowMaximized.GetValue();
-            var (workArea, scaling) = this.GetWorkingArea();
-
-            if (wasWindowMaximized || previousWorkAreaWidth > workArea.Width || previousWorkAreaHeight > workArea.Height)
-            {
-                // Resolution has changed (and is now smaller), let's make the window fill all available space.
-                this.FillArea(workArea, scaling);
-                WindowState = WindowState.Maximized;
-            }
-            else
-            {
-                // Load state
-                var previousWindowWidth = GameStudioInternalSettings.WindowWidth.GetValue();
-                var previousWindowHeight = GameStudioInternalSettings.WindowHeight.GetValue();
-                // Set window size
-                Width = Math.Min(previousWindowWidth, workArea.Width);
-                Height = Math.Min(previousWindowHeight, workArea.Height);
-                // Window is centered by default
-                this.CenterToArea(workArea, scaling);
-                WindowState = WindowState.Normal;
-            }
+            // Resolution has changed (and is now smaller), let's make the window fill all available space.
+            this.FillArea(workArea, scaling);
+            WindowState = WindowState.Maximized;
+        }
+        else
+        {
+            // Load state
+            var previousWindowWidth = GameStudioInternalSettings.WindowWidth.GetValue();
+            var previousWindowHeight = GameStudioInternalSettings.WindowHeight.GetValue();
+            // Set window size
+            Width = Math.Min(previousWindowWidth, workArea.Width);
+            Height = Math.Min(previousWindowHeight, workArea.Height);
+            // Window is centered by default
+            this.CenterToArea(workArea, scaling);
+            WindowState = WindowState.Normal;
         }
     }
 
@@ -108,25 +106,36 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task SaveAndClose()
+    private Task SaveAndClose()
+    {
+        if (closingTask != null) return closingTask.Task;
+        closingTask = new TaskCompletionSource<bool>();
+        return SaveAndCloseCore(closingTask);
+    }
+
+    private async Task SaveAndCloseCore(TaskCompletionSource<bool> completion)
     {
         try
         {
-            // TODO asks editors to save their modified assets
-            // if cancel: closingTask?.SetResult(false); return;
+            if (Content is MainView mainView)
+                mainView.SaveLayout();
 
-            if (DataContext is MainViewModel viewModel)
-                await viewModel.CloseSessionAsync();
+            if (DataContext is MainViewModel viewModel && !await viewModel.CloseSessionAsync())
+            {
+                completion.TrySetResult(false);
+                return;
+            }
 
             // Internal settings
             SaveInternalSettings();
 
-            closingTask?.SetResult(true);
+            completion.TrySetResult(true);
             // Shutdown after all other operations have completed
             await Dispatcher.UIThread.InvokeAsync(Shutdown, DispatcherPriority.ContextIdle);
         }
         finally
         {
+            completion.TrySetResult(false);
             closingTask = null;
         }
 

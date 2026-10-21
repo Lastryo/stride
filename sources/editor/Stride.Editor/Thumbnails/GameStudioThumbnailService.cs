@@ -31,7 +31,9 @@ public class GameStudioThumbnailService : IThumbnailService
     private readonly AssetCompilerRegistry compilerRegistry;
     private readonly List<ThumbnailPriorityItem> assetsToIncreasePriority = [];
     private readonly ThumbnailGenerator generator;
-    private bool thumbnailThreadShouldTerminate;
+    private volatile bool thumbnailThreadShouldTerminate;
+
+    public int PendingThumbnailCount { get { lock (hashLock) return thumbnailQueueHash.Count + thumbnailsInProgressAndContinuation.Count; } }
     private RenderingMode renderingMode;
     private ColorSpace colorSpace;
     private GraphicsProfile graphicsProfile;
@@ -63,14 +65,21 @@ public class GameStudioThumbnailService : IThumbnailService
         // Terminate thumbnail control thread
         lock (hashLock)
         {
+            if (thumbnailThreadShouldTerminate) return;
+            thumbnailThreadShouldTerminate = true;
             foreach (var item in thumbnailQueueHash)
             {
                 assetBuilderService.RemoveBuildUnit(item.Value);
             }
             thumbnailQueueHash.Clear();
+            thumbnailsInProgressAndContinuation.Clear();
         }
-        thumbnailThreadShouldTerminate = true;
         generator.Dispose();
+        session.Dispatcher.Invoke(() =>
+        {
+            if (currentJobToken >= 0) session.Main.Status.NotifyBackgroundJobFinished(currentJobToken);
+            currentJobToken = -1;
+        });
         gameSettingsProviderService.GameSettingsChanged -= GameSettingsChanged;
     }
 
@@ -102,7 +111,12 @@ public class GameStudioThumbnailService : IThumbnailService
         if (shouldRefreshAllThumbnails)
         {
             var allAssets = session.AllAssets.Select(x => x.AssetItem).ToList();
-            Task.Run(() => AddThumbnailAssetItems(allAssets, QueuePosition.First));
+            var localAssets = session.LocalPackages.SelectMany(package => package.Assets).Select(asset => asset.AssetItem).ToArray();
+            Task.Run(() =>
+            {
+                AddThumbnailAssetItems(allAssets, QueuePosition.Last);
+                IncreaseThumbnailPriority(localAssets);
+            });
         }
     }
 
@@ -133,15 +147,9 @@ public class GameStudioThumbnailService : IThumbnailService
         // Mark thumbnail as being compiled
         lock (hashLock)
         {
+            if (thumbnailThreadShouldTerminate) throw new OperationCanceledException("Thumbnail service has stopped.");
             thumbnailQueueHash.Remove(asset);
-            if (thumbnailsInProgressAndContinuation.ContainsKey(asset.Id) && System.Diagnostics.Debugger.IsAttached)
-            {
-                // Virgile: This case should not happen, but it happened to me once and could not reproduce.
-                // Please let me know if it happens to you.
-                // Note: this is likely not critical and should work fine even if it happens.
-                System.Diagnostics.Debugger.Break();
-            }
-            thumbnailsInProgressAndContinuation[asset.Id] = null;
+            thumbnailsInProgressAndContinuation.TryAdd(asset.Id, null);
         }
 
         return thumbnailCompiler.Compile(asset, gameSettings, HasStaticThumbnail(asset.Asset.GetType()));
@@ -155,6 +163,7 @@ public class GameStudioThumbnailService : IThumbnailService
 
             lock (hashLock)
             {
+                if (thumbnailThreadShouldTerminate) return;
                 foreach (var asset in assetItems)
                 {
                     if (thumbnailsInProgressAndContinuation.ContainsKey(asset.Id))
@@ -166,7 +175,11 @@ public class GameStudioThumbnailService : IThumbnailService
                     {
                         if (thumbnailQueueHash.TryGetValue(asset, out var node))
                         {
-                            assetBuilderService.RemoveBuildUnit(node);
+                            if (!assetBuilderService.TryRemoveBuildUnit(node))
+                            {
+                                thumbnailsInProgressAndContinuation[asset.Id] = new ThumbnailContinuation(asset, position);
+                                continue;
+                            }
                             thumbnailQueueHash.Remove(asset);
                         }
 
@@ -213,7 +226,7 @@ public class GameStudioThumbnailService : IThumbnailService
                     var node = thumbnailPriorityItem.Node;
                     var asset = thumbnailPriorityItem.Asset;
 
-                    assetBuilderService.RemoveBuildUnit(node);
+                    if (!assetBuilderService.TryRemoveBuildUnit(node)) continue;
                     thumbnailQueueHash.Remove(asset);
                     node = assetBuilderService.PushBuildUnit(new ThumbnailAssetBuildUnit(asset, currentGameSettings, this, firstPriority--));
                     thumbnailQueueHash.Add(asset, node);
@@ -226,15 +239,20 @@ public class GameStudioThumbnailService : IThumbnailService
 
     private void ThumbnailBuilt(object? sender, ThumbnailBuiltEventArgs e)
     {
+        if (thumbnailThreadShouldTerminate) return;
         ThumbnailData? thumbnailData = null;
         if (e.ThumbnailStream != null)
         {
             var stream = new MemoryStream();
             e.ThumbnailStream.CopyTo(stream);
+            stream.Position = 0;
             thumbnailData = new BitmapThumbnailData(e.ThumbnailId, stream);
         }
 
-        if (e.Result != ThumbnailBuildResult.Cancelled)
+        if (e.Result == ThumbnailBuildResult.Failed)
+            thumbnailData = new ResourceThumbnailData(Stride.Core.Storage.ObjectId.Empty, "Stride.Editor.Resources.appbar.checkmark.cross.png") { HasError = true };
+
+        if (e.Result != ThumbnailBuildResult.Cancelled && thumbnailData != null)
         {
             ThumbnailCompleted?.Invoke(this, new ThumbnailCompletedArgs(e.AssetId, thumbnailData));
         }
@@ -245,7 +263,7 @@ public class GameStudioThumbnailService : IThumbnailService
             thumbnailsInProgressAndContinuation.Remove(e.AssetId);
 
             // Check if same asset has been requested again while it was compiling
-            if (thumbnailContinuation != null)
+            if (!thumbnailThreadShouldTerminate && thumbnailContinuation != null)
             {
                 var priority = thumbnailContinuation.Position == QueuePosition.First ? firstPriority-- : lastPriority++;
                 var node = assetBuilderService.PushBuildUnit(new ThumbnailAssetBuildUnit(thumbnailContinuation.UpdatedAssetToRecompile, currentGameSettings, this, priority));
@@ -258,25 +276,42 @@ public class GameStudioThumbnailService : IThumbnailService
     {
         Task.Run(async () =>
         {
+            var lastLoggedCount = -1;
             while (!thumbnailThreadShouldTerminate)
             {
                 await Task.Delay(500);
-                if (currentJobToken >= 0)
+                await session.Dispatcher.InvokeAsync(() =>
                 {
-                    if (thumbnailQueueHash.Count > 0)
+                    if (thumbnailThreadShouldTerminate) return;
+                    var pending = PendingThumbnailCount;
+                    if (currentJobToken >= 0)
                     {
-                        session.Main.Status.NotifyBackgroundJobProgress(currentJobToken, thumbnailQueueHash.Count, true);
+                        if (pending > 0)
+                        {
+                            session.Main.Status.NotifyBackgroundJobProgress(currentJobToken, pending, true);
+                            if (pending <= 10 && pending != lastLoggedCount)
+                            {
+                                lastLoggedCount = pending;
+                                lock (hashLock)
+                                {
+                                    var inQueue = string.Join(", ", thumbnailQueueHash.Keys.Select(k => k.Location));
+                                    var inProg = string.Join(", ", thumbnailsInProgressAndContinuation.Keys.Select(id => session.GetAssetById(id)?.Url ?? id.ToString()));
+                                    GlobalLogger.GetLogger("Thumbnails").Info($"Building thumbnails… ({pending} in queue): queue=[{inQueue}], inProgress=[{inProg}]");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            session.Main.Status.NotifyBackgroundJobFinished(currentJobToken);
+                            currentJobToken = -1;
+                        }
                     }
-                    else
+                    else if (pending > 0)
                     {
-                        session.Main.Status.NotifyBackgroundJobFinished(currentJobToken);
-                        currentJobToken = -1;
+                        currentJobToken = session.Main.Status.NotifyBackgroundJobStarted("Building thumbnails… ({0} in queue)", JobPriority.Background);
+                        session.Main.Status.NotifyBackgroundJobProgress(currentJobToken, pending, true);
                     }
-                }
-                else if (thumbnailQueueHash.Count > 0)
-                {
-                    currentJobToken = session.Main.Status.NotifyBackgroundJobStarted("Building thumbnails… ({0} in queue)", JobPriority.Background);
-                }
+                });
             }
         });
     }

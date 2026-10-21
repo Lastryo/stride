@@ -83,6 +83,7 @@ public class ThumbnailGenerator : IDisposable
     private readonly GameFontSystem fontSystem;
 
     private readonly object lockObject = new();
+    private bool disposed;
 
     private readonly HashSet<GraphicsCompositor> thumbnailGraphicsCompositors = new();
 
@@ -175,6 +176,7 @@ public class ThumbnailGenerator : IDisposable
         // Global lock so that only one rendering happens at the same time
         lock (lockObject)
         {
+            ObjectDisposedException.ThrowIf(disposed, this);
             try
             {
                 lock (AssetBuilderService.OutOfMicrothreadDatabaseLock)
@@ -271,12 +273,17 @@ public class ThumbnailGenerator : IDisposable
 
     public void Dispose()
     {
-        // destroy all game systems
-        thumbnailGraphicsCompositors.ForEach(x => x.Dispose());
-        sceneSystem.Dispose();
-        fontSystem.Dispose();
-        EffectSystem.Dispose();
-        GraphicsDevice.Dispose();
+        lock (lockObject)
+        {
+            if (disposed) return;
+            disposed = true;
+            thumbnailGraphicsCompositors.ForEach(x => x.Dispose());
+            sceneSystem.Dispose();
+            gameSystems.Dispose();
+            SpriteBatch.Dispose();
+            UIBatch.Dispose();
+            GraphicsDevice.Dispose();
+        }
     }
 
     public delegate void PostProcessThumbnailDelegate(Image image);

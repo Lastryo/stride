@@ -26,7 +26,14 @@ public class MicroThreadSynchronizationContext : SynchronizationContext, IMicroT
         // Note: As it will end up on the callstack, it might be better to Schedule it instead (to avoid overflow)?
         // 2/ Otherwise, we just received an external task continuation (i.e. Task.Sleep()), or a microthread triggering another,
         // so schedule it so that it comes back in our regular scheduler.
-        if (microThread.Scheduler.RunningMicroThread == microThread)
+        MicroThread? running;
+        try { running = microThread.Scheduler.RunningMicroThread; }
+        catch (ObjectDisposedException)
+        {
+            // External tasks can finish after the game has disposed its scheduler.
+            return;
+        }
+        if (running == microThread)
         {
             d(state);
         }

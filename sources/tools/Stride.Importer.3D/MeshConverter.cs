@@ -30,10 +30,17 @@ namespace Stride.Importer.ThreeD
     {
         static MeshConverter()
         {
-            if (Platform.Type == PlatformType.Windows)
-                NativeLibraryHelper.PreloadLibrary("Assimp64", typeof(MeshConverter));
-            else if (Platform.Type == PlatformType.macOS || Platform.Type == PlatformType.Linux)
-                NativeLibraryHelper.PreloadLibrary("libassimp", typeof(MeshConverter));
+            try
+            {
+                if (Platform.Type == PlatformType.Windows)
+                    NativeLibraryHelper.PreloadLibrary("Assimp64", typeof(MeshConverter));
+                else if (Platform.Type == PlatformType.macOS || Platform.Type == PlatformType.Linux)
+                    NativeLibraryHelper.PreloadLibrary("libassimp", typeof(MeshConverter));
+            }
+            catch (Exception ex)
+            {
+                GlobalLogger.GetLogger("Import Assimp").Warning($"Failed to preload Assimp native library: {ex.Message}");
+            }
         }
 
         private const int NumberOfBonesPerVertex = 4;

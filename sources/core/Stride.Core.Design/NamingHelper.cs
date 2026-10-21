@@ -147,8 +147,54 @@ public static partial class NamingHelper
         return result;
     }
 
+    /// <summary>
+    /// Computes a unique name for a duplicate object by incrementing the index in parentheses (e.g. "Name (1)", "Name (2)").
+    /// If the given name already ends with " ({index})", the index inside the parentheses is incremented.
+    /// </summary>
+    /// <param name="name">The source name being duplicated.</param>
+    /// <param name="isTaken">A delegate that returns true if the candidate name is already in use.</param>
+    /// <returns>A unique name with an incremented index.</returns>
+    public static string ComputeDuplicateName(string name, Func<string, bool> isTaken)
+    {
+#if NET6_0_OR_GREATER
+        ArgumentNullException.ThrowIfNull(isTaken);
+#else
+        if (isTaken is null) throw new ArgumentNullException(nameof(isTaken));
+#endif
+        name ??= string.Empty;
+        var match = DuplicateNameRegex.Match(name);
+        string baseName;
+        int startIndex;
+        if (match.Success && int.TryParse(match.Groups[2].Value, out var parsedIndex))
+        {
+            baseName = match.Groups[1].Value;
+            startIndex = parsedIndex + 1;
+        }
+        else
+        {
+            baseName = name;
+            startIndex = 1;
+        }
+
+        var suffix = startIndex;
+        var candidate = $"{baseName} ({suffix})";
+        while (isTaken(candidate))
+        {
+            suffix++;
+            candidate = $"{baseName} ({suffix})";
+        }
+        return candidate;
+    }
+
 #if NET7_0_OR_GREATER
+    private static readonly Regex DuplicateNameRegex = GetDuplicateNameRegex();
+
     [GeneratedRegex("^[a-zA-Z_][a-zA-Z0-9_]*$")]
     private static partial Regex GetMatchIdentifierRegex();
+
+    [GeneratedRegex(@"^(.*) \((\d+)\)$")]
+    private static partial Regex GetDuplicateNameRegex();
+#else
+    private static readonly Regex DuplicateNameRegex = new Regex(@"^(.*) \((\d+)\)$");
 #endif
 }

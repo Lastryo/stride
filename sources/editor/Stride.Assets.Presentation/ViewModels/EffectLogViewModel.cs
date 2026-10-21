@@ -17,4 +17,9 @@ public class EffectLogViewModel : AssetViewModel<EffectLogAsset>
         : base(parameters)
     {
     }
+    public string Text
+    {
+        get => Asset.Text;
+        set => SetValue(() => Asset.Text != value, () => Asset.Text = value);
+    }
 }

@@ -8,10 +8,14 @@ namespace Stride.Assets.Presentation.ViewModels;
 
 public sealed class UIPageRootViewModel : UIRootViewModel
 {
+    public const string OneRootOnly = "A UI page can only have one root element.";
+
     public UIPageRootViewModel(UIPageViewModel asset)
-        : base(asset, asset.Asset.Hierarchy.EnumerateRootPartDesigns().Single().Yield())
+        : base(asset, asset.Asset.Hierarchy.EnumerateRootPartDesigns().SingleOrDefault() is { } root ? [root] : [])
     {
     }
+
+    public UIElementViewModel? RootElement => Children.Count > 0 ? (UIElementViewModel)Children[0] : null;
 
     public override string? Name { get => "UIPageRoot"; set => throw new NotSupportedException($"Cannot change the name of a {nameof(UIPageRootViewModel)} object."); }
 }

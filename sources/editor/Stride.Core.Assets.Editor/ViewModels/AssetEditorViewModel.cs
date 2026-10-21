@@ -43,6 +43,10 @@ public class AssetEditorViewModel<TAsset> : AssetEditorViewModel, IAssetEditorVi
 /// </summary>
 public abstract class AssetEditorViewModel : DispatcherViewModel
 {
+    private bool isClosing;
+
+    public bool IsClosing { get => isClosing; internal set => SetValue(ref isClosing, value); }
+
     protected AssetEditorViewModel(AssetViewModel asset)
         : base(asset.ServiceProvider)
     {

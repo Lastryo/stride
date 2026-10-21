@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Collections.Specialized;
 using Stride.Core.Assets.Analysis;
 using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Diagnostics;
@@ -13,7 +14,7 @@ public sealed class AssetLogViewModel : LoggerViewModel
 {
     private readonly SessionViewModel session;
     private readonly Dictionary<LogKey, Logger> loggers = [];
-    private bool waiting;
+    private int refreshVersion;
     private int errorCount;
 
     public AssetLogViewModel(IViewModelServiceProvider serviceProvider, SessionViewModel session)
@@ -22,8 +23,8 @@ public sealed class AssetLogViewModel : LoggerViewModel
         MinLevel = LogMessageType.Warning;
         this.session = session;
         FilteredMessages = [];
-        session.AssetCollection.SelectedAssets.CollectionChanged += (_, _) => RefreshFilteredMessages();
-        Messages.CollectionChanged += (_, _) => RefreshFilteredMessages();
+        session.AssetCollection.SelectedAssets.CollectionChanged += FilterSourceChanged;
+        Messages.CollectionChanged += FilterSourceChanged;
 
         // Listen if IBuildService gets registered
         ServiceProvider.ServiceRegistered += ServiceRegistered;
@@ -34,6 +35,9 @@ public sealed class AssetLogViewModel : LoggerViewModel
     /// <inheritdoc />
     public override void Destroy()
     {
+        refreshVersion++;
+        session.AssetCollection.SelectedAssets.CollectionChanged -= FilterSourceChanged;
+        Messages.CollectionChanged -= FilterSourceChanged;
         ServiceProvider.ServiceRegistered -= ServiceRegistered;
         if (ServiceProvider.TryGet<IBuildService>() is { } service)
         {
@@ -68,8 +72,10 @@ public sealed class AssetLogViewModel : LoggerViewModel
     {
         if (GetLogger(key, false) is { } logger)
         {
+            ClearMessages(logger);
             RemoveLogger(logger);
             loggers.Remove(key);
+            RefreshFilteredMessages();
             return true;
         }
         return false;
@@ -80,7 +86,7 @@ public sealed class AssetLogViewModel : LoggerViewModel
         if (!loggers.TryGetValue(key, out var logger) && create)
         {
             logger = GlobalLogger.GetLogger(key.ToString());
-            loggers.Add(key, logger);
+            AddLogger(key, logger);
         }
         return logger;
     }
@@ -98,7 +104,7 @@ public sealed class AssetLogViewModel : LoggerViewModel
     {
         Dispatcher.InvokeAsync(() =>
         {
-            if (session.GetAssetById(e.AssetItem.Id) is not null)
+            if (!IsDestroyed && session.GetAssetById(e.AssetItem.Id) is not null)
             {
                 var key = LogKey.Get(e.AssetItem.Id, "Build");
                 ClearMessages(key);
@@ -117,17 +123,15 @@ public sealed class AssetLogViewModel : LoggerViewModel
         }
     }
 
+    private void FilterSourceChanged(object? sender, NotifyCollectionChangedEventArgs e) => RefreshFilteredMessages();
+
     private async void RefreshFilteredMessages()
     {
-        if (waiting)
-            return;
+        var version = ++refreshVersion;
+        await Task.Delay(200);
+        if (IsDestroyed || version != refreshVersion) return;
 
-        waiting = true;
-        await Task.Delay(500);
-        waiting = false;
-
-        var selection = await Dispatcher.InvokeAsync(() => session.AssetCollection.SelectedAssets.ToList());
-        FilteredMessages.Clear();
+        var selection = session.AssetCollection.SelectedAssets.ToList();
         var ids = await Task.Run(() =>
         {
             var result = new HashSet<AssetId>();
@@ -139,19 +143,19 @@ public sealed class AssetLogViewModel : LoggerViewModel
                 if (dependencies != null)
                 {
                     foreach (var reference in dependencies.LinksOut)
-                    {
                         result.Add(reference.Item.Id);
-                    }
                 }
             }
             return result;
         });
-        var selectedLoggers = loggers.Where(x => ids.Contains(x.Key.AssetId));
-        foreach (var loggerResult in selectedLoggers.Select(x => x.Value).OfType<LoggerResult>())
-        {
-            FilteredMessages.AddRange(loggerResult.Messages);
-        }
-        ErrorCount = FilteredMessages.Count(x => x.IsAtLeast(LogMessageType.Warning));
+        if (IsDestroyed || version != refreshVersion) return;
+
+        var selectedLoggers = loggers.Where(x => selection.Count == 0 || x.Key.AssetId == AssetId.Empty || ids.Contains(x.Key.AssetId));
+        var messages = selectedLoggers.SelectMany(x => Loggers[x.Value])
+            .Where(x => x.IsAtLeast(LogMessageType.Warning)).ToList();
+        FilteredMessages.Clear();
+        FilteredMessages.AddRange(messages);
+        ErrorCount = messages.Count;
     }
 
     private void ServiceRegistered(object? sender, ServiceRegistrationEventArgs e)

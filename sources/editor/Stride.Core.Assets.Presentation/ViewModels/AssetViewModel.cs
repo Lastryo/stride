@@ -69,6 +69,8 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
 
     public Asset Asset => AssetItem.Asset;
 
+    protected internal virtual Task UpdateAssetFromSource(Stride.Core.Diagnostics.Logger logger) => Task.CompletedTask;
+
     public AssetItem AssetItem
     {
         get => assetItem;
@@ -122,7 +124,7 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
     public ThumbnailData? ThumbnailData
     {
         get => thumbnailData;
-        set => SetValue(ref thumbnailData, value);
+        set => SetValueUncancellable(ref thumbnailData, value);
     }
 
     /// <summary>
@@ -134,6 +136,12 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
     /// Gets the url of this asset.
     /// </summary>
     public string Url => AssetItem.Location;
+
+    protected override void OnDirtyFlagSet()
+    {
+        base.OnDirtyFlagSet();
+        AssetItem.IsDirty = IsDirty;
+    }
 
     protected bool Initializing { get; private set; }
 
@@ -178,6 +186,7 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
             {
                 Session.GraphContainer.UnregisterGraph(Id);
             }
+            Directory.RemoveAsset(this);
         }
         else
         {
@@ -190,7 +199,9 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
             }
         }
         AssetItem.IsDeleted = IsDeleted;
+        if (!IsDeleted && !Initializing) Directory.AddAsset(this);
         Session.SourceTracker?.UpdateAssetStatus(this);
+        if (!Initializing) _ = AssetDependenciesViewModel.NotifyAssetChanged(Session, this);
     }
 
     public static HashSet<AssetViewModel> ComputeRecursiveReferencerAssets(IEnumerable<AssetViewModel> assets)

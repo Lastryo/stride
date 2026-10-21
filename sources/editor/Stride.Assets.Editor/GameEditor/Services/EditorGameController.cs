@@ -151,6 +151,15 @@ public abstract class EditorGameController<TEditorGame> : IEditorGameController 
     public void OnHideGame() => Game.IsEditorHidden = true;
     public void OnShowGame() => Game.IsEditorHidden = false;
 
+    public Vector3 GetMousePositionInScene(bool lastRightClick = false)
+    {
+        EnsureNotDestroyed();
+        if (IsDestroying || Game == null)
+            return Vector3.Zero;
+        var position = view?.GetMousePosition(lastRightClick) ?? (Game.Input?.MousePosition ?? Vector2.Zero);
+        return Game.GetPositionInScene(position);
+    }
+
     public Task<Vector3> GetMousePositionInSceneAsync(bool lastRightClick, CancellationToken token = default)
     {
         EnsureNotDestroyed();

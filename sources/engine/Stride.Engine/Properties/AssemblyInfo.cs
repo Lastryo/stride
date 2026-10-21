@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Stride.Assets" + Stride.PublicKeys.Default)]
 [assembly: InternalsVisibleTo("Stride.Assets.Presentation" + Stride.PublicKeys.Default)]
 [assembly: InternalsVisibleTo("Stride.Assets.Presentation.Wpf" + Stride.PublicKeys.Default)]
+[assembly: InternalsVisibleTo("Stride.Assets.Editor" + Stride.PublicKeys.Default)]
 [assembly: InternalsVisibleTo("Stride.Editor" + Stride.PublicKeys.Default)]
 [assembly: InternalsVisibleTo("Stride.Engine.Serializers" + Stride.PublicKeys.Default)]
 [assembly: InternalsVisibleTo("Stride.Engine.Shaders" + Stride.PublicKeys.Default)]

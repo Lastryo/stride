@@ -3,6 +3,7 @@
 
 using Stride.Assets.Entities;
 using Stride.Core;
+using Stride.Core.Assets;
 using Stride.Core.Assets.Presentation.Components.Properties;
 using Stride.Core.Assets.Presentation.ViewModels;
 using Stride.Core.Presentation.Quantum;
@@ -15,6 +16,7 @@ namespace Stride.Assets.Presentation.ViewModels;
 public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetPropertyProviderViewModel
 {
     private readonly MemberGraphNodeBinding<string> nameNodeBinding;
+    private readonly MemberGraphNodeBinding<BasePart?> baseNodeBinding;
     private readonly ObjectGraphNodeBinding<EntityComponentCollection> componentsNodeBinding;
 
     public EntityViewModel(EntityHierarchyViewModel asset, EntityDesign entityDesign)
@@ -22,6 +24,8 @@ public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetProper
     {
         EntityDesign = entityDesign;
 
+        var designNode = asset.Session.AssetNodeContainer.GetOrCreateNode(entityDesign);
+        baseNodeBinding = new MemberGraphNodeBinding<BasePart?>(designNode[nameof(EntityDesign.Base)], nameof(IsPrefabInstance), OnPropertyChanging, OnPropertyChanged, ServiceProvider.TryGet<IUndoRedoService>());
         var assetNode = asset.Session.AssetNodeContainer.GetOrCreateNode(entityDesign.Entity);
         nameNodeBinding = new MemberGraphNodeBinding<string>(assetNode[nameof(Entity.Name)], nameof(Name), OnPropertyChanging, OnPropertyChanged, ServiceProvider.TryGet<IUndoRedoService>());
         componentsNodeBinding = new ObjectGraphNodeBinding<EntityComponentCollection>(assetNode[nameof(Entity.Components)].Target!, nameof(Components), OnPropertyChanging, OnPropertyChanged, ServiceProvider.TryGet<IUndoRedoService>(), false);
@@ -44,7 +48,9 @@ public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetProper
         set => nameNodeBinding.Value = value;
     }
 
-    internal EntityDesign EntityDesign { get; }
+    public EntityDesign EntityDesign { get; }
+
+    public bool IsPrefabInstance => baseNodeBinding.Value != null;
 
     bool IPropertyProviderViewModel.CanProvidePropertiesViewModel => true;
 
@@ -55,6 +61,7 @@ public sealed class EntityViewModel : EntityHierarchyItemViewModel, IAssetProper
     {
         EnsureNotDestroyed(nameof(EntityViewModel));
         nameNodeBinding.Dispose();
+        baseNodeBinding.Dispose();
         componentsNodeBinding.Dispose();
         base.Destroy();
     }

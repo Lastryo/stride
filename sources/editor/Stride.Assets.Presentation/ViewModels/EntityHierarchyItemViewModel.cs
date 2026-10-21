@@ -11,6 +11,9 @@ namespace Stride.Assets.Presentation.ViewModels;
 public abstract class EntityHierarchyItemViewModel : AssetCompositeItemViewModel<EntityHierarchyViewModel, EntityHierarchyItemViewModel>, IAssetPartViewModel
 {
     private bool isVisible = true;
+    private bool isLocked;
+    private bool isLoaded = true;
+
     protected EntityHierarchyItemViewModel(EntityHierarchyViewModel asset, IEnumerable<EntityDesign> childEntities)
         : this(asset, childEntities, string.Empty)
     {
@@ -24,6 +27,8 @@ public abstract class EntityHierarchyItemViewModel : AssetCompositeItemViewModel
     protected EntityHierarchyItemViewModel(EntityHierarchyViewModel asset, IEnumerable<EntityDesign> childEntities, string folderPath, IEnumerable<string> retainedFolders)
         : base(asset)
     {
+        LockCommand = new Stride.Core.Presentation.Commands.AnonymousCommand(ServiceProvider, () => ToggleLock(false));
+        LoadCommand = new Stride.Core.Presentation.Commands.AnonymousCommand(ServiceProvider, () => ToggleLoad(false));
         BuildChildren(childEntities, folderPath, retainedFolders.ToArray());
     }
 
@@ -31,6 +36,74 @@ public abstract class EntityHierarchyItemViewModel : AssetCompositeItemViewModel
     public abstract AbsoluteId Id { get; }
 
     public bool IsVisible { get => isVisible; set => SetValue(ref isVisible, value); }
+
+    public bool IsLocked
+    {
+        get => isLocked;
+        set
+        {
+            if (SetValue(ref isLocked, value))
+            {
+                OnPropertyChanged(nameof(IsSelectable));
+                LockStateChanged?.Invoke(this);
+            }
+        }
+    }
+
+    public bool IsLoaded
+    {
+        get => isLoaded;
+        set
+        {
+            if (SetValue(ref isLoaded, value))
+            {
+                OnPropertyChanged(nameof(IsSelectable));
+                LockStateChanged?.Invoke(this);
+            }
+        }
+    }
+
+    public bool IsSelectable => IsLoaded && !IsLocked;
+
+    public Stride.Core.Presentation.Commands.ICommandBase LockCommand { get; }
+
+    public Stride.Core.Presentation.Commands.ICommandBase LoadCommand { get; }
+
+    public static event Action<EntityHierarchyItemViewModel>? LockStateChanged;
+
+    public void ToggleLock(bool recursive = false)
+    {
+        SetLocked(!IsLocked, recursive || this is EntityHierarchyRootViewModel || this is EntityFolderViewModel);
+    }
+
+    public void SetLocked(bool locked, bool recursive)
+    {
+        IsLocked = locked;
+        if (recursive || this is EntityHierarchyRootViewModel || this is EntityFolderViewModel)
+        {
+            foreach (var child in Children)
+            {
+                child.SetLocked(locked, true);
+            }
+        }
+    }
+
+    public void ToggleLoad(bool recursive = false)
+    {
+        SetLoaded(!IsLoaded, recursive || this is EntityHierarchyRootViewModel || this is EntityFolderViewModel);
+    }
+
+    public void SetLoaded(bool loaded, bool recursive)
+    {
+        IsLoaded = loaded;
+        if (recursive || this is EntityHierarchyRootViewModel || this is EntityFolderViewModel)
+        {
+            foreach (var child in Children)
+            {
+                child.SetLoaded(loaded, true);
+            }
+        }
+    }
 
     /// <summary>
     /// An enumeration of the items represented by this item.

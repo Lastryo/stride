@@ -45,7 +45,6 @@ public sealed class PropertyViewItem : ExpandableItemsControl
         ArgumentNullException.ThrowIfNull(propertyView);
         PropertyView = propertyView;
         Offset = offset;
-        Focusable = true;
 
         AddHandler(PointerMovedEvent, OnPreviewPointerMoved, RoutingStrategies.Tunnel);
     }
@@ -83,16 +82,6 @@ public sealed class PropertyViewItem : ExpandableItemsControl
     public IReadOnlyCollection<PropertyViewItem> Properties => properties;
 
     public PropertyView PropertyView { get; }
-
-    protected override void OnPointerPressed(PointerPressedEventArgs e)
-    {
-        base.OnPointerPressed(e);
-        if (!e.Handled && Focusable && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            Focus();
-            e.Handled = true;
-        }
-    }
 
     protected override void ClearContainerForItemOverride(Control container)
     {

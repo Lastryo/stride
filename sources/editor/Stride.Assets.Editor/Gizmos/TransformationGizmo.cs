@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Stride.Core.Extensions;
 using Stride.Core.Mathematics;
 using Stride.Assets.Editor.EntityHierarchyEditor.Game;
 using Stride.Assets.Editor.GameEditor;
@@ -47,6 +48,8 @@ namespace Stride.Assets.Editor.Gizmos
         public const RenderGroupMask TransformationGizmoGroupMask = RenderGroupMask.Group4;
 
         private bool transformationInitialized;
+        private Vector3 pivotTranslation;
+        public bool IsTransforming => transformationInitialized;
 
         /// <summary>
         /// Event triggered when a gizmo transformation finishes.
@@ -122,6 +125,26 @@ namespace Stride.Assets.Editor.Gizmos
         /// Gets or sets the working space of the gizmo.
         /// </summary>
         public TransformationSpace Space { get; set; }
+        public TransformationPivot Pivot { get; set; }
+
+        private Vector3 GetPivotPosition()
+        {
+            if (IsTransforming) return Vector3.TransformCoordinate(pivotTranslation, StartWorldMatrix);
+            if (Pivot == TransformationPivot.Pivot || ModifiedEntities == null || ModifiedEntities.Count == 0)
+                return AnchorEntity.Transform.WorldMatrix.TranslationVector;
+
+            var bounds = BoundingBox.Empty;
+            foreach (var entity in ModifiedEntities.BreadthFirst(item => item.GetChildren()))
+            {
+                entity.Transform.UpdateWorldMatrix();
+                var model = entity.Get<ModelComponent>();
+                var box = model?.Model != null && model.Model.Meshes.Count > 0 ? model.BoundingBox : BoundingBox.Empty;
+                if (box == BoundingBox.Empty)
+                    box = new BoundingBox(entity.Transform.WorldMatrix.TranslationVector, entity.Transform.WorldMatrix.TranslationVector);
+                bounds = BoundingBox.Merge(bounds, box);
+            }
+            return bounds.Center;
+        }
 
         /// <summary>
         /// Gets or sets the entity with is modified by the <see cref="TransformationGizmo"/>
@@ -212,6 +235,7 @@ namespace Stride.Assets.Editor.Gizmos
                     throw new ArgumentOutOfRangeException();
             }
 
+            worldMatrix.TranslationVector = GetPivotPosition();
             return worldMatrix;
         }
 
@@ -219,7 +243,7 @@ namespace Stride.Assets.Editor.Gizmos
         {
             if (cameraService.Component.Projection == CameraProjectionMode.Perspective)
             {
-                var distanceToSelectedEntity = MathF.Abs(Vector3.TransformCoordinate(AnchorEntity.Transform.WorldMatrix.TranslationVector, cameraService.ViewMatrix).Z);
+                var distanceToSelectedEntity = MathF.Abs(Vector3.TransformCoordinate(GetPivotPosition(), cameraService.ViewMatrix).Z);
                 return SizeFactor * DefaultScale * 2f * MathF.Tan(MathUtil.DegreesToRadians(cameraService.VerticalFieldOfView / 2)) * distanceToSelectedEntity;
             }
 
@@ -293,6 +317,7 @@ namespace Stride.Assets.Editor.Gizmos
             // calculate the un-projection plane for 2D transformations
             var planeNormal = Vector3.Zero;
             StartWorldMatrix = WorldMatrix;
+            pivotTranslation = Vector3.Zero;
             var gizmoViewInverse = Matrix.Invert(StartWorldMatrix * cameraService.ViewMatrix);
             if (TransformationGizmo.PlaneToIndex.ContainsKey(TransformationAxes))
             {
@@ -398,6 +423,12 @@ namespace Stride.Assets.Editor.Gizmos
             
             // determine the transformation to apply
             var transformation = CalculateTransformation();
+            ApplyTransformation(transformation);
+        }
+
+        private void ApplyTransformation(InitialTransformation transformation)
+        {
+            pivotTranslation = transformation.Translation;
 
             // apply the transformations on all selected root entities
             foreach (var entity in ModifiedEntities)
@@ -430,6 +461,12 @@ namespace Stride.Assets.Editor.Gizmos
 
                 // translation (transform the translation from gizmo space to the selected root's parent space)
                 entityTransfo.Position = initialTransfo.Translation + Vector3.TransformNormal(transformation.Translation, gizmoToParentMatrix);
+
+                if (Pivot == TransformationPivot.Center && transformation.Scale != Vector3.One)
+                {
+                    var relative = Vector3.TransformCoordinate(initialTransfo.Translation, Matrix.Invert(gizmoToParentMatrix));
+                    entityTransfo.Position += Vector3.TransformNormal(relative * transformation.Scale - relative, gizmoToParentMatrix);
+                }
 
                 // the rotation
                 if (transformation.Rotation != Quaternion.Identity)

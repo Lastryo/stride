@@ -162,6 +162,8 @@ namespace Stride.Rendering.UI
                 }
 
 
+                uiElementState.VirtualResolution = virtualResolution;
+
                 // Check if the current UI component is being picked based on the current ViewParameters (used to draw this element)
                 using (Profiler.Begin(UIProfilerKeys.TouchEventsUpdate))
                 {
@@ -184,7 +186,7 @@ namespace Stride.Rendering.UI
                     continue;
 
                 var updatableRootElement = (IUIElementUpdate)rootElement;
-                var virtualResolution = renderObject.Resolution;
+                var virtualResolution = uiElementState.VirtualResolution;
 
                 // update the rendering context values specific to this element
                 renderingContext.Resolution = virtualResolution;
@@ -352,6 +354,7 @@ namespace Stride.Rendering.UI
         {
             public readonly RenderUIElement RenderObject;
             public Matrix WorldViewProjectionMatrix;
+            public Vector3 VirtualResolution;
 
             public UIElementState(RenderUIElement renderObject)
             {

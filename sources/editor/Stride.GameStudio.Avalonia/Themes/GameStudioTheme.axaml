@@ -6,8 +6,18 @@
       <!-- Fluent's generated tab containers live inside a template, so use its
            resource hooks as well as the editor's explicit control styles. -->
       <x:Double x:Key="TabItemHeaderFontSize">12</x:Double>
-      <x:Double x:Key="TabItemMinHeight">25</x:Double>
-      <Thickness x:Key="TabItemHeaderMargin">5,4</Thickness>
+      <x:Double x:Key="TabItemMinHeight">22</x:Double>
+      <x:Double x:Key="TreeViewItemMinHeight">23</x:Double>
+      <x:Double x:Key="TreeViewItemIndent">12</x:Double>
+      <x:Double x:Key="TreeViewItemExpandCollapseChevronSize">8</x:Double>
+      <Thickness x:Key="TreeViewItemExpandCollapseChevronMargin">2,0,4,0</Thickness>
+      <x:Double x:Key="TextControlThemeMinHeight">22</x:Double>
+      <Thickness x:Key="TextControlThemePadding">4,1</Thickness>
+      <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">22</x:Double>
+      <Thickness x:Key="ComboBoxPadding">4,1</Thickness>
+      <x:Double x:Key="CheckBoxMinHeight">22</x:Double>
+      <Thickness x:Key="TabItemHeaderMargin">6,2</Thickness>
       <FontWeight x:Key="TabItemHeaderThemeFontWeight">Normal</FontWeight>
       <x:Double x:Key="ControlContentThemeFontSize">12</x:Double>
       <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
@@ -19,7 +29,9 @@
           <SolidColorBrush x:Key="StudioBorderBrush" Color="#333333"/>
           <SolidColorBrush x:Key="StudioTextBrush" Color="#E6E6E6"/>
           <SolidColorBrush x:Key="StudioMutedBrush" Color="#999999"/>
+          <SolidColorBrush x:Key="StudioTextMutedBrush" Color="#999999"/>
           <SolidColorBrush x:Key="StudioHoverBrush" Color="#393939"/>
+          <SolidColorBrush x:Key="StudioAssetHoverBrush" Color="#3E3E40"/>
           <SolidColorBrush x:Key="StudioSelectionBrush" Color="#007ACC"/>
           <SolidColorBrush x:Key="StudioStatusBrush" Color="#007ACC"/>
         </ResourceDictionary>
@@ -30,7 +42,9 @@
           <SolidColorBrush x:Key="StudioBorderBrush" Color="#CCCCD0"/>
           <SolidColorBrush x:Key="StudioTextBrush" Color="#202024"/>
           <SolidColorBrush x:Key="StudioMutedBrush" Color="#666666"/>
+          <SolidColorBrush x:Key="StudioTextMutedBrush" Color="#666666"/>
           <SolidColorBrush x:Key="StudioHoverBrush" Color="#DADAE0"/>
+          <SolidColorBrush x:Key="StudioAssetHoverBrush" Color="#DADAE0"/>
           <SolidColorBrush x:Key="StudioSelectionBrush" Color="#007ACC"/>
           <SolidColorBrush x:Key="StudioStatusBrush" Color="#007ACC"/>
         </ResourceDictionary>
@@ -50,6 +64,16 @@
     <Setter Property="Padding" Value="9,5"/>
     <Setter Property="MinHeight" Value="24"/>
   </Style>
+  <Style Selector="UserControl.editorShell Button, UserControl.editorShell ToggleButton">
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="MinWidth" Value="20"/>
+    <Setter Property="Padding" Value="4,1"/>
+    <Setter Property="CornerRadius" Value="0"/>
+  </Style>
+  <Style Selector="UserControl.editorShell CheckBox">
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="Padding" Value="2,0"/>
+  </Style>
   <Style Selector="UserControl.editorShell GridSplitter">
     <Setter Property="Background" Value="{DynamicResource StudioBackgroundBrush}"/>
   </Style>
@@ -63,12 +87,16 @@
     <Setter Property="Padding" Value="6,2"/>
   </Style>
   <Style Selector="Button.studioTool">
-    <Setter Property="MinWidth" Value="26"/>
-    <Setter Property="MinHeight" Value="26"/>
+    <Setter Property="MinWidth" Value="24"/>
+    <Setter Property="MinHeight" Value="24"/>
     <Setter Property="Padding" Value="4,0"/>
     <Setter Property="CornerRadius" Value="0"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <!-- Colored icons don't dim on their own, so disabled commands looked clickable. -->
+  <Style Selector="Button.studioTool:disabled Image">
+    <Setter Property="Opacity" Value="0.35"/>
   </Style>
   <Style Selector="Separator.studioToolSeparator">
     <Setter Property="Width" Value="1"/>
@@ -86,8 +114,17 @@
     <Setter Property="Background" Value="{DynamicResource StudioHeaderBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource StudioBorderBrush}"/>
     <Setter Property="BorderThickness" Value="0,0,0,1"/>
-    <Setter Property="Padding" Value="7,4"/>
-    <Setter Property="MinHeight" Value="25"/>
+    <Setter Property="Padding" Value="6,2"/>
+    <Setter Property="MinHeight" Value="22"/>
+  </Style>
+  <Style Selector="Border.studioPanelHeader Button.studioPanelHeaderButton">
+    <Setter Property="Width" Value="16"/>
+    <Setter Property="Height" Value="16"/>
+    <Setter Property="MinWidth" Value="16"/>
+    <Setter Property="MinHeight" Value="16"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
   </Style>
   <Style Selector="UserControl.editorShell TreeView, UserControl.editorShell ListBox">
     <Setter Property="Background" Value="{DynamicResource StudioPanelBrush}"/>
@@ -103,8 +140,8 @@
     <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
   </Style>
   <Style Selector="UserControl.editorShell TextBox, UserControl.editorShell ComboBox">
-    <Setter Property="MinHeight" Value="25"/>
-    <Setter Property="Padding" Value="5,2"/>
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="Padding" Value="4,1"/>
     <Setter Property="CornerRadius" Value="0"/>
     <Setter Property="Background" Value="{DynamicResource StudioPanelBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource StudioBorderBrush}"/>
@@ -114,25 +151,69 @@
     <Setter Property="Padding" Value="0"/>
   </Style>
   <Style Selector="UserControl.editorShell TabItem">
-    <Setter Property="MinHeight" Value="25"/>
-    <Setter Property="Padding" Value="5,4"/>
+    <Setter Property="MinHeight" Value="22"/>
+    <Setter Property="Padding" Value="6,2"/>
     <Setter Property="FontSize" Value="12"/>
+  </Style>
+  <Style Selector="UserControl.editorShell TabItem /template/ Border#PART_SelectedPipe">
+    <Setter Property="IsVisible" Value="False"/>
+  </Style>
+  <Style Selector="UserControl.editorShell TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StudioHeaderBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource StudioTextBrush}"/>
   </Style>
   <Style Selector="UserControl.editorShell TabItem:selected">
     <Setter Property="Background" Value="{DynamicResource StudioHeaderBrush}"/>
   </Style>
+  <Style Selector="TabControl.studioDocumentTabs TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="TabControl.studioDocumentTabs TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="ListBox.studioAssetList">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+  </Style>
   <Style Selector="ListBox.studioAssetList ListBoxItem">
-    <Setter Property="Padding" Value="3"/>
-    <Setter Property="Margin" Value="2"/>
-    <Setter Property="CornerRadius" Value="0"/>
+    <Setter Property="Padding" Value="6,3"/>
+    <Setter Property="Margin" Value="0"/>
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="VerticalContentAlignment" Value="Top"/>
+    <Setter Property="Background" Value="{DynamicResource StudioBackgroundBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource StudioTextBrush}"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}">
+          <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ListBox.studioAssetList ListBoxItem:pointerover">
+    <Setter Property="Background" Value="{DynamicResource StudioAssetHoverBrush}"/>
+  </Style>
+  <Style Selector="ListBox.studioAssetList ListBoxItem:selected">
+    <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
+    <Setter Property="Foreground" Value="White"/>
   </Style>
   <Style Selector="Border.studioAssetThumbnail">
-    <Setter Property="Background" Value="{DynamicResource StudioBackgroundBrush}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource StudioBorderBrush}"/>
-    <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="CornerRadius" Value="2"/>
+    <Setter Property="BorderThickness" Value="2"/>
+    <Setter Property="CornerRadius" Value="3"/>
   </Style>
   <Style Selector="StackPanel.studioNavigation">
     <Setter Property="Background" Value="{DynamicResource StudioHeaderBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.hierarchyName.unloaded">
+    <Setter Property="Foreground" Value="Gray"/>
   </Style>
 </Styles>

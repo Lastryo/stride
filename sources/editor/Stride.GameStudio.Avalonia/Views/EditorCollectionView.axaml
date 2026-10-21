@@ -7,11 +7,25 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Stride.GameStudio.Avalonia.Views.EditorCollectionView"
              x:DataType="caevm:EditorCollectionViewModel">
-  <TabControl ItemsSource="{Binding Editors}"
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseEditorCommand}" CommandParameter="{Binding ActiveEditor}"/>
+  </UserControl.KeyBindings>
+  <TabControl Classes="studioDocumentTabs" Padding="0" ItemsSource="{Binding Editors}"
               SelectedItem="{Binding ActiveEditor}">
     <ItemsControl.ItemTemplate>
-      <DataTemplate>
-        <TextBlock Text="{Binding Asset.Name}" />
+      <DataTemplate DataType="caevm:AssetEditorViewModel">
+        <StackPanel Orientation="Horizontal" Spacing="4" ToolTip.Tip="{Binding Asset.Url}">
+          <TextBlock MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontWeight="Normal">
+            <Run Text="/"/><Run Text="{Binding Asset.Directory.Package.Name}"/><Run Text="/"/><Run Text="{Binding Asset.Url}"/>
+          </TextBlock>
+          <TextBlock Text="*" IsVisible="{Binding Asset.IsDirty}" VerticalAlignment="Center"/>
+          <Button Classes="documentClose" Width="16" Height="16" MinWidth="16" MinHeight="16" Padding="0"
+                  Background="Transparent" BorderThickness="0" IsEnabled="{Binding !IsClosing}"
+                  Command="{Binding $parent[TabControl].((caevm:EditorCollectionViewModel)DataContext).CloseEditorCommand}"
+                  CommandParameter="{Binding}" ToolTip.Tip="Close editor (Ctrl+F4)">
+            <Path Data="M0,0 L8,8 M8,0 L0,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1" Width="8" Height="8"/>
+          </Button>
+        </StackPanel>
       </DataTemplate>
     </ItemsControl.ItemTemplate>
     <TabControl.ContentTemplate>

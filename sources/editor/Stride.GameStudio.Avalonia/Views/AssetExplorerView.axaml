@@ -6,7 +6,9 @@
              xmlns:caevm="using:Stride.Core.Assets.Editor.ViewModels"
              xmlns:caec="using:Stride.Core.Assets.Editor.Avalonia.Converters"
              xmlns:capvm="using:Stride.Core.Assets.Presentation.ViewModels"
-             xmlns:gscv="using:Stride.GameStudio.Avalonia.Converters"
+             xmlns:views="using:Stride.GameStudio.Avalonia.Views"
+             xmlns:controls="using:Stride.GameStudio.Avalonia.Controls"
+             xmlns:cvt="using:Stride.GameStudio.Avalonia.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Stride.GameStudio.Avalonia.Views.AssetExplorerView"
              x:DataType="caevm:AssetCollectionViewModel">
@@ -20,205 +22,318 @@
       <SolidColorBrush x:Key="FilterBrushAssetType">#D7AA67</SolidColorBrush>
     </ResourceDictionary>
   </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.studioTool:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="sd|SearchComboBox.assetFilter /template/ TextBox#PART_EditableTextBox">
+      <Setter Property="MinHeight" Value="22"/>
+      <Setter Property="Height" Value="22"/>
+      <Setter Property="Padding" Value="4,0"/>
+      <Setter Property="FontSize" Value="11"/>
+    </Style>
+  </UserControl.Styles>
   <DockPanel>
     <!-- Asset toolbar -->
-    <DockPanel DockPanel.Dock="Top" Margin="4,4,4,0">
-      <!-- View options -->
-      <Menu DockPanel.Dock="Left" Background="Transparent" Margin="0,0,4,0">
-        <MenuItem ToolTip.Tip="Asset view options">
-          <MenuItem.Header>
-            <Image Source="{StaticResource ImageView}" Width="16" Height="16" />
-          </MenuItem.Header>
-          <MenuItem Header="Display" FontWeight="Bold" IsHitTestVisible="False" />
-          <MenuItem Header="Assets in selected folder only"
-                    Command="{Binding ChangeDisplayAssetModeCommand}"
-                    CommandParameter="{x:Static caevm:DisplayAssetMode.AssetInSelectedFolderOnly}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:DisplayAssetMode.AssetInSelectedFolderOnly}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Assets and folders in selected folder"
-                    Command="{Binding ChangeDisplayAssetModeCommand}"
-                    CommandParameter="{x:Static caevm:DisplayAssetMode.AssetAndFolderInSelectedFolder}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:DisplayAssetMode.AssetAndFolderInSelectedFolder}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Assets in selected folder and subfolders"
-                    Command="{Binding ChangeDisplayAssetModeCommand}"
-                    CommandParameter="{x:Static caevm:DisplayAssetMode.AssetInSelectedFolderAndSubFolder}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:DisplayAssetMode.AssetInSelectedFolderAndSubFolder}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <Separator />
-          <MenuItem Header="Sort by" FontWeight="Bold" IsHitTestVisible="False" />
-          <MenuItem Header="Name"
-                    Command="{Binding SortAssetsCommand}"
-                    CommandParameter="{x:Static caevm:SortRule.Name}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:SortRule.Name}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Date modified"
-                    Command="{Binding SortAssetsCommand}"
-                    CommandParameter="{x:Static caevm:SortRule.ModificationDateThenName}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:SortRule.ModificationDateThenName}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Type"
-                    Command="{Binding SortAssetsCommand}"
-                    CommandParameter="{x:Static caevm:SortRule.TypeOrderThenName}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:SortRule.TypeOrderThenName}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-          <MenuItem Header="Unsaved changes"
-                    Command="{Binding SortAssetsCommand}"
-                    CommandParameter="{x:Static caevm:SortRule.DirtyThenName}">
-            <MenuItem.Icon>
-              <TextBlock Text="&#x2713;"
-                         IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
-                                     ConverterParameter={x:Static caevm:SortRule.DirtyThenName}}" />
-            </MenuItem.Icon>
-          </MenuItem>
-        </MenuItem>
-      </Menu>
-      <!--  Filter  -->
-      <sd:SearchComboBox x:Name="FilterSearchComboBox"
-                         DockPanel.Dock="Left"
-                         Width="160"
-                         PlaceholderText="Add a filter..."
-                         ItemsSource="{Binding AvailableAssetFilters}"
-                         SearchText="{Binding AssetFilterPattern}"
-                         ClearTextAfterSelection="True"
-                         Command="{Binding AddAssetFilterCommand}"
-                         AlternativeCommand="{Binding RefreshAssetFilterCommand}"
-                         AlternativeModifiers="Shift"
-                         ToolTip.Tip="Filter assets by name or type">
-        <sd:SearchComboBox.ItemTemplate>
-          <DataTemplate DataType="{x:Type caevm:AssetFilterViewModel}">
-            <StackPanel Orientation="Horizontal">
-              <Image Width="16" Height="16" Source="{StaticResource ImageAdd}">
+    <Border DockPanel.Dock="Top" Background="{DynamicResource StudioAssetHoverBrush}" Padding="8,2,4,2">
+      <DockPanel MinHeight="30" LastChildFill="False">
+        <!-- Add asset -->
+        <Button x:Name="AddAssetButton" DockPanel.Dock="Left" Classes="studioTool" Margin="0,0,4,0"
+                ToolTip.Tip="Add asset to current location (Ctrl+I)">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <PathIcon Data="M8,0 H12 V8 H20 V12 H12 V20 H8 V12 H0 V8 H8 Z" Foreground="{DynamicResource StudioTextBrush}" Width="20" Height="20"/>
+            <TextBlock Text="Add asset" VerticalAlignment="Center"/>
+          </StackPanel>
+          <Button.Flyout>
+            <Flyout Opening="AddAssetFlyout_OnOpening" Placement="BottomEdgeAlignedLeft">
+              <Flyout.FlyoutPresenterTheme>
+                <ControlTheme TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
+                  <Setter Property="Padding" Value="0"/>
+                  <Setter Property="CornerRadius" Value="0"/>
+                  <Setter Property="BorderThickness" Value="1"/>
+                  <Setter Property="BorderBrush" Value="{DynamicResource StudioMutedBrush}"/>
+                  <Setter Property="MaxWidth" Value="700"/>
+                </ControlTheme>
+              </Flyout.FlyoutPresenterTheme>
+              <views:AddAssetView/>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+        <Button x:Name="UpdateSourcesButton" DockPanel.Dock="Left" Classes="studioTool"
+                Command="{Binding Session.SourceTracker.UpdateAllAssetsWithModifiedSourceCommand}"
+                ToolTip.Tip="Update assets whose source files have changed (Ctrl+R)">
+          <StackPanel Orientation="Horizontal" Spacing="3">
+            <Image Source="avares://Stride.GameStudio.Avalonia/Assets/reimport-24.png" Width="24" Height="24"/>
+            <TextBlock Text="{Binding Session.SourceTracker.AssetsToUpdate.Count, StringFormat='({0})'}"
+                       IsVisible="{Binding Session.SourceTracker.AssetsToUpdate.Count, Converter={sd:NumericToBool}}"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button x:Name="ImportEffectsButton" DockPanel.Dock="Left" Classes="studioTool"
+                Command="{Binding Session.ImportEffectLogCommand}"
+                IsEnabled="{Binding Session.ImportEffectLogPendingCount, Converter={sd:NumericToBool}}"
+                ToolTip.Tip="Import last effects compiled remotely">
+          <StackPanel Orientation="Horizontal" Spacing="3">
+            <Image Source="avares://Stride.GameStudio.Avalonia/Assets/teapot-24.png" Width="24" Height="24"/>
+            <TextBlock Text="{Binding Session.ImportEffectLogPendingCount, StringFormat='({0})'}"
+                       IsVisible="{Binding Session.ImportEffectLogPendingCount, Converter={sd:NumericToBool}}"
+                       VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button x:Name="EditAssetButton" DockPanel.Dock="Left" Classes="studioTool" Margin="8,0"
+                Command="{Binding Session.EditSelectedContentCommand}"
+                ToolTip.Tip="Open asset in dedicated editor (Enter)">
+          <Image Source="avares://Stride.GameStudio.Avalonia/Assets/edit-24.png" Width="24" Height="24"/>
+        </Button>
+        <!-- View options -->
+        <Button x:Name="ViewOptionsButton" DockPanel.Dock="Left" Classes="studioTool" Margin="0,0,4,0"
+                ToolTip.Tip="Asset view options">
+          <PathIcon Width="24" Height="16" Foreground="{DynamicResource StudioTextBrush}"
+                    Data="M12,4.5 C7,4.5 2.73,7.61 1,12 C2.73,16.39 7,19.5 12,19.5 C17,19.5 21.27,16.39 23,12 C21.27,7.61 17,4.5 12,4.5 Z M12,17 A5,5 0 1 1 12,7 A5,5 0 1 1 12,17 Z M12,9 A3,3 0 1 0 12,15 A3,3 0 1 0 12,9 Z"/>
+          <Button.Flyout>
+            <MenuFlyout>
+            <MenuItem Header="Display" FontWeight="Bold" IsHitTestVisible="False" />
+            <MenuItem Header="Assets in selected folder only"
+                      Command="{Binding ChangeDisplayAssetModeCommand}"
+                      CommandParameter="{x:Static caevm:DisplayAssetMode.AssetInSelectedFolderOnly}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:DisplayAssetMode.AssetInSelectedFolderOnly}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Assets and folders in selected folder"
+                      Command="{Binding ChangeDisplayAssetModeCommand}"
+                      CommandParameter="{x:Static caevm:DisplayAssetMode.AssetAndFolderInSelectedFolder}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:DisplayAssetMode.AssetAndFolderInSelectedFolder}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Assets in selected folder and subfolders"
+                      Command="{Binding ChangeDisplayAssetModeCommand}"
+                      CommandParameter="{x:Static caevm:DisplayAssetMode.AssetInSelectedFolderAndSubFolder}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding DisplayAssetMode, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:DisplayAssetMode.AssetInSelectedFolderAndSubFolder}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Sort by" FontWeight="Bold" IsHitTestVisible="False" />
+            <MenuItem Header="Name"
+                      Command="{Binding SortAssetsCommand}"
+                      CommandParameter="{x:Static caevm:SortRule.Name}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:SortRule.Name}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Date modified"
+                      Command="{Binding SortAssetsCommand}"
+                      CommandParameter="{x:Static caevm:SortRule.ModificationDateThenName}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:SortRule.ModificationDateThenName}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Type"
+                      Command="{Binding SortAssetsCommand}"
+                      CommandParameter="{x:Static caevm:SortRule.TypeOrderThenName}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:SortRule.TypeOrderThenName}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Unsaved changes"
+                      Command="{Binding SortAssetsCommand}"
+                      CommandParameter="{x:Static caevm:SortRule.DirtyThenName}">
+              <MenuItem.Icon>
+                <TextBlock Text="&#x2713;"
+                           IsVisible="{Binding SortRule, Converter={sd:IsEqualToParam},
+                                       ConverterParameter={x:Static caevm:SortRule.DirtyThenName}}" />
+              </MenuItem.Icon>
+            </MenuItem>
+              <Separator/>
+              <MenuItem Header="View" FontWeight="Bold" IsHitTestVisible="False"/>
+              <MenuItem Header="Zoom in" Click="ZoomIn_OnClick" ToolTip.Tip="Increase thumbnail size (Ctrl+mouse wheel)"/>
+              <MenuItem Header="Zoom out" Click="ZoomOut_OnClick" ToolTip.Tip="Decrease thumbnail size (Ctrl+mouse wheel)"/>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <!--  Filter  -->
+        <sd:SearchComboBox x:Name="FilterSearchComboBox" Classes="assetFilter"
+                           DockPanel.Dock="Left"
+                           Width="120"
+                           VerticalAlignment="Center"
+                           PlaceholderText="Add a filter..."
+                           ItemsSource="{Binding AvailableAssetFilters}"
+                           SearchText="{Binding AssetFilterPattern}"
+                           ClearTextAfterSelection="True"
+                           Command="{Binding AddAssetFilterCommand}"
+                           AlternativeCommand="{Binding RefreshAssetFilterCommand}"
+                           AlternativeModifiers="Shift"
+                           ToolTip.Tip="Filter assets by name, type or tag">
+          <sd:SearchComboBox.ItemTemplate>
+            <DataTemplate DataType="{x:Type caevm:AssetFilterViewModel}">
+              <StackPanel Orientation="Horizontal">
+                <Image Width="16" Height="16" Source="{StaticResource ImageAdd}">
+                  <Interaction.Behaviors>
+                    <DataTriggerBehavior Binding="{Binding IsAlternative, ElementName=FilterSearchComboBox}"
+                                         ComparisonCondition="Equal" Value="True">
+                      <ChangePropertyAction PropertyName="Source" Value="{StaticResource ImageRefresh}"/>
+                    </DataTriggerBehavior>
+                    <DataTriggerBehavior Binding="{Binding IsAlternative, ElementName=FilterSearchComboBox}"
+                                         ComparisonCondition="Equal" Value="False">
+                      <ChangePropertyAction PropertyName="Source" Value="{StaticResource ImageAdd}"/>
+                    </DataTriggerBehavior>
+                  </Interaction.Behaviors>
+                </Image>
+                <TextBlock Text="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}"
+                           VerticalAlignment="Center"
+                           Margin="4,0" />
+              </StackPanel>
+            </DataTemplate>
+          </sd:SearchComboBox.ItemTemplate>
+        </sd:SearchComboBox>
+        <Button DockPanel.Dock="Left"
+                Margin="4,0,0,0"
+                Command="{Binding ClearAssetFiltersCommand}"
+                IsVisible="{Binding CurrentAssetFilters.Count, Converter={sd:NumericToBool}}"
+                ToolTip.Tip="Clear all filters">
+          <Image Source="{StaticResource ImageClearFilters}" Width="16" Height="16"/>
+        </Button>
+        <!-- Filter tags -->
+        <ItemsControl DockPanel.Dock="Left"
+                      ItemsSource="{Binding CurrentAssetFilters}"
+                      IsVisible="{Binding CurrentAssetFilters.Count, Converter={sd:NumericToBool}}"
+                      Margin="4,0,0,0"
+                      VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type caevm:AssetFilterViewModel}">
+              <Border Margin="2" Padding="4,2" CornerRadius="3"
+                      Opacity="{Binding IsActive, Converter={sd:BoolToOpacity}}"
+                      ToolTip.Tip="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}">
                 <Interaction.Behaviors>
-                  <DataTriggerBehavior Binding="{Binding IsAlternative, ElementName=FilterSearchComboBox}"
-                                       ComparisonCondition="Equal" Value="True">
-                    <ChangePropertyAction PropertyName="Source" Value="{StaticResource ImageRefresh}"/>
+                  <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
+                                       Value="{x:Static caevm:FilterCategory.AssetName}">
+                    <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetName}"/>
                   </DataTriggerBehavior>
-                  <DataTriggerBehavior Binding="{Binding IsAlternative, ElementName=FilterSearchComboBox}"
-                                       ComparisonCondition="Equal" Value="False">
-                    <ChangePropertyAction PropertyName="Source" Value="{StaticResource ImageAdd}"/>
+                  <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
+                                       Value="{x:Static caevm:FilterCategory.AssetTag}">
+                    <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetTag}"/>
+                  </DataTriggerBehavior>
+                  <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
+                                       Value="{x:Static caevm:FilterCategory.AssetType}">
+                    <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetType}"/>
                   </DataTriggerBehavior>
                 </Interaction.Behaviors>
-              </Image>
-              <TextBlock Text="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}"
-                         VerticalAlignment="Center"
-                         Margin="4,0" />
-            </StackPanel>
-          </DataTemplate>
-        </sd:SearchComboBox.ItemTemplate>
-      </sd:SearchComboBox>
-      <Button DockPanel.Dock="Left"
-              Margin="4,0,0,0"
-              Command="{Binding ClearAssetFiltersCommand}"
-              IsVisible="{Binding CurrentAssetFilters.Count, Converter={sd:NumericToBool}}"
-              ToolTip.Tip="Clear all filters">
-        <Image Source="{StaticResource ImageClearFilters}" Width="16" Height="16"/>
-      </Button>
-      <!-- Filter tags -->
-      <ItemsControl DockPanel.Dock="Left"
-                    ItemsSource="{Binding CurrentAssetFilters}"
-                    IsVisible="{Binding CurrentAssetFilters.Count, Converter={sd:NumericToBool}}"
-                    Margin="4,0,0,0"
-                    VerticalAlignment="Center">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <WrapPanel Orientation="Horizontal" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="{x:Type caevm:AssetFilterViewModel}">
-            <Border Margin="2" Padding="4,2" CornerRadius="3"
-                    Opacity="{Binding IsActive, Converter={sd:BoolToOpacity}}"
-                    ToolTip.Tip="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}">
-              <Interaction.Behaviors>
-                <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
-                                     Value="{x:Static caevm:FilterCategory.AssetName}">
-                  <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetName}"/>
-                </DataTriggerBehavior>
-                <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
-                                     Value="{x:Static caevm:FilterCategory.AssetTag}">
-                  <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetTag}"/>
-                </DataTriggerBehavior>
-                <DataTriggerBehavior Binding="{Binding Category}" ComparisonCondition="Equal"
-                                     Value="{x:Static caevm:FilterCategory.AssetType}">
-                  <ChangePropertyAction PropertyName="Background" Value="{StaticResource FilterBrushAssetType}"/>
-                </DataTriggerBehavior>
-              </Interaction.Behaviors>
-              <DockPanel LastChildFill="True">
-                <Button DockPanel.Dock="Right"
-                        Margin="4,0,0,0"
-                        Padding="2,0"
-                        Command="{Binding RemoveFilterCommand}"
-                        CommandParameter="{Binding}">
-                  <TextBlock Text="✕" FontSize="10" />
-                </Button>
-                <Button Padding="0" Background="Transparent"
-                        Command="{Binding ToggleIsActiveCommand}">
-                  <TextBlock Text="{Binding DisplayName}"
-                             MaxWidth="100"
-                             TextTrimming="CharacterEllipsis" />
-                </Button>
-              </DockPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </DockPanel>
+                <DockPanel LastChildFill="True">
+                  <Button DockPanel.Dock="Right"
+                          Margin="4,0,0,0"
+                          Padding="2,0"
+                          Command="{Binding RemoveFilterCommand}"
+                          CommandParameter="{Binding}">
+                    <TextBlock Text="✕" FontSize="10" />
+                  </Button>
+                  <Button Padding="0" Background="Transparent"
+                          Command="{Binding ToggleIsActiveCommand}">
+                    <TextBlock Text="{Binding DisplayName}"
+                               MaxWidth="100"
+                               TextTrimming="CharacterEllipsis" />
+                  </Button>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </DockPanel>
+    </Border>
     <!-- Asset list -->
-    <ListBox Classes="studioAssetList" ItemsSource="{Binding FilteredAssets}"
+    <ListBox x:Name="AssetListBox" Classes="studioAssetList" ItemsSource="{Binding FilteredContent}"
+             KeyDown="OnAssetsKeyDown"
              SelectedItems="{Binding SelectedContent}"
-             SelectionMode="Multiple"
-             Margin="4">
+             SelectionMode="Multiple">
+      <ListBox.ContextMenu>
+        <ContextMenu x:Name="AssetListContextMenu" Opened="AssetListContextMenu_OnOpened">
+          <MenuItem x:Name="ContextAddAssetSubMenu" Header="Add asset" InputGesture="Ctrl+I"/>
+          <MenuItem Header="New folder" Command="{Binding NewDirectoryCommand}"/>
+          <Separator/>
+          <MenuItem Header="Show in Explorer" Command="{Binding ExploreCommand}"/>
+        </ContextMenu>
+      </ListBox.ContextMenu>
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <WrapPanel />
+          <controls:AssetTilePanel ThumbnailSize="{Binding $parent[views:AssetExplorerView].ThumbnailSize}"/>
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
+      <ListBox.DataTemplates>
         <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
-          <StackPanel Width="104" Spacing="5" Margin="3">
+          <views:AssetCard ThumbnailSize="{Binding $parent[views:AssetExplorerView].ThumbnailSize}" PointerPressed="OnAssetCardPointerPressed">
+            <views:AssetCard.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Open" Command="{Binding ((caevm:SessionViewModel)Session).EditSelectedContentCommand}" InputGesture="Enter"/>
+                <MenuItem Header="Duplicate" Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.DuplicateSelectionCommand}"
+                          HotKey="Ctrl+D" InputGesture="{Binding $self.HotKey, Mode=OneTime}"/>
+                <MenuItem Header="Delete" Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.DeleteSelectionCommand}"
+                          HotKey="Delete" InputGesture="{Binding $self.HotKey, Mode=OneTime}"/>
+                <Separator/>
+                <MenuItem Header="Show in Explorer" Command="{Binding ((caevm:SessionViewModel)Session).ExploreCommand}" CommandParameter="{Binding}"/>
+              </ContextMenu>
+            </views:AssetCard.ContextMenu>
             <Interaction.Behaviors>
               <EventTriggerBehavior EventName="DoubleTapped">
                 <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).EditSelectedContentCommand}" />
               </EventTriggerBehavior>
             </Interaction.Behaviors>
-            <Border Height="88" Classes="studioAssetThumbnail">
-              <Grid>
-                <Path Data="M3,1 L11,1 L15,5 L15,17 L3,17 Z M11,1 L11,5 L15,5 M6,9 L12,9 M6,12 L12,12"
-                      Stroke="{DynamicResource StudioMutedBrush}" StrokeThickness="1.2" Width="28" Height="34" Stretch="Uniform"
-                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Image Source="{Binding ThumbnailData?.Presenter, Converter={gscv:StrideImage}}"
-                       Width="80" Height="80" Stretch="Uniform"/>
-              </Grid>
+          </views:AssetCard>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type capvm:DirectoryViewModel}">
+          <StackPanel Width="{Binding $parent[views:AssetExplorerView].ThumbnailSize}" HorizontalAlignment="Center" Background="Transparent"
+                      PointerPressed="OnAssetCardPointerPressed"
+                      ToolTip.ShowDelay="1">
+            <ToolTip.Tip>
+              <StackPanel>
+                <TextBlock Text="{Binding Path, StringFormat='URL: {0}'}" FontWeight="Bold"/>
+                <TextBlock Text="{Binding TypeDisplayName, StringFormat='Type: {0}'}"/>
+              </StackPanel>
+            </ToolTip.Tip>
+            <StackPanel.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Open" Command="{Binding ((caevm:SessionViewModel)Session).EditSelectedContentCommand}" InputGesture="Enter"/>
+                <Separator/>
+                <MenuItem Header="Show in Explorer" Command="{Binding ((caevm:SessionViewModel)Session).ExploreCommand}" CommandParameter="{Binding}"/>
+              </ContextMenu>
+            </StackPanel.ContextMenu>
+            <Interaction.Behaviors>
+              <EventTriggerBehavior EventName="DoubleTapped">
+                <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).EditSelectedContentCommand}" />
+              </EventTriggerBehavior>
+            </Interaction.Behaviors>
+            <Border Classes="studioAssetThumbnail" Margin="0,3,0,0" Width="{Binding $parent[views:AssetExplorerView].ThumbnailSize}" Height="{Binding $parent[views:AssetExplorerView].ThumbnailSize}">
+              <Image Source="{StaticResource FolderIcon}" MaxWidth="64" MaxHeight="64"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stretch="Uniform"/>
             </Border>
-            <TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+            <StackPanel Width="{Binding $parent[views:AssetExplorerView].ThumbnailSize}" Height="48" HorizontalAlignment="Center">
+              <TextBlock Text="{Binding Name, Converter={cvt:NameBreakingLine}}" TextAlignment="Center"
+                         TextWrapping="Wrap" MaxHeight="32" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="{Binding TypeDisplayName}" TextAlignment="Center" FontSize="10" Opacity="0.5"
+                         TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
           </StackPanel>
         </DataTemplate>
-      </ItemsControl.ItemTemplate>
+      </ListBox.DataTemplates>
     </ListBox>
   </DockPanel>
 </UserControl>

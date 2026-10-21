@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Collections.Specialized;
 using Stride.Core.Diagnostics;
 using Stride.Core.Extensions;
 using Stride.Core.IO;
@@ -22,6 +23,10 @@ public class PackageViewModel : SessionObjectViewModel, IComparable<PackageViewM
         PackageContainer = packageContainer;
 
         content.Add(AssetMountPoint);
+        Dependencies = new DependencyCategoryViewModel(nameof(Dependencies), this, session, Package.RootAssets);
+        content.Add(Dependencies);
+        foreach (var dependency in PackageContainer.DirectDependencies.ToArray())
+            _ = new DirectDependencyReferenceViewModel(dependency, this, Dependencies, false);
         IsLoaded = Package.State >= PackageState.AssetsReady;
 
         // IsDeleted will make the package added to Session.LocalPackages, so let's do it last
@@ -32,6 +37,8 @@ public class PackageViewModel : SessionObjectViewModel, IComparable<PackageViewM
     /// Gets the root directory of this package.
     /// </summary>
     public AssetMountPointViewModel AssetMountPoint { get; }
+
+    public DependencyCategoryViewModel Dependencies { get; }
 
     /// <summary>
     /// Gets all assets contained in this package.
@@ -178,24 +185,30 @@ public class PackageViewModel : SessionObjectViewModel, IComparable<PackageViewM
 
     private static int ComparePackageContent(ViewModelBase x, ViewModelBase y)
     {
-        if (x is AssetMountPointViewModel xAssets)
+        var order = ContentOrder(x).CompareTo(ContentOrder(y));
+        return order != 0 ? order : string.Compare(((SessionObjectViewModel)x).Name, ((SessionObjectViewModel)y).Name, StringComparison.InvariantCultureIgnoreCase);
+
+        static int ContentOrder(ViewModelBase item) => item switch
         {
-            if (y is AssetMountPointViewModel yAssets)
-                return string.Compare(xAssets.Name, yAssets.Name, StringComparison.InvariantCultureIgnoreCase);
-            return -1;
-        }
-        if (x is ProjectViewModel xProject)
-        {
-            if (y is ProjectViewModel yProject)
-            {
-                return xProject.CompareTo(yProject);
-            }
-            return y is AssetMountPointViewModel ? 1 : -1;
-        }
-        throw new InvalidOperationException("Unable to sort the given items for the Content collection of PackageViewModel");
+            AssetMountPointViewModel => 0,
+            ProjectCodeViewModel => 1,
+            ProjectViewModel => 2,
+            DependencyCategoryViewModel => 3,
+            _ => throw new InvalidOperationException("Unable to sort the given items for the Content collection of PackageViewModel"),
+        };
     }
 
-    private AssetViewModel CreateAsset(AssetItem assetItem, DirectoryBaseViewModel directory, ILogger? logger = null)
+    public AssetViewModel AddAsset(AssetItem assetItem, DirectoryBaseViewModel directory)
+    {
+        if (directory.Package != this || !IsEditable) throw new InvalidOperationException("Assets can only be added to an editable directory of this package.");
+        var asset = CreateAsset(assetItem, directory, canUndoRedoCreation: true);
+        directory.AddAsset(asset);
+        asset.Initialize();
+        asset.AssetItem.IsDirty = true;
+        return asset;
+    }
+
+    private AssetViewModel CreateAsset(AssetItem assetItem, DirectoryBaseViewModel directory, ILogger? logger = null, bool canUndoRedoCreation = false)
     {
         AssetCollectionItemIdHelper.GenerateMissingItemIds(assetItem.Asset);
         Session.GraphContainer.InitializeAsset(assetItem, logger);
@@ -204,7 +217,7 @@ public class PackageViewModel : SessionObjectViewModel, IComparable<PackageViewM
         {
             assetViewModelType = assetViewModelType.MakeGenericType(assetItem.Asset.GetType());
         }
-        return (AssetViewModel)Activator.CreateInstance(assetViewModelType, new ConstructorParameters(assetItem, directory, false))!;
+        return (AssetViewModel)Activator.CreateInstance(assetViewModelType, new ConstructorParameters(assetItem, directory, canUndoRedoCreation))!;
     }
 
     private void FillRootAssetCollection()
@@ -216,6 +229,36 @@ public class PackageViewModel : SessionObjectViewModel, IComparable<PackageViewM
             if (dependency.Package != null)
                 RootAssets.AddRange(dependency.Package.RootAssets.Select(x => Session.GetAssetById(x.Id)).NotNull()!);
         }
+        RegisterMemberCollectionForActionStack(nameof(RootAssets), RootAssets);
+        RootAssets.CollectionChanged += RootAssetsCollectionChanged;
+    }
+
+    private void RootAssetsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (var asset in e.NewItems!.Cast<AssetViewModel>())
+                {
+                    Package.RootAssets.Remove(asset.Id);
+                    Package.RootAssets.Add(new AssetReference(asset.Id, asset.Url));
+                    asset.Dependencies.NotifyRootAssetChange(true);
+                }
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (var asset in e.OldItems!.Cast<AssetViewModel>())
+                {
+                    Package.RootAssets.Remove(asset.Id);
+                    asset.Dependencies.NotifyRootAssetChange(true);
+                }
+                break;
+            default:
+                Package.RootAssets.Clear();
+                Package.RootAssets.AddRange(RootAssets.Select(asset => new AssetReference(asset.Id, asset.Url)));
+                foreach (var asset in Session.AllAssets) asset.Dependencies.NotifyRootAssetChange(false);
+                break;
+        }
+        Package.IsDirty = true;
     }
 
     IChildViewModel IChildViewModel.GetParent()

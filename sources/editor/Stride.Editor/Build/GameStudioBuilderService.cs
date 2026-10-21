@@ -93,16 +93,16 @@ public sealed class GameStudioBuilderService : AssetBuilderService
 
     public override void Dispose()
     {
+        if (IsDisposed) return;
+        IsDisposed = true;
         base.Dispose();
         if (createDebugTools)
         {
             debugService?.UnregisterDebugPage(assetBuilderServiceDebugPage!);
             debugService?.UnregisterDebugPage(effectCompilerServiceDebugPage!);
         }
-        if (!IsDisposed)
-        {
-            IsDisposed = true;
-        }
+        taskScheduler.Dispose();
+        effectCompiler.Dispose();
     }
 
     private void ShaderBuildStepsStepProcessed(object? sender, BuildStepEventArgs e)

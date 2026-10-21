@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+        xmlns:vm="using:Stride.GameStudio.Avalonia.ViewModels"
+        mc:Ignorable="d"
+        x:Class="Stride.GameStudio.Avalonia.Views.UpdatePlatformsWindow"
+        x:DataType="vm:UpdatePlatformsViewModel"
+        Title="Select platforms"
+        Icon="/Assets/GameStudio.ico"
+        Width="460" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="20" Spacing="16">
+    <TextBlock Text="Platforms" FontSize="16" FontWeight="SemiBold"/>
+    <Border BorderThickness="1" BorderBrush="{DynamicResource StudioBorderBrush}"
+            Background="{DynamicResource StudioBackgroundBrush}" Padding="12" CornerRadius="4">
+      <ItemsControl ItemsSource="{Binding Platforms}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:PlatformItemViewModel">
+            <StackPanel Margin="0,4" Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                          IsEnabled="{Binding CanBeUnselected}"/>
+                <TextBlock Text="(Will be removed from project and disk)"
+                           IsVisible="{Binding MarkedToRemove}"
+                           Foreground="OrangeRed" VerticalAlignment="Center" FontSize="11"/>
+              </StackPanel>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <CheckBox Content="Force regeneration of all platform projects"
+              IsChecked="{Binding ForcePlatformRegeneration, Mode=TwoWay}"/>
+
+    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+      <Button Content="OK" Width="80" HorizontalContentAlignment="Center" Click="ButtonOk_OnClick" IsDefault="True"/>
+      <Button Content="Cancel" Width="80" HorizontalContentAlignment="Center" Click="ButtonCancel_OnClick" IsCancel="True"/>
+    </StackPanel>
+  </StackPanel>
+</Window>
+

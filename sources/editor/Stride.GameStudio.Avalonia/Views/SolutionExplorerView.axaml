@@ -7,118 +7,120 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Stride.GameStudio.Avalonia.Views.SolutionExplorerView"
              x:DataType="vm2:SessionViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
   <DockPanel>
     <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-      <TextBlock Text="Solution explorer"/>
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+          <Button Width="16" Height="16" MinWidth="16" MinHeight="16"
+                  Padding="0" Background="Transparent" BorderThickness="0" ToolTip.Tip="Panel options">
+            <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10"/>
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Expand all" Click="ExpandAll_OnClick"/>
+                <MenuItem Header="Collapse all" Click="CollapseAll_OnClick"/>
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <Button Classes="studioPanelHeaderButton" Click="ClosePanel_OnClick" ToolTip.Tip="Close panel">
+            <Path Data="M2,2 L8,8 M8,2 L2,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="10" Height="10"/>
+          </Button>
+        </StackPanel>
+        <TextBlock Text="Solution explorer" VerticalAlignment="Center"/>
+      </DockPanel>
     </Border>
-    <TreeView Classes="studioSolutionTree" ItemsSource="{Binding PackageCategories.Values}"
+    <TreeView x:Name="SolutionTreeView" Classes="studioSolutionTree" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding PackageCategories.Values}"
               SelectedItems="{Binding AssetCollection.SelectedLocations}"
               SelectionMode="Multiple"
+              PointerPressed="OnTreeViewPointerPressed"
               Margin="0">
+      <TreeView.ContextMenu>
+        <ContextMenu Opened="OnSolutionContextMenuOpened">
+          <MenuItem Header="Create folder" Command="{Binding NewDirectoryCommand}" CommandParameter="{Binding AssetCollection.SelectedLocations}"/>
+          <Separator/>
+          <MenuItem Header="Show in Explorer" Command="{Binding ExploreCommand}" CommandParameter="{Binding AssetCollection.SelectedLocations}"/>
+        </ContextMenu>
+      </TreeView.ContextMenu>
       <Control.DataTemplates>
         <TreeDataTemplate DataType="{x:Type vm:AssetMountPointViewModel}"
                           ItemsSource="{Binding SubDirectories}">
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding Name}">
-            <Path Classes="solutionIcon rootFolderIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto" ToolTip.Tip="{Binding Name}">
+            <Image Source="{StaticResource ImageRootFolder}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <TreeDataTemplate DataType="{x:Type vm:ICategoryViewModel}"
                            ItemsSource="{Binding Content}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Path Classes="solutionIcon categoryIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto">
+            <Image Source="{StaticResource ImageDepsRoot}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <TreeDataTemplate DataType="{x:Type vm:DirectoryViewModel}"
                           ItemsSource="{Binding SubDirectories}">
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding Path}">
-            <Path Classes="solutionIcon folderIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto" ToolTip.Tip="{Binding Path}">
+            <Image Source="{StaticResource ImageFolder}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <TreeDataTemplate DataType="{x:Type vm:ProjectViewModel}"
                           ItemsSource="{Binding Content}">
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding ProjectPath}">
-            <Path Classes="solutionIcon projectIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto" ToolTip.Tip="{Binding ProjectPath}">
+            <Image Source="{StaticResource ImageProject}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <TreeDataTemplate DataType="{x:Type vm:PackageViewModel}"
                           ItemsSource="{Binding Content}">
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding PackagePath}">
-            <Path Classes="solutionIcon packageIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto" ToolTip.Tip="{Binding PackagePath}">
+            <Image Source="{StaticResource ImagePackage}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <DataTemplate DataType="{x:Type vm:PackageReferenceViewModel}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Path Classes="solutionIcon referenceIcon"/>
-            <TextBlock Text="{Binding Name}" />
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto">
+            <Image Source="{StaticResource ImagePackageReference}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+          </Grid>
         </DataTemplate>
         <TreeDataTemplate DataType="{x:Type vm:ProjectCodeViewModel}"
                           ItemsSource="{Binding SubDirectories}">
-          <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding Name}">
-            <Path Classes="solutionIcon rootFolderIcon"/>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto" ToolTip.Tip="{Binding Name}">
+            <Image Source="{StaticResource ImageRootFolder}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Classes="dirtyMarker" Text="*" IsVisible="{Binding IsDirty}"/>
+          </Grid>
         </TreeDataTemplate>
         <!-- Fallback -->
         <DataTemplate DataType="{x:Type vm:SessionObjectViewModel}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Path Classes="solutionIcon fallbackIcon"/>
-            <TextBlock Text="{Binding Name}" />
-          </StackPanel>
+          <Grid ColumnDefinitions="16,*,Auto">
+            <Image Source="{StaticResource ImageFolder}" Width="16" Height="16"/>
+            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="4,0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+          </Grid>
         </DataTemplate>
       </Control.DataTemplates>
     </TreeView>
   </DockPanel>
   <UserControl.Styles>
+    <Style Selector="TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
     <Style Selector="TextBlock.dirtyMarker">
       <Setter Property="Foreground" Value="{DynamicResource StudioMutedBrush}"/>
       <Setter Property="FontWeight" Value="Bold"/>
       <Setter Property="Margin" Value="1,0,0,0"/>
-    </Style>
-    <Style Selector="Path.solutionIcon">
-      <Setter Property="Width" Value="16"/>
-      <Setter Property="Height" Value="16"/>
-      <Setter Property="Stretch" Value="Uniform"/>
-      <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    <Style Selector="Path.rootFolderIcon">
-      <Setter Property="Data" Value="M1,2 L9,2 L10.5,4 L15,4 L15,14 L1,14 Z M3,5 L13,5 L13,12 L3,12 Z"/>
-      <Setter Property="Fill" Value="#DBB679"/>
-    </Style>
-    <Style Selector="Path.folderIcon">
-      <Setter Property="Data" Value="M1,3 L7,3 L9,5 L15,5 L15,13 L1,13 Z"/>
-      <Setter Property="Fill" Value="#DCB67A"/>
-    </Style>
-    <Style Selector="Path.categoryIcon">
-      <Setter Property="Data" Value="M2,3 L6,3 L6,6 L9,6 L9,3 L14,3 L14,6 L11,6 L11,9 L14,9 L14,13 L11,13 L11,10 L8,10 L8,13 L2,13 L2,9 L5,9 L5,6 L2,6 Z"/>
-      <Setter Property="Fill" Value="{DynamicResource StudioMutedBrush}"/>
-    </Style>
-    <Style Selector="Path.projectIcon">
-      <Setter Property="Data" Value="M3,1 L10,1 L14,5 L14,15 L3,15 Z M10,2 L10,5 L13,5 M5,8 L12,8 M5,10 L12,10 M5,12 L10,12"/>
-      <Setter Property="Fill" Value="{DynamicResource StudioTextBrush}"/>
-    </Style>
-    <Style Selector="Path.packageIcon">
-      <Setter Property="Data" Value="M1,4 L8,1 L15,4 L8,7 Z M1,4 L1,12 L8,15 L8,7 M15,4 L15,12 L8,15 M4,2.3 L11,5.3"/>
-      <Setter Property="Fill" Value="#C27D1A"/>
-    </Style>
-    <Style Selector="Path.referenceIcon">
-      <Setter Property="Data" Value="M1,3 L8,3 L10,5 L15,5 L15,13 L1,13 Z M7,8 L12,8 M10,6 L12,8 L10,10"/>
-      <Setter Property="Fill" Value="{DynamicResource StudioMutedBrush}"/>
-    </Style>
-    <Style Selector="Path.fallbackIcon">
-      <Setter Property="Data" Value="M2,2 L14,2 L14,14 L2,14 Z M5,5 L11,5 M5,8 L11,8 M5,11 L9,11"/>
-      <Setter Property="Fill" Value="{DynamicResource StudioMutedBrush}"/>
     </Style>
   </UserControl.Styles>
 </UserControl>

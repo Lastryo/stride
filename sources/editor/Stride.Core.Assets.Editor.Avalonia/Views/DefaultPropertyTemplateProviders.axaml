@@ -140,7 +140,7 @@
   <ControlTheme x:Key="EnumComboBoxTheme" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}"
                 x:DataType="cpqvm:NodeViewModel">
     <Setter Property="Margin" Value="2"/>
-    <Setter Property="SelectedItem" Value="{Binding NodeValue}"/>
+    <Setter Property="SelectedItem" Value="{Binding NodeValue, Converter={sd:EnumSelection}}"/>
     <Setter Property="ItemsSource" Value="{Binding Type, Converter={sd:EnumValues}, Mode=OneWay}"/>
     <Setter Property="ItemTemplate">
       <DataTemplate DataType="cpqvm:NodeViewModel">
@@ -201,7 +201,7 @@
         </Rectangle>
       </Border>
       <Border Grid.Column="1" x:Name="PART_Name"
-              MinHeight="23" Margin="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"
+              MinHeight="22" Margin="2,0" HorizontalAlignment="Stretch" VerticalAlignment="Top"
               ToolTip.Tip="{Binding [Documentation]}">
         <Grid>
           <Grid.ColumnDefinitions>
@@ -282,10 +282,10 @@
           Margin="{Binding $parent[sd:PropertyViewItem].Offset, Mode=OneWay, Converter={sd:NumericToThickness}, ConverterParameter={sd:Thickness 1,0,0,0}}">
       <Border x:Name="PART_Name"
               Background="{DynamicResource PropertyHeaderBackground}"
-              MinHeight="20" Margin="6" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+              MinHeight="22" Margin="4,2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
               ToolTip.Tip="{Binding [Documentation]}"/>
       <DockPanel x:Name="HeaderDockPanel"
-                 MinHeight="32" Margin="10,8">
+                 MinHeight="24" Margin="8,3">
         <StackPanel DockPanel.Dock="Right"
                     Orientation="Horizontal" VerticalAlignment="Center">
           <Button Theme="{StaticResource RemoveItemButtonTheme}"/>
@@ -315,7 +315,7 @@
                     IsThreeState="{ReflectionBinding [Enabled]?.NodeValue, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static cpqvm:NodeViewModel.DifferentValues}, TargetNullValue={x:False}}"/>
           <Image Source="{Binding NodeValue, Converter={sd:Chained {sd:ObjectToType}, {caec:TypeToResource}}}"
                  MaxWidth="16" MaxHeight="16" Margin="0,0,4,0"/>
-          <TextBlock x:Name="HeaderTextBlock" FontSize="16" TextTrimming="CharacterEllipsis"
+          <TextBlock x:Name="HeaderTextBlock" FontSize="12" TextTrimming="CharacterEllipsis"
                      Text="{Binding DisplayName, Mode=OneWay}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
           <Interaction.Behaviors>
             <DataTriggerBehavior Binding="{sd:MultiBinding {Binding ConverterParameter=[IsOverridden], Converter={caec:NodePathToObject}},
@@ -338,12 +338,12 @@
             </DataTriggerBehavior>
             <DataTriggerBehavior Binding="{Binding Level, Converter={sd:IsEqual}, ConverterParameter={sd:Int 2}}" Value="{sd:True}">
               <ChangePropertyAction TargetObject="PART_Name" PropertyName="Opacity" Value="{sd:Double 0.6}"/>
-              <ChangePropertyAction TargetObject="HeaderTextBlock" PropertyName="FontSize" Value="{sd:Double 14}"/>
+              <ChangePropertyAction TargetObject="HeaderTextBlock" PropertyName="FontSize" Value="{sd:Double 12}"/>
             </DataTriggerBehavior>
             <DataTriggerBehavior Binding="{Binding Level, Converter={sd:IsGreater}, ConverterParameter={sd:Int 2}}" Value="{sd:True}">
               <ChangePropertyAction TargetObject="PART_Name" PropertyName="Opacity" Value="{sd:Double 0.5}"/>
               <ChangePropertyAction TargetObject="HeaderTextBlock" PropertyName="FontSize" Value="{sd:Double 12}"/>
-              <ChangePropertyAction TargetObject="HeaderDockPanel" PropertyName="Margin" Value="{sd:Thickness 10,4}"/>
+              <ChangePropertyAction TargetObject="HeaderDockPanel" PropertyName="Margin" Value="{sd:Thickness 8,2}"/>
               <ChangePropertyAction TargetObject="Grid" PropertyName="Margin" Value="{sd:Thickness 15,0,0,0}"/>
             </DataTriggerBehavior>
           </Interaction.Behaviors>
@@ -362,7 +362,7 @@
   </sd:DefaultTemplateProvider>
 
   <!-- Provider for category -->
-  <caev:CategoryNodeTemplateProvider x:Key="CategoryNodeTemplateProvider" caev:PropertyViewHelper.TemplateCategory="PropertyHeader"
+  <caev:CategoryNodeTemplateProvider x:Key="CategoryNodeTemplateProvider" OverrideRule="Most" caev:PropertyViewHelper.TemplateCategory="PropertyHeader"
                                      Template="{StaticResource ReadOnlyPropertyHeaderTemplate}"/>
 
   <!-- Provider for abstract types -->
@@ -957,7 +957,7 @@
   <!-- Provider for string -->
   <caev:TypeMatchTemplateProvider x:Key="StringPropertyTemplateProvider" Type="{x:Type s:String}" caev:PropertyViewHelper.TemplateCategory="PropertyEditor">
     <DataTemplate DataType="cpqvm:NodeViewModel">
-      <TextBox Text="{Binding NodeValue, Converter={caec:DifferentValuesToString}}">
+      <TextBox Text="{Binding NodeValue, Converter={caec:DifferentValuesToString}, UpdateSourceTrigger=Explicit}">
         <Interaction.Behaviors>
           <sd:TextBoxValidationBehavior/>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
@@ -999,7 +999,7 @@
   <!-- Provider for Color -->
   <caev:TypeMatchTemplateProvider x:Key="ColorPropertyTemplateProvider" Type="{x:Type math:Color}" caev:PropertyViewHelper.TemplateCategory="PropertyEditor">
     <DataTemplate DataType="cpqvm:NodeViewModel">
-      <sd:ColorEditor Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
+      <sd:ColorEditor IsMixed="{Binding NodeValue, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static cpqvm:NodeViewModel.DifferentValues}}" Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
                       Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
@@ -1013,7 +1013,7 @@
   <!-- Provider for Color3 -->
   <caev:TypeMatchTemplateProvider x:Key="Color3PropertyTemplateProvider" Type="{x:Type math:Color3}" caev:PropertyViewHelper.TemplateCategory="PropertyEditor">
     <DataTemplate DataType="cpqvm:NodeViewModel">
-      <sd:Color3Editor Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
+      <sd:Color3Editor IsMixed="{Binding NodeValue, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static cpqvm:NodeViewModel.DifferentValues}}" Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
                        Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">
@@ -1027,7 +1027,7 @@
   <!-- Provider for Color4 -->
   <caev:TypeMatchTemplateProvider x:Key="Color4PropertyTemplateProvider" Type="{x:Type math:Color4}" caev:PropertyViewHelper.TemplateCategory="PropertyEditor">
     <DataTemplate DataType="cpqvm:NodeViewModel">
-      <sd:Color4Editor Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
+      <sd:Color4Editor IsMixed="{Binding NodeValue, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static cpqvm:NodeViewModel.DifferentValues}}" Value="{Binding NodeValue, Converter={caec:DifferentValuesToNull}}"
                        Palette="{x:Static caev:ColorPalettes.Metals}">
         <Interaction.Behaviors>
           <DataTriggerBehavior Binding="{Binding NodeValue}" Value="{x:Static cpqvm:NodeViewModel.DifferentValues}">

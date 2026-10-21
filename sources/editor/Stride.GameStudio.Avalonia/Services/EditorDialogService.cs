@@ -69,7 +69,10 @@ internal class EditorDialogService : DialogService, IEditorDialogService
                 };
                 workProgress.WorkFinished += (_, _) =>
                 {
-                    if (!workProgress.ShouldStayOpen()) progressWindow.Close();
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (!workProgress.ShouldStayOpen()) progressWindow.Close();
+                    });
                 };
                 progressWindow.Closing += (_, e) =>
                 {
@@ -101,6 +104,20 @@ internal class EditorDialogService : DialogService, IEditorDialogService
             {
                 DataContext = new SettingsViewModel(serviceProvider, EditorSettings.SettingsContainer.CurrentProfile)
             }.ShowDialog(MainWindow);
+        });
+    }
+
+    public async Task<bool?> ShowUpdatePlatformsWindowAsync(ViewModels.UpdatePlatformsViewModel viewModel)
+    {
+        if (MainWindow is null) return false;
+
+        return await Dispatcher.InvokeTask(async () =>
+        {
+            var window = new UpdatePlatformsWindow
+            {
+                DataContext = viewModel
+            };
+            return await window.ShowDialog<bool?>(MainWindow);
         });
     }
 }

@@ -9,6 +9,8 @@ namespace Stride.Core.BuildEngine;
 
 public abstract class BuildStep
 {
+    private readonly TaskCompletionSource<BuildStep> executionCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     internal bool ProcessedDependencies = false;
 
     public delegate void TransformExecuteContextLoggerDelegate(ref Logger logger);
@@ -147,13 +149,7 @@ public abstract class BuildStep
 
     public Task<BuildStep> ExecutedAsync()
     {
-        // Already processed?
-        if (Processed)
-            return Task.FromResult(this);
-
-        var tcs = new TaskCompletionSource<BuildStep>();
-        StepProcessed += (sender, e) => tcs.TrySetResult(e.Step);
-        return tcs.Task;
+        return Processed ? Task.FromResult(this) : executionCompletion.Task;
     }
 
     /// <summary>
@@ -167,22 +163,30 @@ public abstract class BuildStep
 
         //executeContext.Logger.Debug("Step timer for {0}: callbacks: {1}ms, total: {2}ms", this, CallbackWatch.ElapsedMilliseconds, MicroThreadWatch.ElapsedMilliseconds);
 
-        if (StepProcessed != null)
+        try
         {
-            try
+            if (StepProcessed != null)
             {
-                var outputObjectsGroups = executeContext.GetOutputObjectsGroups();
-                MicrothreadLocalDatabases.MountDatabase(outputObjectsGroups);
-                StepProcessed(this, new BuildStepEventArgs(this, executeContext.Logger));
+                try
+                {
+                    var outputObjectsGroups = executeContext.GetOutputObjectsGroups();
+                    MicrothreadLocalDatabases.MountDatabase(outputObjectsGroups);
+                    StepProcessed(this, new BuildStepEventArgs(this, executeContext.Logger));
+                }
+                catch (Exception ex)
+                {
+                    executeContext.Logger.Error("Exception in command " + this + ": " + ex);
+                }
+                finally
+                {
+                    MicrothreadLocalDatabases.UnmountDatabase();
+                }
             }
-            catch (Exception ex)
-            {
-                executeContext.Logger.Error("Exception in command " + this + ": " + ex);
-            }
-            finally
-            {
-                MicrothreadLocalDatabases.UnmountDatabase();
-            }
+        }
+        finally
+        {
+            // Completion must not depend on subscribing before the event or on callback success.
+            executionCompletion.TrySetResult(this);
         }
     }
 

@@ -52,11 +52,9 @@ public abstract class AssetCompositeHierarchyEditorViewModel<TAssetPartDesign, T
         SelectedItems.CollectionChanged -= SelectedItemsCollectionChanged;
         SelectedContent.CollectionChanged -= SelectedContentCollectionChanged;
 
-        // Clear the property grid if any of our items was selected.
-        // TODO: this should be factorized with UI editor (at least) and with Sprite editor (ideally)
-        //if (Session.ActiveProperties.Selection.OfType< AssetCompositeItemViewModel>().Any(x => x == RootPart))
+        // An inactive document must not clear another document's inspector.
+        if (Session.ActiveProperties.Selection?.OfType<IAssetPartViewModel>().Any(item => item.Id.AssetId == Asset.Id) == true)
         {
-            // TODO: reimplement this!
             Session.ActiveProperties.GenerateSelectionPropertiesAsync(Enumerable.Empty<IPropertyProviderViewModel>()).Forget();
         }
         // Destroy all parts recursively

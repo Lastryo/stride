@@ -3,14 +3,21 @@
 
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using Stride.Core.Assets.Analysis;
 using Stride.Core.Assets.Editor.Components.Properties;
+using Stride.Core.Assets.Editor.Components.CopyPasteProcessors;
+using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Reflection;
 using Stride.Core.Assets.Presentation.ViewModels;
+using Stride.Core.Assets.Templates;
 using Stride.Core.Extensions;
 using Stride.Core.Presentation.Collections;
 using Stride.Core.Presentation.Commands;
 using Stride.Core.Presentation.Core;
+using Stride.Core.Presentation.Dirtiables;
+using Stride.Core.Presentation.Services;
 using Stride.Core.Presentation.ViewModels;
+using Stride.Core.Presentation.Windows;
 
 namespace Stride.Core.Assets.Editor.ViewModels;
 
@@ -87,7 +94,7 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
     private object? singleSelectedContent;
 
     private bool discardSelectionChanges;
-    private DisplayAssetMode displayAssetMode;
+    private DisplayAssetMode displayAssetMode = DisplayAssetMode.AssetAndFolderInSelectedFolder;
     private SortRule sortRule;
 
     public AssetCollectionViewModel(SessionViewModel session)
@@ -109,6 +116,10 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
         RefreshAssetFilterCommand = new AnonymousCommand<AssetFilterViewModel>(ServiceProvider, RefreshAssetFilter);
         ChangeDisplayAssetModeCommand = new AnonymousCommand<DisplayAssetMode>(ServiceProvider, mode => DisplayAssetMode = mode);
         SortAssetsCommand = new AnonymousCommand<SortRule>(ServiceProvider, rule => SortRule = rule);
+        DuplicateSelectionCommand = new AnonymousCommand(ServiceProvider, () => DuplicateSelection(),
+            () => SelectedAssets.Count > 0 && SelectedAssets.All(asset => asset.IsEditable && !asset.IsDeleted));
+        DeleteSelectionCommand = new AnonymousTaskCommand(ServiceProvider, () => DeleteSelection(), CanDeleteSelection);
+        CreateAssetFromTemplateCommand = new AnonymousTaskCommand<TemplateDescription>(ServiceProvider, template => Session.CreateAssetFromTemplate(template));
 
         currentAssetFilters.CollectionChanged += (_, e) =>
         {
@@ -130,6 +141,12 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
     /// </summary>
     public IReadOnlyObservableCollection<AssetViewModel> FilteredAssets => filteredAssets;
     private readonly ObservableList<AssetViewModel> filteredAssets = [];
+
+    /// <summary>
+    /// A list of assets and folders after the filter rules are applied to <see cref="Assets"/> and monitored directories.
+    /// </summary>
+    public IReadOnlyObservableCollection<object> FilteredContent => filteredContent;
+    private readonly ObservableList<object> filteredContent = [];
 
     /// <summary>
     /// A list of asset filters that can currently be applied.
@@ -275,6 +292,27 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
 
         filteredList.Sort(comparer);
         filteredAssets.AddRange(filteredList);
+        UpdateFilteredContent();
+    }
+
+    private void UpdateFilteredContent()
+    {
+        filteredContent.Clear();
+
+        if (displayAssetMode != DisplayAssetMode.AssetAndFolderInSelectedFolder)
+        {
+            filteredContent.AddRange(filteredAssets);
+            return;
+        }
+
+        var activeNameFilters = currentAssetFilters.Where(f => f is { Category: FilterCategory.AssetName, IsActive: true }).ToList();
+        var nameComparer = new NaturalStringComparer();
+        var folders = monitoredDirectories.SelectMany(d => d.SubDirectories)
+            .Where(d => activeNameFilters.All(f => f.Filter.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .All(x => d.Name.IndexOf(x, StringComparison.OrdinalIgnoreCase) >= 0)))
+            .OrderBy(d => d.Name, nameComparer);
+
+        filteredContent.AddRange(folders.Concat<object>(filteredAssets));
     }
 
     private void OnFilterPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -325,6 +363,91 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
     }
 
     public ICommandBase SelectAssetCommand { get; }
+    public ICommandBase DuplicateSelectionCommand { get; }
+    public ICommandBase DeleteSelectionCommand { get; }
+    public ICommandBase CreateAssetFromTemplateCommand { get; }
+    public ICommandBase ExploreCommand => Session.ExploreCommand;
+    public ICommandBase NewDirectoryCommand => Session.NewDirectoryCommand;
+
+    private bool CanDeleteSelection() => SelectedAssets.Count > 0 && SelectedAssets.All(asset => asset.IsEditable && !asset.IsDeleted);
+
+    public async Task<bool> DeleteSelection(bool askConfirmation = true)
+    {
+        if (!CanDeleteSelection()) return false;
+        var toDelete = SelectedAssets.ToArray();
+        if (askConfirmation)
+        {
+            var dialogs = ServiceProvider.TryGet<IDialogService>();
+            if (dialogs?.HasMainWindow != true) return false;
+            var ids = toDelete.Select(asset => asset.Id).ToHashSet();
+            var referencers = toDelete.SelectMany(asset => Session.DependencyManager.ComputeDependencies(asset.Id,
+                    AssetDependencySearchOptions.In, ContentLinkType.Reference)?.LinksIn ?? [])
+                .Where(link => !ids.Contains(link.Item.Id) && Session.GetAssetById(link.Item.Id) != null)
+                .Select(link => link.Item.Id).Distinct().Count();
+            var message = toDelete.Length == 1 ? $"Delete asset '{toDelete[0].Url}'?" : $"Delete these {toDelete.Length} assets?";
+            message += "\nAsset files will be moved to the system trash when you save the project. Imported source files will be kept.";
+            if (referencers > 0) message += $"\n{referencers} other assets reference this selection. Their references will become missing.";
+            if (await dialogs.MessageBoxAsync(message,
+                [new DialogButtonInfo { Content = "Delete", Result = 1 }, new DialogButtonInfo { Content = "Cancel", Result = 2, IsCancel = true, IsDefault = true }],
+                MessageBoxImage.Question) != 1) return false;
+        }
+
+        foreach (var editor in Session.EditorCollection.Editors.Where(editor => toDelete.Contains(editor.Asset)).ToArray())
+            await Session.EditorCollection.CloseEditorAsync(editor);
+
+        using (var transaction = Session.ActionService?.CreateTransaction())
+        {
+            foreach (var package in Session.LocalPackages)
+            {
+                foreach (var root in package.RootAssets.Where(toDelete.Contains).ToArray()) package.RootAssets.Remove(root);
+                // Preserve deletion/Undo for serialized references not present in the view model collection.
+                var roots = package.Package.RootAssets.Where(reference => toDelete.Any(asset => asset.Id == reference.Id)).ToArray();
+                if (roots.Length == 0) continue;
+                void RemoveRoots()
+                {
+                    foreach (var root in roots) package.Package.RootAssets.Remove(root.Id);
+                }
+                Session.ActionService?.PushOperation(new AnonymousDirtyingOperation(package.Dirtiables,
+                    () => { foreach (var root in roots) package.Package.RootAssets.Add(root); }, RemoveRoots));
+                RemoveRoots();
+            }
+            selectedContent.Clear();
+            foreach (var asset in toDelete) asset.IsDeleted = true;
+            if (transaction != null) Session.ActionService?.SetName(transaction, "Delete assets");
+        }
+        return true;
+    }
+
+    public IReadOnlyList<AssetViewModel> DuplicateSelection()
+    {
+        if (!DuplicateSelectionCommand.CanExecute(null)) return [];
+        var sources = SelectedAssets.ToArray();
+        var copyPaste = new CopyPasteService(Session.GraphContainer);
+        copyPaste.RegisterProcessor(new AssetItemPasteProcessor(Session));
+        var text = copyPaste.CopyMultipleAssets(sources.Select(asset => asset.AssetItem).ToList())!;
+        var pasted = copyPaste.DeserializeCopiedData(text, new List<AssetItem>(), typeof(AssetItem));
+        var items = ((IEnumerable<AssetItem>)pasted.Items.Single().Data!).ToArray();
+        var result = new List<AssetViewModel>();
+        using (var transaction = Session.ActionService?.CreateTransaction())
+        {
+            for (var i = 0; i < sources.Length; i++)
+            {
+                var source = sources[i];
+                var item = items[i];
+                var used = source.Directory.Package.Package.Assets.Select(asset => (string)asset.Location)
+                    .Concat(source.Directory.Package.DeletedAssets.Select(asset => asset.Url)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var location = NamingHelper.ComputeDuplicateName(source.Url, used.Contains);
+                item = item.Clone(location, item.Asset);
+                item.Asset.Id = AssetId.New();
+                item.SourceFolder = source.AssetItem.SourceFolder;
+                item.AlternativePath = null;
+                result.Add(source.Directory.Package.AddAsset(item, source.Directory));
+            }
+            if (transaction != null) Session.ActionService?.SetName(transaction, "Duplicate assets");
+        }
+        SelectAssets(result);
+        return result;
+    }
 
     public void SelectAssets(IEnumerable<AssetViewModel> assetsToSelect)
     {
@@ -346,6 +469,22 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
             selectedContent.Clear();
             // FIXME xplat-editor filters
             selectedContent.AddRange(assetList);
+        }
+    }
+
+    public void SelectContent(object item)
+    {
+        Dispatcher.EnsureAccess();
+        ArgumentNullException.ThrowIfNull(item);
+
+        if (item is AssetViewModel asset)
+        {
+            SelectAssets(asset.Yield()!);
+        }
+        else
+        {
+            selectedContent.Clear();
+            selectedContent.Add(item);
         }
     }
 
@@ -407,7 +546,9 @@ public sealed class AssetCollectionViewModel : DispatcherViewModel
                 foreach (AssetViewModel oldItem in e.OldItems)
                 {
                     assets.Remove(oldItem);
+                    filteredAssets.Remove(oldItem);
                 }
+                UpdateFilteredContent();
             }
             if (e.NewItems != null)
             {

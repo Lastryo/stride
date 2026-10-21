@@ -1,0 +1,372 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+             xmlns:converters="using:Stride.Core.Assets.Editor.Avalonia.Converters"
+             xmlns:vm="using:Stride.Assets.Editor.ViewModels"
+             xmlns:vm1="using:Stride.Assets.Presentation.ViewModels"
+             xmlns:vm2="using:Stride.Assets.Editor.UIEditor.ViewModels"
+             x:Class="Stride.Assets.Editor.Avalonia.Views.UIEditorView"
+             x:DataType="vm:UIEditorBaseViewModel">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <converters:TypeToResource x:Key="UITypeIcon"/>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.uiAction">
+      <Setter Property="Margin" Value="2"/>
+      <Setter Property="Padding" Value="4"/>
+      <Setter Property="MinWidth" Value="24"/>
+      <Setter Property="MinHeight" Value="24"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="TreeView.uiFactoryList">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="TreeView.uiFactoryList TreeViewItem">
+      <Setter Property="Padding" Value="6,3"/>
+      <Setter Property="MinHeight" Value="24"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-accept /template/ Border#PART_LayoutRoot, TreeViewItem.drag-accept:pointerover /template/ Border#PART_LayoutRoot, TreeViewItem.drag-accept:selected /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="#29462C"/>
+      <Setter Property="BorderBrush" Value="#65C36A"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+      <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-reject /template/ Border#PART_LayoutRoot, TreeViewItem.drag-reject:pointerover /template/ Border#PART_LayoutRoot, TreeViewItem.drag-reject:selected /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="#4D2223"/>
+      <Setter Property="BorderBrush" Value="#DC4E4E"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+      <Setter Property="CornerRadius" Value="2"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-over-before /template/ Border#PART_LayoutRoot">
+      <Setter Property="BorderThickness" Value="0,2,0,0"/>
+      <Setter Property="BorderBrush" Value="#FF4A90E2"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-over-after /template/ Border#PART_LayoutRoot">
+      <Setter Property="BorderThickness" Value="0,0,0,2"/>
+      <Setter Property="BorderBrush" Value="#FF4A90E2"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <Grid ColumnDefinitions="*,5,3*">
+    <!-- Left Panel -->
+    <DockPanel Grid.Column="0">
+      <!-- UI Properties Button -->
+      <Border DockPanel.Dock="Top" Padding="6,4" Background="{DynamicResource StudioPanelHeaderBackgroundBrush}">
+        <Button Content="UI properties" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding ShowPropertiesCommand}" Padding="6,4"/>
+      </Border>
+
+      <Grid RowDefinitions="*,5,*">
+        <!-- UI Element Library Palette -->
+        <DockPanel Grid.Row="0">
+          <Border DockPanel.Dock="Top" Padding="6,3" Background="{DynamicResource StudioPanelHeaderBackgroundBrush}">
+            <TextBlock Text="UI library" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource StudioTextMutedBrush}"/>
+          </Border>
+          <TreeView x:Name="FactoryListBox" Classes="uiFactoryList" ItemsSource="{Binding FactoryGroups}" DoubleTapped="OnFactoryDoubleTapped">
+            <TreeView.Styles>
+              <Style Selector="TreeViewItem"><Setter Property="IsExpanded" Value="True"/></Style>
+            </TreeView.Styles>
+            <TreeView.DataTemplates>
+              <TreeDataTemplate DataType="vm2:UIElementFactoryGroup" ItemsSource="{Binding Children}">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+              </TreeDataTemplate>
+              <DataTemplate DataType="vm2:IUIElementFactory">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Image Source="{Binding Type, Converter={StaticResource UITypeIcon}}" Width="16" Height="16"/>
+                  <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </DataTemplate>
+            </TreeView.DataTemplates>
+          </TreeView>
+        </DockPanel>
+
+        <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows"/>
+
+        <!-- Visual Tree Hierarchy -->
+        <DockPanel Grid.Row="2">
+          <Border DockPanel.Dock="Top" Padding="6,2" Background="{DynamicResource StudioPanelHeaderBackgroundBrush}">
+            <DockPanel LastChildFill="True">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                <Button Classes="uiAction" Click="ExpandAllButton_OnClick" ToolTip.Tip="Expand all elements">
+                  <Image Source="{StaticResource ImageExpandAllFolders}" Width="16" Height="16"/>
+                </Button>
+                <Button Classes="uiAction" Click="CollapseAllButton_OnClick" ToolTip.Tip="Collapse all elements">
+                  <Image Source="{StaticResource ImageCollapseAllFolders}" Width="16" Height="16"/>
+                </Button>
+              </StackPanel>
+              <TextBlock Text="Visual Tree" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource StudioTextMutedBrush}"/>
+            </DockPanel>
+          </Border>
+
+          <TreeView x:Name="HierarchyTreeView"
+                    Classes="studioSceneTree"
+                    ItemsSource="{Binding HierarchyRoot.Children, Mode=OneWay}"
+                    SelectedItems="{Binding SelectedContent}"
+                    SelectionMode="Multiple"
+                    BorderThickness="0">
+            <TreeView.ContextMenu>
+              <ContextMenu Opening="OnSelectionMenuOpening">
+                <MenuItem Header="Group into" Tag="Group" IsEnabled="{Binding GroupIntoCommand.IsEnabled}"/>
+                <MenuItem Header="Ungroup" Command="{Binding UngroupCommand}" IsVisible="{Binding LastSelectedElement.IsPanel, FallbackValue=False, TargetNullValue=False}"/>
+                <MenuItem Header="Change layout type" Tag="Layout" IsEnabled="{Binding ChangeLayoutTypeCommand.IsEnabled}" IsVisible="{Binding LastSelectedElement.IsPanel, FallbackValue=False, TargetNullValue=False}"/>
+                <Separator/>
+
+                <!-- Canvas Pin Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentCanvas, FallbackValue=False, TargetNullValue=False}" Header="Pin origin (Canvas)">
+                  <MenuItem Header="Top left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTopLeft}"/>
+                  <MenuItem Header="Top" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTop}"/>
+                  <MenuItem Header="Top right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTopRight}"/>
+                  <MenuItem Header="Left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinLeft}"/>
+                  <MenuItem Header="Center" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinCenter}"/>
+                  <MenuItem Header="Right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinRight}"/>
+                  <MenuItem Header="Bottom left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottomLeft}"/>
+                  <MenuItem Header="Bottom" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottom}"/>
+                  <MenuItem Header="Bottom right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottomRight}"/>
+                  <Separator/>
+                  <MenuItem Header="Front" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinFront}"/>
+                  <MenuItem Header="Middle" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinMiddle}"/>
+                  <MenuItem Header="Back" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBack}"/>
+                </MenuItem>
+
+                <!-- Grid Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentGrid, FallbackValue=False, TargetNullValue=False}" Header="Grid tools">
+                  <MenuItem Header="Row: Move up" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveUp}"/>
+                  <MenuItem Header="Row: Move down" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveDown}"/>
+                  <MenuItem Header="Column: Move left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveLeft}"/>
+                  <MenuItem Header="Column: Move right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveRight}"/>
+                  <MenuItem Header="Layer: Move back" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveBack}"/>
+                  <MenuItem Header="Layer: Move front" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveFront}"/>
+                </MenuItem>
+
+                <!-- StackPanel Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentStackPanel, FallbackValue=False, TargetNullValue=False}" Header="StackPanel: Move up" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveUp}"/>
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentStackPanel, FallbackValue=False, TargetNullValue=False}" Header="StackPanel: Move down" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveDown}"/>
+
+                <Separator/>
+                <MenuItem Header="Create page from selection" Command="{Binding CreatePageCommand}"/>
+                <MenuItem Header="Create library from selection" Command="{Binding CreateLibraryCommand}"/>
+                <Separator/>
+                <MenuItem Header="Open library in editor" Command="{Binding OpenLibraryEditorCommand}"/>
+                <MenuItem Header="Select library in Asset View" Command="{Binding SelectLibraryCommand}"/>
+                <MenuItem Header="Break link to library" Command="{Binding BreakLinkToLibraryCommand}"/>
+                <Separator/>
+                <MenuItem Header="Copy" InputGesture="Ctrl+C" Command="{Binding CopyCommand}"/>
+                <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding CutCommand}"/>
+                <MenuItem Header="Paste" InputGesture="Ctrl+V" Command="{Binding PasteCommand}"/>
+                <MenuItem Header="Paste as root" Command="{Binding PasteAsRootCommand}"/>
+                <MenuItem Header="Duplicate" InputGesture="Ctrl+D" Command="{Binding DuplicateSelectionCommand}"/>
+                <MenuItem Header="Delete" InputGesture="Delete" Command="{Binding DeleteCommand}">
+                  <MenuItem.Icon>
+                    <Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Rename" InputGesture="F2" Command="{Binding LastSelectedElement.RenameCommand}"/>
+              </ContextMenu>
+            </TreeView.ContextMenu>
+
+            <TreeView.DataTemplates>
+              <TreeDataTemplate DataType="{x:Type vm1:UIElementViewModel}" ItemsSource="{Binding Children}">
+                <Grid ColumnDefinitions="*,Auto" Margin="2,1" ToolTip.Tip="{Binding Status}">
+                  <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="{Binding ElementType, Converter={StaticResource UITypeIcon}}" Width="16" Height="16" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding Name}" FontWeight="Normal" Margin="0,0,4,0" IsVisible="{Binding ShowDisplayName}"/>
+                    <TextBox Text="{Binding Name, Mode=OneWay}" IsVisible="{Binding IsEditing}" MinWidth="100" Margin="0,0,4,0"
+                             AttachedToVisualTree="OnRenameAttached" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                    <TextBlock Text="{Binding ElementType.Name, StringFormat='[{0}]'}"/>
+                    <TextBlock Text="{Binding SourceLibrary.Name, StringFormat='(Library: {0})'}" Margin="4,0,0,0" Foreground="#FFB0FFD3" FontSize="11" IsVisible="{Binding SourceLibrary, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Children.Count, StringFormat='({0})'}" Foreground="{DynamicResource StudioTextMutedBrush}" FontSize="11" IsVisible="{Binding Children.Count}"/>
+                </Grid>
+              </TreeDataTemplate>
+            </TreeView.DataTemplates>
+            <TreeView.Styles>
+              <Style Selector="TreeViewItem" x:CompileBindings="False">
+                <Setter Property="IsExpanded" Value="True"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+              </Style>
+              <Style Selector="TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+              </Style>
+            </TreeView.Styles>
+          </TreeView>
+        </DockPanel>
+      </Grid>
+    </DockPanel>
+
+    <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns"/>
+
+    <!-- Right Panel: Viewport -->
+    <DockPanel Grid.Column="2">
+      <!-- Viewport Toolbar -->
+      <Border DockPanel.Dock="Top" Padding="4,2" Background="{DynamicResource StudioPanelHeaderBackgroundBrush}">
+        <DockPanel LastChildFill="True">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Button Classes="uiAction" Command="{Binding Viewport.ResetZoomCommand}" ToolTip.Tip="Reset zoom">
+              <Image Source="{StaticResource ImageZoomDefault}" Width="16" Height="16"/>
+            </Button>
+            <Button Classes="uiAction" Command="{Binding Viewport.ZoomOutCommand}" ToolTip.Tip="Zoom out">
+              <Image Source="{StaticResource ImageZoomOut}" Width="16" Height="16"/>
+            </Button>
+            <Button Classes="uiAction" Command="{Binding Viewport.ZoomInCommand}" ToolTip.Tip="Zoom in">
+              <Image Source="{StaticResource ImageZoomIn}" Width="16" Height="16"/>
+            </Button>
+
+            <Separator Width="1" Height="16" VerticalAlignment="Center" Margin="4,0" Background="{DynamicResource StudioBorderBrush}"/>
+
+            <!-- Snap Input -->
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+              <TextBlock Text="Snap:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource StudioTextMutedBrush}"/>
+              <NumericUpDown Value="{Binding Viewport.SnapValue, Mode=TwoWay}" Minimum="0" Maximum="1000" Increment="1" FormatString="0.0" Width="90" Height="24" ToolTip.Tip="Snaps to this value (0 to disable)"/>
+            </StackPanel>
+
+            <Separator Width="1" Height="16" VerticalAlignment="Center" Margin="4,0" Background="{DynamicResource StudioBorderBrush}"/>
+
+            <!-- Settings Popup -->
+            <Button Classes="uiAction" ToolTip.Tip="Viewport Adorner Settings">
+              <Image Source="{StaticResource ImageView}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedLeft">
+                  <Border Padding="10" Background="{DynamicResource StudioBackgroundBrush}">
+                    <StackPanel Spacing="6" Width="350">
+                      <TextBlock Text="Adorner Settings" FontWeight="Bold" Margin="0,0,0,4"/>
+                      <Grid ColumnDefinitions="*,80,120" RowDefinitions="Auto,Auto,Auto,Auto" Margin="2">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Guideline" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding Viewport.GuidelineThickness, Mode=TwoWay}" Minimum="1" Maximum="20" FormatString="0"/>
+                        <sd:ColorEditor x:Name="GuidelineColorEditor" Grid.Row="0" Grid.Column="2" Margin="6,0,0,0" Value="{Binding Viewport.GuidelineColor, Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Highlight" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Viewport.HighlightThickness, Mode=TwoWay}" Minimum="1" Maximum="20" FormatString="0"/>
+                        <sd:ColorEditor x:Name="HighlightColorEditor" Grid.Row="1" Grid.Column="2" Margin="6,0,0,0" Value="{Binding Viewport.HighlightColor, Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Selection" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding Viewport.SelectionThickness, Mode=TwoWay}" Minimum="1" Maximum="20" FormatString="0"/>
+                        <sd:ColorEditor x:Name="SelectionColorEditor" Grid.Row="2" Grid.Column="2" Margin="6,0,0,0" Value="{Binding Viewport.SelectionColor, Mode=TwoWay}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Sizing" VerticalAlignment="Center"/>
+                        <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding Viewport.SizingThickness, Mode=TwoWay}" Minimum="1" Maximum="20" FormatString="0"/>
+                        <sd:ColorEditor x:Name="SizingColorEditor" Grid.Row="3" Grid.Column="2" Margin="6,0,0,0" Value="{Binding Viewport.SizingColor, Mode=TwoWay}"/>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Error / Exception banner -->
+      <Border DockPanel.Dock="Bottom" Padding="6,3" IsVisible="{Binding Viewport.LastException, Converter={x:Static ObjectConverters.IsNotNull}}" Background="{DynamicResource StudioBackgroundBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5">
+            <Button x:Name="ResumeErrorButton" Content="Resume" Command="{Binding Viewport.ResumeCommand}"/>
+            <Button x:Name="CopyErrorButton" Content="Copy error" Command="{Binding Viewport.CopyErrorToClipboardCommand}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding Viewport.LastException.Message}" Foreground="#FFCC6666" TextWrapping="Wrap"/>
+        </DockPanel>
+      </Border>
+
+      <!-- Viewport 2D Host Control -->
+      <ContentControl x:Name="ViewportHostControl" Content="{Binding Viewport.EditorHost}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+        <ContentControl.ContextMenu><ContextMenu Opening="OnViewportMenuOpening">
+                <MenuItem Header="Set current selection" Tag="Candidates"/>
+                <MenuItem Header="View">
+                  <MenuItem Header="Zoom in" Command="{Binding Viewport.ZoomInCommand}"/>
+                  <MenuItem Header="Zoom out" Command="{Binding Viewport.ZoomOutCommand}"/>
+                  <MenuItem Header="Reset camera" Command="{Binding Viewport.ResetZoomCommand}"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Group into" Tag="Group" IsEnabled="{Binding GroupIntoCommand.IsEnabled}"/>
+                <MenuItem Header="Ungroup" Command="{Binding UngroupCommand}" IsVisible="{Binding LastSelectedElement.IsPanel, FallbackValue=False, TargetNullValue=False}"/>
+                <MenuItem Header="Change layout type" Tag="Layout" IsEnabled="{Binding ChangeLayoutTypeCommand.IsEnabled}" IsVisible="{Binding LastSelectedElement.IsPanel, FallbackValue=False, TargetNullValue=False}"/>
+                <Separator/>
+
+                <!-- Canvas Pin Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentCanvas, FallbackValue=False, TargetNullValue=False}" Header="Pin origin (Canvas)">
+                  <MenuItem Header="Top left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTopLeft}"/>
+                  <MenuItem Header="Top" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTop}"/>
+                  <MenuItem Header="Top right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinTopRight}"/>
+                  <MenuItem Header="Left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinLeft}"/>
+                  <MenuItem Header="Center" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinCenter}"/>
+                  <MenuItem Header="Right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinRight}"/>
+                  <MenuItem Header="Bottom left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottomLeft}"/>
+                  <MenuItem Header="Bottom" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottom}"/>
+                  <MenuItem Header="Bottom right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBottomRight}"/>
+                  <Separator/>
+                  <MenuItem Header="Front" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinFront}"/>
+                  <MenuItem Header="Middle" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinMiddle}"/>
+                  <MenuItem Header="Back" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.PinBack}"/>
+                </MenuItem>
+
+                <!-- Grid Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentGrid, FallbackValue=False, TargetNullValue=False}" Header="Grid tools">
+                  <MenuItem Header="Row: Move up" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveUp}"/>
+                  <MenuItem Header="Row: Move down" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveDown}"/>
+                  <MenuItem Header="Column: Move left" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveLeft}"/>
+                  <MenuItem Header="Column: Move right" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveRight}"/>
+                  <MenuItem Header="Layer: Move back" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveBack}"/>
+                  <MenuItem Header="Layer: Move front" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveFront}"/>
+                </MenuItem>
+
+                <!-- StackPanel Tools -->
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentStackPanel, FallbackValue=False, TargetNullValue=False}" Header="StackPanel: Move up" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveUp}"/>
+                <MenuItem IsVisible="{Binding LastSelectedElement.IsParentStackPanel, FallbackValue=False, TargetNullValue=False}" Header="StackPanel: Move down" Command="{Binding LastSelectedElement.PanelCommand}" CommandParameter="{x:Static vm1:PanelCommandMode.MoveDown}"/>
+
+                <Separator/>
+                <MenuItem Header="Create page from selection" Command="{Binding CreatePageCommand}"/>
+                <MenuItem Header="Create library from selection" Command="{Binding CreateLibraryCommand}"/>
+                <Separator/>
+                <MenuItem Header="Open library in editor" Command="{Binding OpenLibraryEditorCommand}"/>
+                <MenuItem Header="Select library in Asset View" Command="{Binding SelectLibraryCommand}"/>
+                <MenuItem Header="Break link to library" Command="{Binding BreakLinkToLibraryCommand}"/>
+                <Separator/>
+                <MenuItem Header="Copy" InputGesture="Ctrl+C" Command="{Binding CopyCommand}"/>
+                <MenuItem Header="Cut" InputGesture="Ctrl+X" Command="{Binding CutCommand}"/>
+                <MenuItem Header="Paste" InputGesture="Ctrl+V" Command="{Binding PasteCommand}"/>
+                <MenuItem Header="Paste as root" Command="{Binding PasteAsRootCommand}"/>
+                <MenuItem Header="Duplicate" InputGesture="Ctrl+D" Command="{Binding DuplicateSelectionCommand}"/>
+                <MenuItem Header="Delete" InputGesture="Delete" Command="{Binding DeleteCommand}">
+                  <MenuItem.Icon>
+                    <Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Rename" InputGesture="F2" Command="{Binding LastSelectedElement.RenameCommand}"/>
+              </ContextMenu></ContentControl.ContextMenu>
+      </ContentControl>
+    </DockPanel>
+  </Grid>
+
+  <!-- Drag & Drop Tooltip Overlay -->
+  <Canvas IsHitTestVisible="False">
+    <Border x:Name="DragTooltipBorder"
+            IsVisible="False"
+            Background="#1E1E20"
+            BorderBrush="#444446"
+            BorderThickness="1"
+            CornerRadius="2"
+            Padding="6,4">
+      <StackPanel Spacing="3">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image Source="{StaticResource ImageFolder}" Width="16" Height="16" VerticalAlignment="Center"/>
+          <TextBlock x:Name="DragTooltipTitle" Foreground="#E6E6E6" FontSize="12" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Image x:Name="DragTooltipAcceptedIcon" Source="{StaticResource ImageAcceptingDrop}" Width="14" Height="14" VerticalAlignment="Center"/>
+          <Image x:Name="DragTooltipRejectedIcon" Source="{StaticResource ImageRejectingDrop}" Width="14" Height="14" VerticalAlignment="Center"/>
+          <TextBlock x:Name="DragTooltipMessage" Foreground="#E6E6E6" FontSize="12" VerticalAlignment="Center"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Canvas>
+</Grid>
+</UserControl>
+

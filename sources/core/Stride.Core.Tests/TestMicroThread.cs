@@ -12,6 +12,17 @@ namespace Stride.Core.Tests;
 [Collection("Non-Parallel Collection")]
 public class TestMicroThread
 {
+    [Fact]
+    public void LateContinuationAfterSchedulerDisposalIsIgnored()
+    {
+        var scheduler = new Scheduler();
+        var context = new MicroThreadSynchronizationContext(new MicroThread(scheduler));
+        scheduler.Dispose();
+        var called = false;
+        context.Post(_ => called = true, null);
+        Assert.False(called);
+    }
+
     public class BaseTests
     {
         public int SharedCounter;

@@ -2,6 +2,8 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using Stride.Core.Assets.Tracking;
+using Stride.Core.Presentation.Commands;
+using Stride.Core.Diagnostics;
 using System.Threading.Tasks.Dataflow;
 using Stride.Core.Presentation.ViewModels;
 using Stride.Core.Assets.Presentation.ViewModels;
@@ -16,17 +18,57 @@ public sealed class AssetSourceTrackerViewModel : DispatcherViewModel, IAssetSou
 {
     private readonly CancellationTokenSource cts = new();
     private readonly ObservableSet<AssetViewModel> assetsToUpdate = [];
+    private bool updating;
 
     public AssetSourceTrackerViewModel(SessionViewModel session)
         : base(session.ServiceProvider)
     {
         Session = session;
+        UpdateAllAssetsWithModifiedSourceCommand = new AnonymousTaskCommand(ServiceProvider, UpdateAllAssetsWithModifiedSource) { IsEnabled = false };
 
         // This task will listen to the AssetSourceTracker for source file change notifications and collect them
-        Dispatcher.InvokeTask(() => PullSourceFileChangesAsync(cts.Token), cts.Token);
+        Dispatcher.InvokeTask(async () =>
+        {
+            try { await PullSourceFileChangesAsync(cts.Token); }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested) { }
+        });
     }
 
     public SessionViewModel Session { get; }
+
+    public ICommandBase UpdateAllAssetsWithModifiedSourceCommand { get; }
+
+    public IReadOnlyObservableCollection<AssetViewModel> AssetsToUpdate => assetsToUpdate;
+
+    private async Task UpdateAllAssetsWithModifiedSource()
+    {
+        if (updating) return;
+        updating = true;
+        UpdateAllAssetsWithModifiedSourceCommand.IsEnabled = false;
+        try
+        {
+            using var transaction = Session.ActionService!.CreateTransaction();
+            foreach (var asset in assetsToUpdate.ToArray())
+            {
+                var logger = new LoggerResult();
+                try
+                {
+                    await asset.Sources.UpdateAssetFromSource(logger);
+                }
+                catch (Exception e)
+                {
+                    logger.Error($"Unable to update {asset.Url} from source.", e);
+                }
+                foreach (var message in logger.Messages) GlobalLogger.GetLogger("Asset sources").Log(message);
+            }
+            Session.ActionService.SetName(transaction, "Update assets from source");
+        }
+        finally
+        {
+            updating = false;
+            UpdateAllAssetsWithModifiedSourceCommand.IsEnabled = assetsToUpdate.Count > 0;
+        }
+    }
 
     /// <inheritdoc/>
     public override void Destroy()
@@ -47,8 +89,7 @@ public sealed class AssetSourceTrackerViewModel : DispatcherViewModel, IAssetSou
         else
             assetsToUpdate.Remove(asset);
 
-        // FIXME xplat-editor
-        //UpdateAllAssetsWithModifiedSourceCommand.IsEnabled = assetsToUpdate.Count > 0;
+        UpdateAllAssetsWithModifiedSourceCommand.IsEnabled = !updating && assetsToUpdate.Count > 0;
     }
 
     private async Task PullSourceFileChangesAsync(CancellationToken token)

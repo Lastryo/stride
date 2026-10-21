@@ -75,6 +75,16 @@ public abstract class DirectoryBaseViewModel : SessionObjectViewModel
         assets.Remove(asset);
     }
 
+    internal void AddSubDirectory(DirectoryViewModel directory)
+    {
+        subDirectories.Add(directory);
+    }
+
+    internal void RemoveSubDirectory(DirectoryViewModel directory)
+    {
+        subDirectories.Remove(directory);
+    }
+
     private static int CompareDirectories(DirectoryViewModel? x, DirectoryViewModel? y)
     {
         if (x == null && y == null)

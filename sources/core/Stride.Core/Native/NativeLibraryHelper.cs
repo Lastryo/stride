@@ -148,7 +148,23 @@ public static partial class NativeLibraryHelper
                 return;
             }
 
-            var libraryNameWithExtension = libraryName + libExtension;
+            if (Platform.Type != PlatformType.Windows)
+            {
+                var altName = libraryName.StartsWith("lib", StringComparison.Ordinal)
+                    ? libraryName[3..]
+                    : "lib" + libraryName;
+
+                if (nativeDependenciesWithoutExtensions.TryGetValue(altName, out path) &&
+                    NativeLibrary.TryLoad(path, out knownLibHandle))
+                {
+                    AddLoadedLibrary(libraryName, knownLibHandle);
+                    return;
+                }
+            }
+
+            var libraryNameWithExtension = libraryName.EndsWith(libExtension, StringComparison.OrdinalIgnoreCase)
+                ? libraryName
+                : libraryName + libExtension;
 
             if (Platform.Type != PlatformType.Windows)
             {
@@ -230,7 +246,14 @@ public static partial class NativeLibraryHelper
         //
         void AddLoadedLibrary(string name, nint handle)
         {
-            loadedLibraries.Add(name, handle);
+            loadedLibraries[name] = handle;
+            if (Platform.Type != PlatformType.Windows)
+            {
+                if (name.StartsWith("lib", StringComparison.Ordinal))
+                    loadedLibraries.TryAdd(name[3..], handle);
+                else
+                    loadedLibraries.TryAdd("lib" + name, handle);
+            }
             LogLibraryLoaded(name, handle);
         }
 #endif
@@ -370,16 +393,43 @@ public static partial class NativeLibraryHelper
         {
             var libraryNameWithoutExtension = Path.GetFileNameWithoutExtension(libraryPath);
             var libraryNameWithExtension = Path.GetFileName(libraryPath);
-            nativeDependenciesWithoutExtensions[libraryNameWithoutExtension] = libraryPath;
-            nativeDependenciesWithExtensions[libraryNameWithExtension] = libraryPath;
 
-            // Native libs on Linux/macOS are conventionally named "lib<X>.so/.dylib" but
-            // [DllImport] strings typically drop the prefix ("X"). Register the stripped
-            // form too so the resolver finds it under either spelling.
-            if (Platform.Type != PlatformType.Windows
-                && libraryNameWithoutExtension.StartsWith("lib", StringComparison.Ordinal))
+            void RegisterWithoutExtension(string name)
             {
-                nativeDependenciesWithoutExtensions[libraryNameWithoutExtension[3..]] = libraryPath;
+                nativeDependenciesWithoutExtensions[name] = libraryPath;
+                if (Platform.Type != PlatformType.Windows && name.StartsWith("lib", StringComparison.Ordinal))
+                {
+                    nativeDependenciesWithoutExtensions[name[3..]] = libraryPath;
+                }
+            }
+
+            nativeDependenciesWithExtensions[libraryNameWithExtension] = libraryPath;
+            RegisterWithoutExtension(libraryNameWithoutExtension);
+
+            if (Platform.Type != PlatformType.Windows)
+            {
+                // Linux: soname-versioned libraries (e.g. "libassimp.so.5" -> base name "libassimp")
+                var soIndex = libraryNameWithExtension.IndexOf(".so", StringComparison.OrdinalIgnoreCase);
+                if (soIndex > 0)
+                {
+                    var baseName = libraryNameWithExtension[..soIndex];
+                    RegisterWithoutExtension(baseName);
+                    nativeDependenciesWithExtensions[baseName + ".so"] = libraryPath;
+                }
+
+                // macOS: versioned dylibs (e.g. "libassimp.5.dylib" -> base name "libassimp")
+                var dylibIndex = libraryNameWithExtension.IndexOf(".dylib", StringComparison.OrdinalIgnoreCase);
+                if (dylibIndex > 0)
+                {
+                    var baseName = libraryNameWithExtension[..dylibIndex];
+                    var lastDot = baseName.LastIndexOf('.');
+                    if (lastDot > 0 && int.TryParse(baseName[(lastDot + 1)..], out _))
+                    {
+                        baseName = baseName[..lastDot];
+                    }
+                    RegisterWithoutExtension(baseName);
+                    nativeDependenciesWithExtensions[baseName + ".dylib"] = libraryPath;
+                }
             }
 #if STRIDE_PLATFORM_DESKTOP
             EnsureGlobalResolverRegistered();
@@ -414,10 +464,25 @@ public static partial class NativeLibraryHelper
             if (loadedLibraries.TryGetValue(name, out var handle))
                 return handle;
 
+            if (Platform.Type != PlatformType.Windows)
+            {
+                if (name.StartsWith("lib", StringComparison.Ordinal) && loadedLibraries.TryGetValue(name[3..], out handle))
+                    return handle;
+                if (!name.StartsWith("lib", StringComparison.Ordinal) && loadedLibraries.TryGetValue("lib" + name, out handle))
+                    return handle;
+            }
+
             if (nativeDependenciesWithoutExtensions.TryGetValue(name, out var path) &&
                 NativeLibrary.TryLoad(path, out var loadedHandle))
             {
-                loadedLibraries.Add(name, loadedHandle);
+                loadedLibraries[name] = loadedHandle;
+                if (Platform.Type != PlatformType.Windows)
+                {
+                    if (name.StartsWith("lib", StringComparison.Ordinal))
+                        loadedLibraries.TryAdd(name[3..], loadedHandle);
+                    else
+                        loadedLibraries.TryAdd("lib" + name, loadedHandle);
+                }
                 LogLibraryLoaded(name, loadedHandle);
                 return loadedHandle;
             }

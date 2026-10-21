@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Stride.Core.Assets.Presentation.ViewModels"
+             xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+             xmlns:cvt="using:Stride.GameStudio.Avalonia.Converters"
+             xmlns:controls="using:Stride.GameStudio.Avalonia.Controls"
+             x:Class="Stride.GameStudio.Avalonia.Views.AssetCard"
+             x:Name="Card" x:DataType="vm:AssetViewModel"
+             FontFamily="Segoe UI"
+             ToolTip.ShowDelay="1">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <ToolTip.Tip>
+    <StackPanel>
+      <TextBlock Text="{Binding Url, StringFormat='URL: {0}'}" FontWeight="Bold"/>
+      <TextBlock Text="{Binding TypeDisplayName, StringFormat='Type: {0}'}"/>
+      <TextBlock Text="Included in build as root" IsVisible="{Binding Dependencies.IsRoot, FallbackValue=False}"/>
+      <TextBlock Text="Included in build as dependency" IsVisible="{Binding Dependencies.IsIndirectlyIncluded, FallbackValue=False}"/>
+      <TextBlock Text="Excluded from build" IsVisible="{Binding Dependencies.IsExcluded, FallbackValue=False}"/>
+    </StackPanel>
+  </ToolTip.Tip>
+  <StackPanel>
+    <!-- Keep the image and caption dimensions in sync with WPF's AssetTileView. -->
+    <Grid>
+      <Border Classes="studioAssetThumbnail" Margin="0,3,0,0">
+        <controls:ThumbnailImage x:Name="Thumbnail" Image="{Binding ThumbnailData.Presenter}" Stretch="Uniform"
+                                 Width="{Binding ThumbnailSize, ElementName=Card}"
+                                 Height="{Binding ThumbnailSize, ElementName=Card}"
+                                 RenderOptions.BitmapInterpolationMode="MediumQuality"/>
+      </Border>
+      <ProgressBar Width="32" Height="8" MinHeight="0" IsIndeterminate="True"
+                   IsVisible="{Binding ThumbnailData, Converter={sd:Chained {sd:ObjectToBool}, {sd:InvertBool}}}"/>
+      <Button x:Name="BuildStatusButton" Classes="assetBuildStatus" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,3"
+              Padding="0" Background="Transparent" BorderThickness="0"
+              ToolTip.ShowDelay="1"
+              Command="{Binding Dependencies.ToggleIsRootOnSelectedAssetCommand, FallbackValue={x:Null}}">
+        <ToolTip.Tip>
+          <StackPanel>
+            <TextBlock Text="Included in build as root" IsVisible="{Binding Dependencies.IsRoot}"/>
+            <TextBlock Text="Included in build as dependency" IsVisible="{Binding Dependencies.IsIndirectlyIncluded}"/>
+            <TextBlock Text="Excluded from build" IsVisible="{Binding Dependencies.IsExcluded}"/>
+          </StackPanel>
+        </ToolTip.Tip>
+        <Button.Template>
+          <ControlTemplate>
+            <ContentPresenter Content="{TemplateBinding Content}" Background="Transparent"/>
+          </ControlTemplate>
+        </Button.Template>
+        <Grid Width="22" Height="22">
+          <Image x:Name="RootIndicator" Source="{StaticResource ImageAssetIsRoot}" Width="12" Height="12" Margin="5"
+                 IsVisible="{Binding Dependencies.IsRoot, FallbackValue=False}"/>
+          <Image x:Name="DependencyIndicator" Source="{StaticResource ImageAssetIsIndirectlyIncluded}" Width="12" Height="12" Margin="5"
+                 IsVisible="{Binding Dependencies.IsIndirectlyIncluded, FallbackValue=False}"/>
+          <Image x:Name="ExcludedIndicator" Source="{StaticResource ImageAssetIsExcluded}" Width="12" Height="12" Margin="5"
+                 IsVisible="{Binding Dependencies.IsExcluded, FallbackValue=False}"/>
+        </Grid>
+      </Button>
+    </Grid>
+    <StackPanel x:Name="Caption" Width="{Binding ThumbnailSize, ElementName=Card}" Height="48" HorizontalAlignment="Center">
+      <DockPanel HorizontalAlignment="Center" LastChildFill="True">
+        <TextBlock x:Name="DirtyMarker" DockPanel.Dock="Right" Text="*" IsVisible="{Binding IsDirty}" VerticalAlignment="Bottom"/>
+        <TextBlock x:Name="AssetName" Text="{Binding Name, Converter={cvt:NameBreakingLine}}" TextAlignment="Center"
+                   TextWrapping="Wrap" MaxHeight="32" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+      <TextBlock Text="{Binding TypeDisplayName}" TextAlignment="Center" FontSize="10" Opacity="0.5"
+                 TextTrimming="CharacterEllipsis"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

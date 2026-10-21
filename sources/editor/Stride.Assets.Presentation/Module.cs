@@ -15,6 +15,7 @@ internal class Module
     public static void Initialize()
     {
         RuntimeHelpers.RunModuleConstructor(typeof(MaterialAsset).Module.ModuleHandle);
+        RuntimeHelpers.RunModuleConstructor(typeof(Stride.Assets.Models.ModelAsset).Module.ModuleHandle);
         AssemblyRegistry.Register(typeof(Module).Assembly, AssemblyCommonCategories.Assets);
         AssetQuantumRegistry.RegisterAssembly(typeof(Module).Assembly);
         AssetsPlugin.RegisterPlugin(typeof(StrideDefaultAssetsPlugin));

@@ -26,8 +26,8 @@ public class ThumbnailsViewModel : DispatcherViewModel
         : base(session.SafeArgument(nameof(session)).ServiceProvider)
     {
         this.session = session;
-        // FIXME xplat-editor
-        //session.AssetCollection.FilteredContent.CollectionChanged += VisibleAssetsChanged;
+        session.AssetCollection.FilteredAssets.CollectionChanged += VisibleAssetsChanged;
+        session.References.DisplayedReferences.FilteredAssets.CollectionChanged += VisibleAssetsChanged;
         session.AssetCollection.SelectedContent.CollectionChanged += VisibleAssetsChanged;
         session.AssetPropertiesChanged += AssetPropertiesChanged;
         ServiceProvider.ServiceRegistered += ServiceRegistered;
@@ -36,8 +36,9 @@ public class ThumbnailsViewModel : DispatcherViewModel
     /// <inheritdoc/>
     public override void Destroy()
     {
-        // FIXME xplat-editor
-        //session.AssetCollection.FilteredContent.CollectionChanged -= VisibleAssetsChanged;
+        base.Destroy();
+        session.AssetCollection.FilteredAssets.CollectionChanged -= VisibleAssetsChanged;
+        session.References.DisplayedReferences.FilteredAssets.CollectionChanged -= VisibleAssetsChanged;
         session.AssetCollection.SelectedContent.CollectionChanged -= VisibleAssetsChanged;
         session.AssetPropertiesChanged -= AssetPropertiesChanged;
         ServiceProvider.ServiceRegistered -= ServiceRegistered;
@@ -47,7 +48,11 @@ public class ThumbnailsViewModel : DispatcherViewModel
             thumbnailService.ThumbnailCompleted -= ThumbnailCompleted;
             thumbnailService.Dispose();
         }
-        base.Destroy();
+        foreach (var asset in session.AllAssets)
+        {
+            asset.ThumbnailData?.Destroy();
+            asset.ThumbnailData = null;
+        }
     }
 
     /// <summary>
@@ -77,8 +82,7 @@ public class ThumbnailsViewModel : DispatcherViewModel
             initialQueue.Add(package);
         }
 
-        // TODO: putting false here makes all thumbnails that are not visible to be incorrectly built
-        RefreshThumbnails(package.Assets, true);
+        RefreshThumbnails(package.Assets, !package.Package.IsSystem);
     }
 
     /// <summary>
@@ -123,8 +127,8 @@ public class ThumbnailsViewModel : DispatcherViewModel
 
     private void VisibleAssetsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // FIXME xplat-editor
-        //IncreaseThumbnailPriority(session.AssetCollection.FilteredContent.OfType<AssetViewModel>());
+        IncreaseThumbnailPriority(session.AssetCollection.FilteredAssets);
+        IncreaseThumbnailPriority(session.References.DisplayedReferences.FilteredAssets);
         IncreaseThumbnailPriority(session.AssetCollection.SelectedContent.OfType<AssetViewModel>());
     }
 
@@ -136,14 +140,18 @@ public class ThumbnailsViewModel : DispatcherViewModel
 
     private void ThumbnailCompleted(object? sender, ThumbnailCompletedArgs e)
     {
-        var asset = session.GetAssetById(e.AssetId);
-        if (asset != null)
+        Dispatcher.InvokeAsync(async () =>
         {
-            Dispatcher.InvokeAsync(async () =>
+            var asset = IsDestroyed ? null : session.GetAssetById(e.AssetId);
+            if (asset == null)
             {
-                asset.ThumbnailData = e.Data;
-                await e.Data.PrepareForPresentation(Dispatcher);
-            });
-        }
+                e.Data.Destroy();
+                return;
+            }
+            var previous = asset.ThumbnailData;
+            asset.ThumbnailData = e.Data;
+            previous?.Destroy();
+            await e.Data.PrepareForPresentation(Dispatcher);
+        });
     }
 }

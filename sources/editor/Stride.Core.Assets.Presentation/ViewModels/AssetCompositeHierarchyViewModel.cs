@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Collections.Specialized;
 using Stride.Core.Assets.Quantum;
 using Stride.Core.Quantum;
 
@@ -13,6 +14,41 @@ public abstract class AssetCompositeHierarchyViewModel<TAssetPartDesign, TAssetP
     protected AssetCompositeHierarchyViewModel(ConstructorParameters parameters)
         : base(parameters)
     {
+        Session.DeletedAssetsChanged += AssetsDeleted;
+        AssetHierarchyPropertyGraph.Changed += BaseChanged;
+    }
+
+    public override void Destroy()
+    {
+        Session.DeletedAssetsChanged -= AssetsDeleted;
+        AssetHierarchyPropertyGraph.Changed -= BaseChanged;
+        base.Destroy();
+    }
+
+    private void AssetsDeleted(object? sender, NotifyCollectionChangedEventArgs? e)
+    {
+        if (e?.NewItems == null || UndoRedoService!.UndoRedoInProgress) return;
+        foreach (var deleted in e.NewItems.OfType<AssetCompositeHierarchyViewModel<TAssetPartDesign, TAssetPart>>())
+        {
+            var instanceIds = AssetHierarchyPropertyGraph.GetInstanceIds(deleted.AssetHierarchyPropertyGraph).ToHashSet();
+            var parts = Asset.Hierarchy.Parts.Values.Where(part => part.Base != null && instanceIds.Contains(part.Base.InstanceId)).ToArray();
+            AssetHierarchyPropertyGraph.BreakBasePartLinks(parts);
+        }
+    }
+
+    private void BaseChanged(object? sender, AssetMemberNodeChangeEventArgs e)
+    {
+        if (e.Member.Name != nameof(IAssetPartDesign<TAssetPart>.Base) || e.Member.Parent.Retrieve() is not TAssetPartDesign part) return;
+        var node = (IAssetNode)Session.AssetNodeContainer.GetNode(part.Part)!;
+        if (part.Base == null)
+        {
+            AssetHierarchyPropertyGraph.RefreshBase(node, null);
+        }
+        else if (Session.GetAssetById(part.Base.BasePartAsset.Id) is AssetCompositeHierarchyViewModel<TAssetPartDesign, TAssetPart> source
+            && source.Asset.Hierarchy.Parts.TryGetValue(part.Base.BasePartId, out var basePart))
+        {
+            AssetHierarchyPropertyGraph.RefreshBase(node, (IAssetNode)Session.AssetNodeContainer.GetNode(basePart.Part)!);
+        }
     }
 
     public AssetCompositeHierarchyPropertyGraph<TAssetPartDesign, TAssetPart> AssetHierarchyPropertyGraph => (AssetCompositeHierarchyPropertyGraph<TAssetPartDesign, TAssetPart>)PropertyGraph;

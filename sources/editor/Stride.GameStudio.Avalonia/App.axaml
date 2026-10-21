@@ -16,7 +16,7 @@
           <SolidColorBrush x:Key="PropertyFocusedBackground"
                            Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="#FF252528"/>
+                           Color="#FF316B8F"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
                            Color="#FF525252"/>
         </ResourceDictionary>
@@ -24,7 +24,7 @@
           <SolidColorBrush x:Key="PropertyFocusedBackground"
                            Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="#FF252528"/>
+                           Color="#FF316B8F"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
                            Color="#FF525252"/>
         </ResourceDictionary>
@@ -32,7 +32,7 @@
           <SolidColorBrush x:Key="PropertyFocusedBackground"
                            Color="#FF007ACC"/>
           <SolidColorBrush x:Key="PropertyHeaderBackground"
-                           Color="#FFE5E5E8"/>
+                           Color="#FF316B8F"/>
           <SolidColorBrush x:Key="PropertyHoveredBackground"
                            Color="#FFDADAE0"/>
         </ResourceDictionary>

@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
+using System.Threading.Tasks;
+using Stride.Assets.Editor.UIEditor.Services;
+using Stride.Assets.Editor.UIEditor.ViewModels;
 using Stride.Assets.Presentation.ViewModels;
 using Stride.Core.Assets.Editor.Annotations;
 using Stride.Core.Assets.Editor.ViewModels;
@@ -22,5 +25,13 @@ public sealed class UIPageEditorViewModel : UIEditorBaseViewModel, IAssetEditorV
     protected override UIPageRootViewModel CreateRootPartViewModel()
     {
         return new UIPageRootViewModel(Asset);
+    }
+
+    public override async Task OpenViewport()
+    {
+        Viewport ??= new UIViewportViewModel(this, model => new UIPageEditorController(Asset, (UIViewportViewModel)model));
+        await Viewport.Initialize();
+        Viewport.ShowGame();
+        RegisterAllPropagators();
     }
 }

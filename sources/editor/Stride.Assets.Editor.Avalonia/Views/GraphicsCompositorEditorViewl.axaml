@@ -1,15 +1,98 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Stride.Assets.Editor.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:items="using:Stride.Assets.Editor.GraphicsCompositorEditor.ViewModels"
+             xmlns:controls="using:Stride.Assets.Editor.Avalonia.Controls"
              x:Class="Stride.Assets.Editor.Avalonia.Views.GraphicsCompositorEditorView"
-             x:DataType="vm:GraphicsCompositorEditorViewModel">
-  <DockPanel>
-    <Grid DockPanel.Dock="Top">
-      <TextBlock Text="GraphicsCompositor Editor" />
+             x:DataType="vm:GraphicsCompositorEditorViewModel"
+             KeyDown="EditorKeyDown">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.compositorAction">
+      <Setter Property="Margin" Value="2"/>
+      <Setter Property="Padding" Value="3"/>
+      <Setter Property="MinWidth" Value="24"/>
+      <Setter Property="MinHeight" Value="24"/>
+    </Style>
+    <Style Selector="ListBox.compositorList">
+      <Setter Property="Margin" Value="8"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.compositorList ListBoxItem">
+      <Setter Property="Padding" Value="0,2"/>
+      <Setter Property="MinHeight" Value="22"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="*,5,3*">
+    <Grid RowDefinitions="*,5,*,5,*" MinWidth="180">
+      <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Classes="compositorAction" Command="{Binding AddNewRenderStageCommand}" ToolTip.Tip="Add render stage"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="compositorAction" Command="{Binding RemoveSelectedRenderStagesCommand}" ToolTip.Tip="Remove selected render stages"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel>
+          <TextBlock Text="Render stages:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="RenderStagesList" Classes="compositorList" ItemsSource="{Binding RenderStages}" SelectedItems="{Binding SelectedRenderStages}" SelectionMode="Multiple" ScrollViewer.HorizontalScrollBarVisibility="Disabled" KeyDown="ListKeyDown">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="items:RenderStageViewModel">
+              <Grid>
+                <TextBlock Margin="5,0,0,0" TextTrimming="CharacterEllipsis" DoubleTapped="BeginRename">
+                  <!-- Display text, especially the formatted slot, must not be written back to the asset. -->
+                  <Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold"/>
+                  <Run Text="{Binding EffectSlotName, Mode=OneWay, StringFormat=' (Slot {0})'}" Foreground="Gray"/>
+                </TextBlock>
+                <TextBox IsVisible="False" KeyDown="RenameKeyDown" LostFocus="RenameLostFocus"/>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch"/>
+      <DockPanel Grid.Row="2">
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Classes="compositorAction" Click="AddRenderFeature" ToolTip.Tip="Add render feature"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="compositorAction" Command="{Binding RemoveSelectedRenderFeaturesCommand}" ToolTip.Tip="Remove selected render features"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel>
+          <TextBlock Text="Render features:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="RenderFeaturesList" Classes="compositorList" ItemsSource="{Binding RenderFeatures}" SelectedItems="{Binding SelectedRenderFeatures}" SelectionMode="Multiple" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="items:RenderFeatureViewModel"><TextBlock Text="{Binding Title, Mode=OneWay}" Margin="5,0,0,0" FontWeight="Bold" TextTrimming="CharacterEllipsis"/></DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <GridSplitter Grid.Row="3" HorizontalAlignment="Stretch"/>
+      <DockPanel Grid.Row="4">
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Classes="compositorAction" Command="{Binding AddNewCameraSlotCommand}" ToolTip.Tip="Add camera slot"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="compositorAction" Command="{Binding RemoveSelectedCameraSlotsCommand}" ToolTip.Tip="Remove selected camera slots"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel>
+          <TextBlock Text="Camera slots:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="CameraSlotsList" Classes="compositorList" ItemsSource="{Binding CameraSlots}" SelectedItems="{Binding SelectedCameraSlots}" SelectionMode="Multiple" ScrollViewer.HorizontalScrollBarVisibility="Disabled" KeyDown="ListKeyDown">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="items:GraphicsCompositorCameraSlotsViewModel">
+              <Grid>
+                <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="Bold" Margin="5,0,0,0" TextTrimming="CharacterEllipsis" DoubleTapped="BeginRename"/>
+                <TextBox IsVisible="False" KeyDown="RenameKeyDown" LostFocus="RenameLostFocus"/>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
     </Grid>
-    <TextBlock Text="{Binding Asset.Name}" />
-  </DockPanel>
+    <GridSplitter Grid.Column="1" VerticalAlignment="Stretch"/>
+    <controls:GraphicsCompositorGraph Grid.Column="2" x:Name="CompositorGraph"/>
+  </Grid>
 </UserControl>

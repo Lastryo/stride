@@ -10,6 +10,8 @@ namespace Stride.Assets.Editor.EntityHierarchyEditor.Game;
 public sealed class SceneViewportGame(TaskCompletionSource<bool> loaded, IEffectCompiler compiler, string logPath)
     : EntityHierarchyEditorGame(loaded, compiler, logPath)
 {
+    private Scene? activeContentScene;
+    public Scene? ActiveContentScene => activeContentScene;
     public event Action? ContentReloaded;
 
     public override Entity? FindSubEntity(Guid sceneId, Guid entityId) =>
@@ -19,9 +21,31 @@ public sealed class SceneViewportGame(TaskCompletionSource<bool> loaded, IEffect
 
     public void ReplaceContent(Scene scene)
     {
+        activeContentScene = scene;
         ContentScene.Children.Clear();
         ContentScene.Entities.Clear();
         ContentScene.Children.Add(scene);
         ContentReloaded?.Invoke();
+    }
+
+    public void SetContentLoaded(bool isLoaded)
+    {
+        if (activeContentScene == null) return;
+        if (isLoaded)
+        {
+            if (!ContentScene.Children.Contains(activeContentScene))
+            {
+                ContentScene.Children.Add(activeContentScene);
+                ContentReloaded?.Invoke();
+            }
+        }
+        else
+        {
+            if (ContentScene.Children.Contains(activeContentScene))
+            {
+                ContentScene.Children.Remove(activeContentScene);
+                ContentReloaded?.Invoke();
+            }
+        }
     }
 }

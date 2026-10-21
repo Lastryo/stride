@@ -2,6 +2,7 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using Stride.Assets.UI;
+using Stride.Core;
 using Stride.Core.Quantum;
 
 namespace Stride.Assets.Presentation.ViewModels;
@@ -12,6 +13,8 @@ public abstract class UIRootViewModel : UIHierarchyItemViewModel
         : base(asset, rootElements)
     {
     }
+
+    public override AbsoluteId Id => new(Asset.Id, Guid.Empty);
 
     /// <inheritdoc/>
     public override GraphNodePath GetNodePath()

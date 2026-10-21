@@ -30,6 +30,7 @@ using Stride.GameStudio.Avalonia;
 
 if (args.Length == 0) throw new ArgumentException("Pass a temporary copy of a project's .sln file.");
 MSBuildLocator.RegisterDefaults();
+System.Runtime.CompilerServices.RuntimeHelpers.RunModuleConstructor(typeof(Stride.Assets.Models.ModelAsset).Module.ModuleHandle);
 GlobalLogger.GlobalMessageLogged += message => Console.WriteLine(message);
 AppBuilder.Configure<App>().UsePlatformDetect()
     .With(new X11PlatformOptions { RenderingMode = args.Contains("--glx-presentation")
@@ -59,6 +60,20 @@ internal static class ViewportSmoke
 {
     public static async Task CheckViewport()
     {
+        var startupLifetime = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
+        if (startupLifetime.Args?.Contains("--color-picker") == true)
+        {
+            await EditorColorPickerSmoke.Check(startupLifetime.MainWindow!);
+            startupLifetime.Shutdown();
+            return;
+        }
+        if (startupLifetime.Args?.Contains("--startup-layout-only") == true)
+        {
+            await Task.Delay(1000);
+            await EditorLayoutSmoke.CheckStartup(startupLifetime.MainWindow!);
+            startupLifetime.Shutdown();
+            return;
+        }
         await CheckBackgroundLogging();
         CheckScenePreviewTemplate();
         var lifetime = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
@@ -74,6 +89,82 @@ internal static class ViewportSmoke
         }
         if (scene is null || session is null) throw new TimeoutException("No scene became available in the loaded project.");
         Console.WriteLine($"Loaded {session.AllPackages.Count()} packages and {session.AllAssets.Count()} assets.");
+        if (lifetime.Args?.Contains("--scene-ui") == true)
+        {
+            await EditorSceneUISmoke.Check(session);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--ui-polish") == true)
+        {
+            await EditorUIPolishSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--ui-library") == true)
+        {
+            await EditorUILibrarySmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--ui-page") == true)
+        {
+            await EditorUIPageSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--graphics-compositor") == true)
+        {
+            await EditorGraphicsCompositorSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--asset-build-status") == true)
+        {
+            await EditorAssetBuildStatusSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--prefabs") == true)
+        {
+            await EditorPrefabSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--add-asset") == true)
+        {
+            await EditorAddAssetSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--asset-toolbar") == true)
+        {
+            await EditorAssetToolbarSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--asset-cards") == true)
+        {
+            await EditorAssetCardSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--startup-layout") == true)
+        {
+            await EditorLayoutSmoke.CheckStartup(lifetime.MainWindow!);
+            if (lifetime.Args.Contains("--startup-presentation"))
+                await EditorLayoutSmoke.CheckStartupPresentation(lifetime.MainWindow!);
+        }
         Console.WriteLine("Opening scene: " + scene.Url);
         session.EditorCollection.OpenAssetEditor(scene);
         var editor = (EntityHierarchyEditorViewModel)session.EditorCollection.ActiveEditor!;
@@ -83,7 +174,59 @@ internal static class ViewportSmoke
             throw new Exception("The viewport did not initialize its scene and Avalonia image.");
         var field = typeof(EditorGameController<EntityHierarchyEditorGame>).GetField("Game", BindingFlags.NonPublic | BindingFlags.Instance)!;
         var game = (SceneViewportGame)field.GetValue(viewport.Controller)!;
+        game.ExceptionThrown += (_, args) => Console.Error.WriteLine("Viewport game exception: " + args.Exception);
         Console.WriteLine("Viewport initialized.");
+        if (lifetime.Args?.Contains("--project-build") == true)
+        {
+            await EditorProjectBuildSmoke.Check(session, lifetime.MainWindow!);
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--diagnostics") == true)
+        {
+            await EditorDiagnosticsSmoke.Check(session, lifetime.MainWindow!);
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--close-confirmation") == true)
+        {
+            await EditorCloseSmoke.Check(session, editor, lifetime.MainWindow!, lifetime,
+                lifetime.Args.Contains("--discard"));
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--save") == true)
+        {
+            await EditorSaveSmoke.Check(session, editor, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
+        if (lifetime.Args?.Contains("--camera-modes") == true)
+            await EditorCameraModesSmoke.Check(editor, game, lifetime.MainWindow!).WaitAsync(TimeSpan.FromSeconds(90));
+        if (lifetime.Args?.Contains("--property-type") == true)
+            await EditorPropertyTypeSmoke.Check(editor, lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--component-gizmos") == true)
+        {
+            await EditorTextValidationSmoke.Check((Control)viewport.EditorHost!);
+            await EditorComponentGizmoSmoke.Check(editor, game).WaitAsync(TimeSpan.FromSeconds(90));
+        }
+        if (lifetime.Args?.Contains("--orientation") == true)
+            await EditorOrientationSmoke.Check(editor, game).WaitAsync(TimeSpan.FromSeconds(30));
+        if (lifetime.Args?.Contains("--viewport-tools") == true)
+            await EditorViewportToolsSmoke.Check(editor, game, lifetime.MainWindow!).WaitAsync(TimeSpan.FromSeconds(30));
+        if (lifetime.Args?.Contains("--thumbnails") == true)
+            await EditorThumbnailSmoke.Check(session, lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--startup-layout") == true)
+            await EditorLayoutSmoke.CheckStartup(lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--shell-layout") == true)
+            await EditorLayoutSmoke.Check(lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--hierarchy-layout") == true)
+            await EditorHierarchySmoke.Check(editor, lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--selection-tools") == true)
+            await EditorSelectionToolsSmoke.Check(editor, lifetime.MainWindow!);
+        if (lifetime.Args?.Contains("--asset-delete") == true)
+            await EditorAssetDeleteSmoke.Check(session, lifetime.MainWindow!);
         if (lifetime.Args?.Contains("--presentation-stability") == true)
         {
             await Task.Delay(3000);
@@ -118,6 +261,16 @@ internal static class ViewportSmoke
         if (selectedModelCount != modelCount)
             throw new Exception($"Selecting the entity removed rendered models: {modelCount} -> {selectedModelCount}.");
         Console.WriteLine("PASS: selecting CharacterModel preserves its asset reference and rendered meshes.");
+        if (lifetime.Args?.Contains("--capture-shell") == true)
+        {
+            var root = (Control)lifetime.MainWindow!.Content!;
+            var scaling = TopLevel.GetTopLevel(root)!.RenderScaling;
+            using var capture = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(root.Bounds.Width * scaling), (int)Math.Ceiling(root.Bounds.Height * scaling)), new global::Avalonia.Vector(96 * scaling, 96 * scaling));
+            capture.Render(root);
+            var capturePath = Path.Combine(Path.GetTempPath(), "stride-editor-shell.png");
+            capture.Save(capturePath);
+            Console.WriteLine("Editor shell capture: " + capturePath);
+        }
         await viewport.Controller.InvokeAsync(() =>
         {
             var roots = game.EditorServices.Get<EditorGameEntitySelectionService>()!.GetSelectedRootIds();
@@ -178,8 +331,12 @@ internal static class ViewportSmoke
         if (frame <= firstFrame) throw new Exception("The render loop did not advance.");
         if (viewport.LastException is { } exception) throw new Exception("The render loop faulted.", exception);
         Console.WriteLine($"PASS: Avalonia image, content scene and {modelCount} hydrated model components; render loop stayed alive.");
+        if (lifetime.Args?.Contains("--document-tabs") == true)
+            await EditorDocumentSmoke.Check(editor, game, lifetime.MainWindow!);
         if (lifetime.Args?.Contains("--keep-open") == true) return;
-        await session.CloseAsync().WaitAsync(TimeSpan.FromSeconds(15));
+        await session.CloseAsync().WaitAsync(TimeSpan.FromSeconds(60));
+        if (lifetime.Args?.Contains("--thumbnails") == true)
+            EditorThumbnailSmoke.CheckReleased();
         await viewport.Controller.GameStopped.WaitAsync(TimeSpan.FromSeconds(10));
         Console.WriteLine("PASS: viewport game stopped and disposed.");
         lifetime.Shutdown();
@@ -462,7 +619,32 @@ internal static class ViewportSmoke
         }
         viewport.ActiveTransformation = Transformation.Translation;
         view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyUpEvent, Key = Key.LeftCtrl });
+        var hovered = false;
+        foreach (var offset in new[] { .25f, .5f, .75f })
+        {
+            var point = await viewport.Controller.InvokeAsync(() =>
+            {
+                var gizmo = (TransformationGizmo)typeof(EditorGameEntityTransformService).GetField("active", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(viewport.Controller.GetTransformService())!;
+                var camera = game.EditorServices.Get<EditorGameEntityCameraService>()!;
+                var projected = Vector3.TransformCoordinate(new Vector3(offset, 0, 0), gizmo.GizmoRootEntity.Transform.WorldMatrix * camera.ViewMatrix * camera.ProjectionMatrix);
+                return new global::Avalonia.Point((projected.X * .5 + .5) * view.Bounds.Width, (.5 - projected.Y * .5) * view.Bounds.Height);
+            });
+            view.RaiseEvent(new PointerEventArgs(InputElement.PointerMovedEvent, view, pointer, view, point, 0, new PointerPointProperties(), KeyModifiers.None));
+            await Task.Delay(100);
+            hovered = await viewport.Controller.InvokeAsync(() =>
+            {
+                var service = viewport.Controller.GetTransformService();
+                var gizmo = (TransformationGizmo)typeof(EditorGameEntityTransformService).GetField("active", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!;
+                if (!gizmo.IsUnderMouse()) return false;
+                if (service.IsControllingMouse) throw new Exception("Hovering a transform axis without pressing a button captured the mouse and blocks camera/reload.");
+                return true;
+            });
+            if (hovered) break;
+        }
+        if (!hovered) throw new Exception("The transform hover regression did not reach a visible axis.");
         Console.WriteLine("PASS: Move, Rotate and Scale retain their captured axis outside the gizmo and release capture even with Ctrl held.");
+        Console.WriteLine("PASS: hovering a transform axis does not capture the mouse or block camera/reload.");
     }
 
     private static void CheckScenePreviewTemplate()
@@ -545,13 +727,7 @@ internal static class ViewportSmoke
             camera.Frame(game.ContentScene);
         });
         Console.WriteLine("PASS: Avalonia RMB + W moved the camera and released mouse capture.");
-        position = await viewport.Controller.InvokeAsync(() => camera.Position);
-        view.RaiseEvent(new PointerWheelEventArgs(view, pointer, view, point, 0,
-            new PointerPointProperties(), KeyModifiers.None, new Avalonia.Vector(0, 1)));
-        await Task.Delay(200);
-        if (await viewport.Controller.InvokeAsync(() => camera.Position == position))
-            throw new Exception("Avalonia wheel input did not zoom the camera.");
-        Console.WriteLine("PASS: Avalonia wheel zoomed the camera.");
+        await EditorCameraWheelSmoke.Check(viewport, game).WaitAsync(TimeSpan.FromSeconds(30));
         var originalBuffers = await viewport.Controller.InvokeAsync(() => (game.GraphicsDevice.Presenter.BackBuffer, game.GraphicsDevice.Presenter.DepthStencilBuffer));
         if (view.IsGpuRendering)
         {
@@ -586,6 +762,9 @@ internal static class ViewportSmoke
         CheckImage(view);
         view.Height = oldHeight;
         Console.WriteLine("PASS: offscreen target and bitmap resized with the Avalonia control.");
+        // References is the default dock tab; explicitly display Preview before checking its rendered image.
+        ((Control)mainWindow.Content!).FindControl<TabControl>("PreviewTabs")!.SelectedIndex = 0;
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
         var previewService = (GameStudioPreviewService)session.ServiceProvider.Get<IAssetPreviewService>();
         var previewHost = (AvaloniaGameView)previewService.GetStrideView();
         var modelItem = session.AllPackages.SelectMany(package => package.Package.Assets)
@@ -698,6 +877,7 @@ internal static class ViewportSmoke
             if (process.ExitCode != 0) throw new Exception("Screen capture failed: " + await process.StandardError.ReadToEndAsync());
             stream.Position = 0;
             using var bitmap = new Bitmap(stream);
+            if (sample == 0) bitmap.Save(Path.Combine(Path.GetTempPath(), "stride-viewport-presented-frame.png"));
             var pixels = new byte[checked(bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4)];
             unsafe
             {

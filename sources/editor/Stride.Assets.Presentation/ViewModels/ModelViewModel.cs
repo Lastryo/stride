@@ -4,6 +4,9 @@
 using Stride.Assets.Models;
 using Stride.Core.Assets.Presentation.Annotations;
 using Stride.Core.Assets.Presentation.ViewModels;
+using Stride.Core.Assets;
+using Stride.Core.Reflection;
+using Stride.Core.Quantum;
 
 namespace Stride.Assets.Presentation.ViewModels;
 
@@ -11,10 +14,51 @@ namespace Stride.Assets.Presentation.ViewModels;
 /// View model for <see cref="ModelAsset"/>.
 /// </summary>
 [AssetViewModel<ModelAsset>]
-public class ModelViewModel : AssetViewModel<ModelAsset>
+public class ModelViewModel : ImportedAssetViewModel<ModelAsset>
 {
     public ModelViewModel(ConstructorParameters parameters)
         : base(parameters)
     {
     }
+
+    protected override IAssetImporter? GetImporter()
+    {
+        return AssetRegistry.FindImporterForFile(Asset.Source).OfType<ModelAssetImporter>().FirstOrDefault();
+    }
+
+    protected override void PrepareImporterInputParametersForUpdateFromSource(PropertyCollection importerInputParameters, ModelAsset asset)
+    {
+        // This setting will be ignored if it's the FBX importer
+        importerInputParameters.Set(ModelAssetImporter.DeduplicateMaterialsKey, asset.DeduplicateMaterials);
+    }
+
+    protected override void UpdateAssetFromSource(ModelAsset assetToMerge)
+    {
+        // Create a dictionary containing all new and old materials, favoring old ones to maintain existing references
+        var dictionary = assetToMerge.Materials.ToDictionary(x => x.Name, x => x);
+        Asset.Materials.ForEach(x => dictionary[x.Name] = x);
+
+        // Create a dictionary mapping existing materials to their item id, to attempt to maintain existing ids and avoid unnecessary changes.
+        var ids = CollectionItemIdHelper.GetCollectionItemIds(Asset.Materials).ToDictionary(x => Asset.Materials[(int)x.Key].Name, x => x.Value);
+
+        // Remove currently existing materials, one by one because Quantum does not provide a Clear method.
+        var materialsNode = AssetRootNode![nameof(ModelAsset.Materials)].Target;
+        while (Asset.Materials.Count > 0)
+        {
+            materialsNode.Remove(Asset.Materials[0], new NodeIndex(0));
+        }
+
+        // Repopulate the list of materials
+        for (var i = 0; i < assetToMerge.Materials.Count; ++i)
+        {
+            // Retrieve or create an id for the material
+            ItemId id;
+            if (!ids.TryGetValue(assetToMerge.Materials[i].Name, out id))
+                id = ItemId.New();
+
+            // Use Restore to allow to set manually the id.
+            materialsNode.Restore(dictionary[assetToMerge.Materials[i].Name], new NodeIndex(i), id);
+        }
+    }
+
 }

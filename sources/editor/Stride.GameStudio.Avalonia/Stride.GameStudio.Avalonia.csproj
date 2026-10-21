@@ -18,6 +18,15 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaResource Include="..\..\..\BACKERS.md" Link="Assets\BACKERS.md" />
+      <Content Include="..\Stride.Assets.Presentation.Wpf\Templates\Assets\**" Link="Templates\Assets\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\engine\Stride.SpriteStudio.Offline\Templates\Assets\**" Link="Templates\Assets\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Stride.Assets.Presentation.Wpf\Templates\Core\**" Link="Templates\Core\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +41,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="all" />
     <!--Condition below is needed to remove AvaloniaUI.DiagnosticsSupport package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" />
     <PackageReference Include="Xaml.Behaviors.Interactions" />

@@ -13,7 +13,6 @@ namespace Stride.Editor.Thumbnails
     /// </summary>
     public sealed class BitmapThumbnailData : ThumbnailData
     {
-        private static readonly ObjectCache<ObjectId, Image> Cache = new(512);
         private Stream? thumbnailBitmapStream;
 
         public BitmapThumbnailData(ObjectId thumbnailId, Stream thumbnailBitmapStream) : base(thumbnailId)
@@ -43,15 +42,9 @@ namespace Stride.Editor.Thumbnails
             if (!stream.CanRead)
                 return null;
 
-            var result = Cache.TryGet(thumbnailId);
-            if (result != null)
-                return result;
-
             try
             {
-                var image = Image.Load(stream);
-                Cache.Cache(thumbnailId, image);
-                return image;
+                return Image.Load(stream);
             }
             catch (Exception)
             {

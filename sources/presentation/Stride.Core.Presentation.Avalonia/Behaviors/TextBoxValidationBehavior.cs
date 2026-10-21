@@ -260,7 +260,9 @@ public sealed class TextBoxValidationBehavior : StyledElementBehavior<TextBox>
         hasPendingChanges = false;
         var textToValidate = textBox.Text;
 
-        BindingOperations.GetBindingExpressionBase(textBox, TextBox.TextProperty)?.UpdateSource();
+        // TextBox normalizes null to empty; merely focusing a nullable string must not edit it.
+        if (!string.Equals(initialText ?? string.Empty, textToValidate ?? string.Empty, StringComparison.Ordinal))
+            BindingOperations.GetBindingExpressionBase(textBox, TextBox.TextProperty)?.UpdateSource();
 
         if (ValidateCommand is { } command)
         {

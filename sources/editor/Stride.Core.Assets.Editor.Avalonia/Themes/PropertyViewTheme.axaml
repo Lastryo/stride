@@ -8,6 +8,7 @@
   <ResourceDictionary.MergedDictionaries>
     <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
   </ResourceDictionary.MergedDictionaries>
+  <SolidColorBrush x:Key="PropertyHeaderBackground" Color="#FF316B8F"/>
   <ControlTheme x:Key="PropertyExpanderTheme" TargetType="Expander">
     <Setter Property="Padding" Value="10,0,0,0"/>
     <Setter Property="Template">

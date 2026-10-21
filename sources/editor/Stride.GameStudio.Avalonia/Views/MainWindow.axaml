@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:gsvw="using:Stride.GameStudio.Avalonia.Views"
+        xmlns:cpc="using:Stride.Core.Presentation.Commands"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="Stride.GameStudio.Avalonia.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -12,5 +13,27 @@
         Background="{DynamicResource StudioBackgroundBrush}"
         MinWidth="960" MinHeight="640"
         Width="1280" Height="900">
+  <Window.KeyBindings>
+    <!-- Build project: F6 and Ctrl+Shift+B -->
+    <KeyBinding Gesture="F6" Command="{Binding ProjectBuild.BuildProjectCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <KeyBinding Gesture="Ctrl+Shift+B" Command="{Binding ProjectBuild.BuildProjectCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <!-- Run project: F5 -->
+    <KeyBinding Gesture="F5" Command="{Binding ProjectBuild.RunProjectCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <!-- Cancel build: Ctrl+F6, Shift+F5, Ctrl+Shift+F5 -->
+    <KeyBinding Gesture="Ctrl+F6" Command="{Binding ProjectBuild.CancelBuildCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <KeyBinding Gesture="Shift+F5" Command="{Binding ProjectBuild.CancelBuildCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <!-- Undo / Redo -->
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding Session.ActionHistory.UndoCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <KeyBinding Gesture="Ctrl+Y" Command="{Binding Session.ActionHistory.RedoCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Session.ActionHistory.RedoCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+    <!-- Save solution: Ctrl+S -->
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
+    <!-- Open solution: Ctrl+O -->
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
+    <!-- Debug window: Ctrl+Shift+D -->
+    <KeyBinding Gesture="Ctrl+Shift+D" Command="{Binding OpenDebugWindowCommand}" />
+    <!-- Edit selected asset: Ctrl+Enter -->
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding Session.EditSelectedContentCommand, FallbackValue={x:Static cpc:DisabledCommand.Instance}}" />
+  </Window.KeyBindings>
   <gsvw:MainView />
 </Window>

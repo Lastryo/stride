@@ -17,6 +17,7 @@ using Stride.Core.Serialization.Contents;
 using Stride.Editor.Annotations;
 using Stride.Editor.Build;
 using Stride.Editor.Preview.ViewModels;
+using Stride.Editor.Thumbnails;
 
 namespace Stride.Assets.Editor;
 
@@ -24,7 +25,7 @@ public sealed class StrideEditorPlugin : AssetsEditorPlugin
 {
     public override void InitializePlugin(ILogger logger)
     {
-        // nothing for now
+        Templates.AssetTemplates.Initialize(logger);
     }
 
     public override void InitializeSession(ISessionViewModel session)
@@ -58,11 +59,13 @@ public sealed class StrideEditorPlugin : AssetsEditorPlugin
         session.ServiceProvider.RegisterService(builderService);
         session.ServiceProvider.RegisterService(builderService.Database);
 
-        //var thumbnailService = new GameStudioThumbnailService((SessionViewModel)session, settingsProvider, builderService);
-        //session.ServiceProvider.RegisterService(thumbnailService);
+        var thumbnailService = new GameStudioThumbnailService((SessionViewModel)session, settingsProvider, builderService);
+        session.ServiceProvider.RegisterService(thumbnailService);
 
         if (session is SessionViewModel sessionVm)
         {
+            session.ServiceProvider.RegisterService(new EffectCompilerServerSession(sessionVm));
+
             // commands
             sessionVm.ActiveProperties.RegisterNodePresenterCommand(new FetchEntityCommand());
             sessionVm.ActiveProperties.RegisterNodePresenterCommand(new SetComponentReferenceCommand());

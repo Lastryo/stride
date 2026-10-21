@@ -13,6 +13,7 @@ public sealed class DirectoryViewModel : DirectoryBaseViewModel
     {
         this.name = name;
         this.parent = parent;
+        parent.AddSubDirectory(this);
     }
 
     /// <summary>
@@ -31,7 +32,15 @@ public sealed class DirectoryViewModel : DirectoryBaseViewModel
     public override DirectoryBaseViewModel Parent
     {
         get => parent;
-        set => SetValue(ref parent, value);
+        set
+        {
+            var oldParent = parent;
+            SetValue(ref parent, value, () =>
+            {
+                oldParent?.RemoveSubDirectory(this);
+                value?.AddSubDirectory(this);
+            });
+        }
     }
 
     /// <summary>
@@ -46,7 +55,7 @@ public sealed class DirectoryViewModel : DirectoryBaseViewModel
     /// <summary>
     /// Gets the path of this directory in its current package.
     /// </summary>
-    public override string Path => Parent.Path + Name;
+    public override string Path => Parent.Path + Name + (Name.Length > 0 ? Separator : "");
 
     /// <inheritdoc/>
     public override MountPointViewModel Root => Parent.Root;

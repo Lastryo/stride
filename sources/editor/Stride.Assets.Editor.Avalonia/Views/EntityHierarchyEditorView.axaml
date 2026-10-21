@@ -6,6 +6,7 @@
               xmlns:aec="using:Stride.Assets.Editor.Avalonia.Converters"
               xmlns:vm="using:Stride.Assets.Editor.ViewModels"
               xmlns:vm2="using:Stride.Assets.Presentation.ViewModels"
+              xmlns:ge="using:Stride.Assets.Editor.GameEditor"
               mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
               x:Class="Stride.Assets.Editor.Avalonia.Views.EntityHierarchyEditorView"
               x:DataType="vm:EntityHierarchyEditorViewModel">
@@ -20,10 +21,106 @@
     </ResourceDictionary>
   </UserControl.Resources>
   <UserControl.Styles>
+    <Style Selector="TextBlock.hierarchyName.prefab:not(.unloaded)">
+      <Setter Property="Foreground" Value="{StaticResource PrefabTextColor}"/>
+    </Style>
+    <Style Selector="Border.sceneToolbar">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="MinHeight" Value="28"/>
+    </Style>
+    <Style Selector="Border.sceneToolbar Separator.studioToolSeparator">
+      <Setter Property="Width" Value="2"/>
+      <Setter Property="Height" Value="24"/>
+      <Setter Property="Margin" Value="4,0"/>
+      <Setter Property="Background" Value="#808080"/>
+    </Style>
+    <Style Selector="TextBox.sceneFilter /template/ TextBlock#PART_Watermark">
+      <Setter Property="FontStyle" Value="Italic"/>
+    </Style>
+    <Style Selector="RepeatButton.snapSpinner">
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="Padding" Value="2,0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Content="{TemplateBinding Content}" Background="{TemplateBinding Background}"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RepeatButton.snapSpinner:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StudioHoverBrush}"/>
+    </Style>
+    <Style Selector="sd|NumericTextBox.snapValue">
+      <Setter Property="Height" Value="18"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{DynamicResource NumericEditorBackground}" BorderBrush="{DynamicResource StudioBorderBrush}" BorderThickness="1" CornerRadius="2">
+            <Grid ColumnDefinitions="*,16">
+              <TextBox Name="PART_TextBox" MinWidth="0" MinHeight="0" Height="16" Padding="1,0" BorderThickness="0"
+                       VerticalAlignment="Center" VerticalContentAlignment="Center"
+                       Foreground="{DynamicResource StudioTextBrush}"
+                       Background="Transparent" Text="{TemplateBinding Text}" FontSize="11"
+                       TextAlignment="{TemplateBinding TextAlignment}"/>
+              <Grid Grid.Column="1" RowDefinitions="*,*">
+                <RepeatButton Name="PART_IncreaseButton" Classes="snapSpinner" Click="SnapIncrease_OnClick" ToolTip.Tip="Increase snap step">
+                  <Path Data="M0,4 L5,0 L10,4 Z" Fill="{DynamicResource StudioTextBrush}" Width="12" Height="6" Stretch="Fill"/>
+                </RepeatButton>
+                <RepeatButton Name="PART_DecreaseButton" Classes="snapSpinner" Grid.Row="1" Click="SnapDecrease_OnClick" ToolTip.Tip="Decrease snap step">
+                  <Path Data="M0,0 L5,4 L10,0 Z" Fill="{DynamicResource StudioTextBrush}" Width="12" Height="6" Stretch="Fill"/>
+                </RepeatButton>
+              </Grid>
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="RadioButton.viewportTool, ToggleButton.viewportTool, Button.viewportTool">
+      <Setter Property="Height" Value="28"/>
+      <Setter Property="MinHeight" Value="28"/>
+      <Setter Property="MinWidth" Value="28"/>
+      <Setter Property="Padding" Value="4"/>
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="ToolBorder" BorderThickness="1" BorderBrush="Transparent" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.viewportTool, Button.viewportTool, ToggleButton.viewportTool:not(.snapTool)">
+      <Setter Property="Width" Value="28"/>
+    </Style>
+    <Style Selector="ToggleButton.viewportTool.snapTool">
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="RadioButton.viewportTool:pointerover /template/ Border#ToolBorder, ToggleButton.viewportTool:pointerover /template/ Border#ToolBorder, Button.viewportTool:pointerover /template/ Border#ToolBorder">
+      <Setter Property="Background" Value="{DynamicResource StudioHoverBrush}"/>
+    </Style>
+    <Style Selector="RadioButton.viewportTool:checked /template/ Border#ToolBorder, ToggleButton.viewportTool:checked /template/ Border#ToolBorder">
+      <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
+    </Style>
+    <Style Selector="RadioButton.viewportTool:checked:pointerover /template/ Border#ToolBorder, ToggleButton.viewportTool:checked:pointerover /template/ Border#ToolBorder">
+      <Setter Property="Background" Value="#FF1C97EA"/>
+    </Style>
+    <Style Selector="RadioButton.viewportTool:focus-visible /template/ Border#ToolBorder, ToggleButton.viewportTool:focus-visible /template/ Border#ToolBorder, Button.viewportTool:focus-visible /template/ Border#ToolBorder">
+      <Setter Property="BorderBrush" Value="{DynamicResource StudioTextBrush}"/>
+    </Style>
+
+    <Style Selector="Button.hierarchyUnavailableAction">
+      <Setter Property="Opacity" Value="0.4"/>
+    </Style>
     <Style Selector="Button.hierarchyItemButton">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Margin" Value="4,0,0,0"/>
+      <Setter Property="Margin" Value="0"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="Width" Value="16"/>
       <Setter Property="Height" Value="16"/>
@@ -33,18 +130,34 @@
       <Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
+    <Style Selector="TreeViewItem.drag-over-into /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="{DynamicResource StudioSelectionBrush}"/>
+      <Setter Property="Opacity" Value="0.85"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-over-before /template/ Border#PART_LayoutRoot">
+      <Setter Property="BorderThickness" Value="0,2,0,0"/>
+      <Setter Property="BorderBrush" Value="#FF4A90E2"/>
+    </Style>
+    <Style Selector="TreeViewItem.drag-over-after /template/ Border#PART_LayoutRoot">
+      <Setter Property="BorderThickness" Value="0,0,0,2"/>
+      <Setter Property="BorderBrush" Value="#FF4A90E2"/>
+    </Style>
   </UserControl.Styles>
-  <Grid ColumnDefinitions="*, 5, 3*" Background="{DynamicResource StudioBackgroundBrush}">
+  <Grid x:Name="SceneColumns" Background="{DynamicResource StudioBackgroundBrush}">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="{Binding $parent[UserControl].(sd:EditorLayout.State).HierarchyWidth, Mode=TwoWay, FallbackValue=210}" MinWidth="140" MaxWidth="500"/>
+      <ColumnDefinition Width="5"/>
+      <ColumnDefinition Width="*" MinWidth="240"/>
+    </Grid.ColumnDefinitions>
     <DockPanel Grid.Column="0" Classes="studioPanel">
-      <Border DockPanel.Dock="Top" Classes="studioToolbar">
-        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+      <Border x:Name="HierarchyToolbar" DockPanel.Dock="Top" Classes="studioToolbar sceneToolbar">
+        <StackPanel Orientation="Horizontal">
+          <Path Data="M0,0 h1 v1 h-1 Z M2,0 h1 v1 h-1 Z M0,3 h1 v1 h-1 Z M2,3 h1 v1 h-1 Z M0,6 h1 v1 h-1 Z M2,6 h1 v1 h-1 Z M0,9 h1 v1 h-1 Z M2,9 h1 v1 h-1 Z M0,12 h1 v1 h-1 Z M2,12 h1 v1 h-1 Z"
+                Fill="{DynamicResource StudioTextBrush}" Opacity="0.35" Width="3" Height="13" Margin="3,0,5,0" VerticalAlignment="Center"/>
           <Menu Background="Transparent" VerticalAlignment="Center">
-            <MenuItem Padding="4,2" MinHeight="24" ToolTip.Tip="Create a new entity">
+            <MenuItem Padding="8,0" Width="34" Height="28" MinHeight="28" ToolTip.Tip="Create a new entity">
               <MenuItem.Header>
-                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                  <Image Source="{StaticResource ImageAdd}" Width="16" Height="16" VerticalAlignment="Center"/>
-                  <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10" VerticalAlignment="Center"/>
-                </StackPanel>
+                <Path Data="M5,0 H7 V5 H12 V7 H7 V12 H5 V7 H0 V5 H5 Z" Fill="{DynamicResource StudioTextBrush}" Width="12" Height="12"/>
               </MenuItem.Header>
               <MenuItem Header="Create" FontWeight="Bold" IsHitTestVisible="False"/>
               <MenuItem Header="New folder" Command="{Binding CreateFolderInRootCommand}"/>
@@ -85,19 +198,30 @@
               </MenuItem>
             </MenuItem>
           </Menu>
-          <Separator Classes="studioToolSeparator"/>
-          <TextBox Width="120" PlaceholderText="Filter" Text="{Binding FilterPattern, Mode=TwoWay}" VerticalAlignment="Center"
-                   ToolTip.Tip="Filter entities by name"/>
-          <Separator Classes="studioToolSeparator"/>
-          <Button Classes="studioTool" ToolTip.Tip="Expand all entities" Click="ExpandAll_OnClick">
-            <Image Source="{StaticResource ImageExpandAllFolders}" Width="16" Height="16"/>
-          </Button>
-          <Button Classes="studioTool" ToolTip.Tip="Collapse all entities" Click="CollapseAll_OnClick">
-            <Image Source="{StaticResource ImageCollapseAllFolders}" Width="16" Height="16"/>
-          </Button>
+
+          <TextBox x:Name="HierarchyFilter" Classes="sceneFilter" Margin="4,0" Width="120" MinWidth="40" MinHeight="20" Height="20"
+                   FontSize="11" Padding="3,0" PlaceholderText="Filter" Text="{Binding FilterPattern, Mode=TwoWay}"
+                   VerticalAlignment="Center" ToolTip.Tip="Filter entities by name"/>
+          <StackPanel Orientation="Horizontal" Spacing="0">
+            <Button Classes="viewportTool" Click="ExpandAll_OnClick" ToolTip.Tip="Expand all entities">
+              <Image Source="{StaticResource ImageExpandAllFolders}" Width="16" Height="16"/>
+            </Button>
+            <Button Classes="viewportTool" Click="CollapseAll_OnClick" ToolTip.Tip="Collapse all entities">
+              <Image Source="{StaticResource ImageCollapseAllFolders}" Width="16" Height="16"/>
+            </Button>
+          </StackPanel>
         </StackPanel>
       </Border>
-      <TreeView x:Name="HierarchyTreeView" Classes="studioSceneTree" ItemsSource="{Binding HierarchyRoot, Mode=OneWay, Converter={sd:Yield}}"
+      <Border DockPanel.Dock="Top" Classes="studioPanelHeader" Height="22" MinHeight="22" Padding="6,2" Margin="0,0,2,0">
+        <Grid ColumnDefinitions="*,20,20,20">
+          <TextBlock Text="Entities" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource StudioTextMutedBrush}"/>
+          <Image Grid.Column="1" Source="{StaticResource ImageLoadEntity}" Width="14" Height="14" ToolTip.Tip="Visibility / Load" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.7"/>
+          <Image Grid.Column="2" Source="{StaticResource ImageLockEntity}" Width="14" Height="14" ToolTip.Tip="Lock / Unlock" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.7"/>
+          <Image Grid.Column="3" Source="{StaticResource ImageFetchEntity}" Width="14" Height="14" ToolTip.Tip="Focus (F)" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.7"/>
+        </Grid>
+      </Border>
+      <TreeView x:Name="HierarchyTreeView" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Classes="studioSceneTree" ItemsSource="{Binding HierarchyRoot, Mode=OneWay, Converter={sd:Yield}}"
+                DragDrop.AllowDrop="True"
                 SelectedItems="{Binding SelectedContent}"
                 SelectionMode="Multiple"
                 BorderBrush="Black"
@@ -142,77 +266,117 @@
               <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="UI" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Ui}"/>
               <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Background" Command="{Binding CreateEntityInSelectionCommand}" CommandParameter="{x:Static vm:EntityFactoryKind.Background}"/>
             </MenuItem>
+            <Separator/>
+            <MenuItem Header="Action" FontWeight="Bold" IsHitTestVisible="False"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Duplicate selected entities" InputGesture="Ctrl+D" Command="{Binding DuplicateCommand}"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Open prefab in editor" Command="{Binding OpenPrefabEditorCommand}"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Select prefab in asset view" Command="{Binding SelectPrefabCommand}"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Break link to prefab" Command="{Binding BreakLinkToPrefabCommand}"/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Create prefab from selection" Command="{Binding CreatePrefabFromSelectionCommand}"/>
+            <Separator/>
+            <MenuItem x:DataType="vm:EntityHierarchyEditorViewModel" Header="Delete" InputGesture="Delete" Command="{Binding DeleteCommand}">
+              <MenuItem.Icon>
+                <Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/>
+              </MenuItem.Icon>
+            </MenuItem>
           </ContextMenu>
         </TreeView.ContextMenu>
         <Control.DataTemplates>
           <!-- Folder template -->
-          <TreeDataTemplate DataType="{x:Type vm2:EntityFolderViewModel}"
-                            ItemsSource="{Binding Children}">
-            <StackPanel Orientation="Horizontal">
+          <TreeDataTemplate DataType="{x:Type vm2:EntityFolderViewModel}" ItemsSource="{Binding Children}">
+            <Grid ColumnDefinitions="16,*,20,20,20" ToolTip.Tip="{Binding Name}">
               <Image Source="{StaticResource FolderIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
-              <TextBlock Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center"/>
-            </StackPanel>
+              <TextBlock Grid.Column="1" Classes="hierarchyName" Classes.unloaded="{Binding !IsLoaded}" Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              <Button Grid.Column="3" Classes="hierarchyItemButton hierarchyLock"
+                      Click="LockButton_OnClick"
+                      ToolTip.Tip="Lock / unlock folder entities">
+                <Panel>
+                  <Image Source="{StaticResource ImageLockEntity}" Width="16" Height="16" IsVisible="{Binding IsLocked}"/>
+                  <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16" IsVisible="{Binding !IsLocked}"/>
+                </Panel>
+              </Button>
+            </Grid>
           </TreeDataTemplate>
           <!-- Entity template -->
-          <TreeDataTemplate DataType="{x:Type vm2:EntityViewModel}"
-                            ItemsSource="{Binding Children}">
-            <DockPanel LastChildFill="True">
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
+          <TreeDataTemplate DataType="{x:Type vm2:EntityViewModel}" ItemsSource="{Binding Children}">
+            <Grid ColumnDefinitions="16,*,20,20,20">
+              <Image Source="{Binding Components, Converter={aec:EntityComponentToResource}}" Width="16" Height="16" VerticalAlignment="Center"/>
+              <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="4,0" ToolTip.Tip="{Binding Name}">
+                <TextBlock Classes="hierarchyName" Classes.prefab="{Binding IsPrefabInstance}" Classes.unloaded="{Binding !IsLoaded}" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Text="{Binding Components, Converter={aec:EntityComponentToTransformLinkInfo}}"
+                           Foreground="{StaticResource LinkTextColor}" VerticalAlignment="Center"
+                           IsVisible="{Binding $self.Text, Converter={sd:ObjectToBool}}"/>
+              </Grid>
+              <Button Grid.Column="3" Classes="hierarchyItemButton hierarchyLock"
+                      Click="LockButton_OnClick"
+                      ToolTip.Tip="Lock / unlock this entity (Hold Ctrl to apply recursively)">
+                <Panel>
+                  <Image Source="{StaticResource ImageLockEntity}" Width="16" Height="16" IsVisible="{Binding IsLocked}"/>
+                  <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16" IsVisible="{Binding !IsLocked}"/>
+                </Panel>
+              </Button>
+              <Button Grid.Column="4" Classes="hierarchyItemButton hierarchyFocus"
+                      Command="{Binding $parent[UserControl].((vm:EntityHierarchyEditorViewModel)DataContext).Viewport.FrameEntityCommand}"
+                      CommandParameter="{Binding}"
+                      IsEnabled="{Binding $parent[UserControl].((vm:EntityHierarchyEditorViewModel)DataContext).Viewport.SceneInitialized}"
                       ToolTip.Tip="Focus on this entity (F)">
                 <Image Source="{StaticResource ImageFetchEntity}" Width="16" Height="16"/>
               </Button>
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
-                      ToolTip.Tip="Lock/unlock this entity">
-                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
-              </Button>
-              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
-              <StackPanel Orientation="Horizontal">
-                <Image Source="{Binding Components, Converter={aec:EntityComponentToResource}}" Width="16" Height="16" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding Name}" Margin="4,0" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding Components, Converter={aec:EntityComponentToTransformLinkInfo}}"
-                           Foreground="{StaticResource LinkTextColor}"
-                           VerticalAlignment="Center"
-                           IsVisible="{Binding $self.Text, Converter={sd:ObjectToBool}}"/>
-              </StackPanel>
-            </DockPanel>
+            </Grid>
           </TreeDataTemplate>
           <!-- Scene template -->
-          <TreeDataTemplate DataType="{x:Type vm2:SceneRootViewModel}"
-                            ItemsSource="{Binding Children}">
-            <DockPanel LastChildFill="True">
-              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
-                      ToolTip.Tip="Lock/unlock all entities">
-                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
-              </Button>
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
-                      ToolTip.Tip="Load/unload all entities">
-                <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16"/>
-              </Button>
-              <StackPanel Orientation="Horizontal">
-                <Image Source="{StaticResource SceneIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Bold" VerticalAlignment="Center"/>
+          <TreeDataTemplate DataType="{x:Type vm2:SceneRootViewModel}" ItemsSource="{Binding Children}">
+            <Grid ColumnDefinitions="16,*,20,20,20">
+              <Image Source="{StaticResource SceneIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0" VerticalAlignment="Center">
+                <TextBlock Classes="hierarchyName" Classes.unloaded="{Binding !IsLoaded}" Text="{Binding Name}" FontWeight="Bold"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                <TextBlock Margin="4,0" Text="(Unloaded)" Foreground="Gray" VerticalAlignment="Center" IsVisible="{Binding !IsLoaded}"/>
               </StackPanel>
-            </DockPanel>
+              <Button Grid.Column="2" Classes="hierarchyItemButton hierarchyLoad"
+                      Click="LoadButton_OnClick"
+                      ToolTip.Tip="Load / unload all entities">
+                <Panel>
+                  <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16" IsVisible="{Binding IsLoaded}"/>
+                  <Image Source="{StaticResource ImageUnloadEntity}" Width="16" Height="16" IsVisible="{Binding !IsLoaded}"/>
+                </Panel>
+              </Button>
+              <Button Grid.Column="3" Classes="hierarchyItemButton hierarchyLock"
+                      Click="LockButton_OnClick"
+                      ToolTip.Tip="Lock / unlock all entities">
+                <Panel>
+                  <Image Source="{StaticResource ImageLockEntity}" Width="16" Height="16" IsVisible="{Binding IsLocked}"/>
+                  <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16" IsVisible="{Binding !IsLocked}"/>
+                </Panel>
+              </Button>
+            </Grid>
           </TreeDataTemplate>
           <!-- Prefab template -->
-          <TreeDataTemplate DataType="{x:Type vm2:PrefabRootViewModel}"
-                            ItemsSource="{Binding Children}">
-            <DockPanel LastChildFill="True">
-              <Border DockPanel.Dock="Right" Width="16" Height="16" Margin="4,0,0,0"/>
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
-                      ToolTip.Tip="Lock/unlock all entities">
-                <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16"/>
-              </Button>
-              <Button DockPanel.Dock="Right" Classes="hierarchyItemButton"
-                      ToolTip.Tip="Load/unload all entities">
-                <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16"/>
-              </Button>
-              <StackPanel Orientation="Horizontal">
-                <Image Source="{StaticResource PrefabIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding Name}" Margin="4,0" FontWeight="Bold" VerticalAlignment="Center"/>
+          <TreeDataTemplate DataType="{x:Type vm2:PrefabRootViewModel}" ItemsSource="{Binding Children}">
+            <Grid ColumnDefinitions="16,*,20,20,20">
+              <Image Source="{StaticResource PrefabIcon}" Width="16" Height="16" VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0" VerticalAlignment="Center">
+                <TextBlock Classes="hierarchyName" Classes.unloaded="{Binding !IsLoaded}" Text="{Binding Name}" FontWeight="Bold"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                <TextBlock Margin="4,0" Text="(Unloaded)" Foreground="Gray" VerticalAlignment="Center" IsVisible="{Binding !IsLoaded}"/>
               </StackPanel>
-            </DockPanel>
+              <Button Grid.Column="2" Classes="hierarchyItemButton hierarchyLoad"
+                      Click="LoadButton_OnClick"
+                      ToolTip.Tip="Load / unload all entities">
+                <Panel>
+                  <Image Source="{StaticResource ImageLoadEntity}" Width="16" Height="16" IsVisible="{Binding IsLoaded}"/>
+                  <Image Source="{StaticResource ImageUnloadEntity}" Width="16" Height="16" IsVisible="{Binding !IsLoaded}"/>
+                </Panel>
+              </Button>
+              <Button Grid.Column="3" Classes="hierarchyItemButton hierarchyLock"
+                      Click="LockButton_OnClick"
+                      ToolTip.Tip="Lock / unlock all entities">
+                <Panel>
+                  <Image Source="{StaticResource ImageLockEntity}" Width="16" Height="16" IsVisible="{Binding IsLocked}"/>
+                  <Image Source="{StaticResource ImageUnlockEntity}" Width="16" Height="16" IsVisible="{Binding !IsLocked}"/>
+                </Panel>
+              </Button>
+            </Grid>
           </TreeDataTemplate>
           <!-- Default fallback template -->
           <TreeDataTemplate DataType="{x:Type vm2:EntityHierarchyItemViewModel}"
@@ -227,6 +391,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
           </Style>
           <Style Selector="TreeViewItem /template/ ContentPresenter#PART_HeaderPresenter">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
           </Style>
         </StyledElement.Styles>
@@ -236,25 +401,306 @@
     <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
 
     <DockPanel Grid.Column="2" Classes="studioPanel">
-      <Border DockPanel.Dock="Top" Classes="studioToolbar">
-        <StackPanel Orientation="Horizontal" Spacing="4">
-          <TextBlock Text="Scene" VerticalAlignment="Center" Margin="4,0,8,0"/>
-          <Button Content="Move" Command="{Binding Viewport.TranslateCommand}" ToolTip.Tip="Translate (W)"/>
-          <Button Content="Rotate" Command="{Binding Viewport.RotateCommand}" ToolTip.Tip="Rotate (E)"/>
-          <Button Content="Scale" Command="{Binding Viewport.ScaleCommand}" ToolTip.Tip="Scale (R)"/>
-          <Separator Classes="studioToolSeparator"/>
-          <ComboBox ItemsSource="{Binding Viewport.Spaces}" SelectedItem="{Binding Viewport.Space, Mode=TwoWay}" MinWidth="115"/>
-          <CheckBox Content="Snap" IsChecked="{Binding Viewport.Snap, Mode=TwoWay}" ToolTip.Tip="Snap: 1 unit / 15 degrees / 0.1 scale; hold Shift temporarily"/>
-          <Button Content="Frame" Command="{Binding Viewport.FrameSelectionCommand}" ToolTip.Tip="Frame selection (F)"/>
-        </StackPanel>
+      <Border x:Name="ViewportToolbar" DockPanel.Dock="Top" Classes="studioToolbar sceneToolbar">
+        <DockPanel LastChildFill="True">
+          <!-- Hidden controls preserving backward compatibility and smoke test bindings -->
+          <ComboBox x:Name="CoordinateSpace" IsVisible="False" ItemsSource="{Binding Viewport.Spaces}" SelectedItem="{Binding Viewport.Space, Mode=TwoWay}"/>
+          <ComboBox x:Name="TransformationPivot" IsVisible="False" ItemsSource="{Binding Viewport.Pivots}" SelectedItem="{Binding Viewport.Pivot, Mode=TwoWay}"/>
+          <Button x:Name="SnapSettingsButton" IsVisible="False">
+            <Button.Flyout>
+              <Flyout>
+                <Grid ColumnDefinitions="Auto,80" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Text="Translation" Margin="0,2,8,2" VerticalAlignment="Center"/>
+                  <sd:NumericTextBox Grid.Column="1" Value="{Binding Viewport.TranslationSnap, Mode=TwoWay}" Minimum="0.0001" Maximum="1000000"/>
+                  <TextBlock Grid.Row="1" Text="Rotation (°)" Margin="0,2,8,2" VerticalAlignment="Center"/>
+                  <sd:NumericTextBox Grid.Row="1" Grid.Column="1" Value="{Binding Viewport.RotationSnap, Mode=TwoWay}" Minimum="0.0001" Maximum="360"/>
+                  <TextBlock Grid.Row="2" Text="Scale" Margin="0,2,8,2" VerticalAlignment="Center"/>
+                  <sd:NumericTextBox Grid.Row="2" Grid.Column="1" Value="{Binding Viewport.ScaleSnap, Mode=TwoWay}" Minimum="0.0001" Maximum="1000"/>
+                </Grid>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+
+          <!-- Right toolbar tools: Grid, Lighting, Navigation, Gizmos, Camera, RenderMode -->
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right" VerticalAlignment="Center">
+            <!-- Grid settings -->
+            <Button Classes="viewportTool" ToolTip.Tip="Viewport grid settings...">
+              <Image Source="{StaticResource ImageGrid}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <Grid Background="{DynamicResource StudioBackgroundBrush}" MinWidth="140" MinHeight="100">
+                    <StackPanel Spacing="4">
+                      <CheckBox Content="Show Grid" Margin="8,4" IsChecked="{Binding Viewport.GridVisible, Mode=TwoWay}"/>
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Grid axis" FontWeight="Bold"/>
+                      </Border>
+                      <StackPanel Orientation="Horizontal" Margin="8,2" Spacing="8">
+                        <CheckBox Content="X" IsChecked="True"/>
+                        <CheckBox Content="Y" IsChecked="True"/>
+                        <CheckBox Content="Z" IsChecked="True"/>
+                      </StackPanel>
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Grid opacity" FontWeight="Bold"/>
+                      </Border>
+                      <sd:NumericTextBox Value="1.0" Minimum="0" Maximum="1" DecimalPlaces="3" Margin="8,4"/>
+                    </StackPanel>
+                  </Grid>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Lighting settings -->
+            <Button Classes="viewportTool" ToolTip.Tip="Light probes and cubemaps...">
+              <Image Source="{StaticResource ImageLighting}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <Grid Background="{DynamicResource StudioBackgroundBrush}" MinWidth="150" MinHeight="100">
+                    <StackPanel Spacing="4">
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Light probes" FontWeight="Bold"/>
+                      </Border>
+                      <StackPanel Margin="4" Spacing="4">
+                        <DockPanel Margin="4">
+                          <sd:NumericTextBox DockPanel.Dock="Right" Width="50" Value="1" Minimum="0" DecimalPlaces="3" Margin="2,0"/>
+                          <TextBlock Text="Bounces:" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <UniformGrid Columns="2">
+                          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="4"
+                                  ToolTip.Tip="Compute lighting using light probes">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                              <Image Source="{StaticResource ImageLightProbesCompute}" Width="16" Height="16"/>
+                              <TextBlock Text="Compute" VerticalAlignment="Center"/>
+                            </StackPanel>
+                          </Button>
+                          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="4"
+                                  ToolTip.Tip="Reset light probes">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                              <Image Source="{StaticResource ImageLightProbesReset}" Width="16" Height="16"/>
+                              <TextBlock Text="Reset" VerticalAlignment="Center"/>
+                            </StackPanel>
+                          </Button>
+                        </UniformGrid>
+                      </StackPanel>
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Cubemap" FontWeight="Bold"/>
+                      </Border>
+                      <StackPanel Margin="4">
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="4"
+                                ToolTip.Tip="Generate a cubemap from the scene view and save as a texture">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Image Source="{StaticResource ImageGenerateCubeMap}" Width="16" Height="16"/>
+                            <TextBlock Text="Capture" VerticalAlignment="Center"/>
+                          </StackPanel>
+                        </Button>
+                      </StackPanel>
+                    </StackPanel>
+                  </Grid>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Navigation visibility -->
+            <Button Classes="viewportTool" ToolTip.Tip="Navigation visibility...">
+              <Image Source="{StaticResource ImageNavigation}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <Grid Background="{DynamicResource StudioBackgroundBrush}" MinWidth="180">
+                    <StackPanel Margin="6" Spacing="6">
+                      <TextBlock Text="Show navigation meshes:"/>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Content="All" Width="40" HorizontalContentAlignment="Center"/>
+                        <Button Content="None" Width="40" HorizontalContentAlignment="Center"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Grid>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Grid and Gizmos options -->
+            <Button Classes="viewportTool" ToolTip.Tip="Grid and gizmo options...">
+              <Image Source="{StaticResource ImageGizmos}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <Grid Background="{DynamicResource StudioBackgroundBrush}" MinWidth="200" MaxWidth="300">
+                    <StackPanel Margin="6" Spacing="4">
+                      <TextBlock Text="Transformation gizmo size:"/>
+                      <Slider HorizontalAlignment="Stretch" Minimum="0" Maximum="10" Value="5"/>
+                      <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="Component gizmo size:"/>
+                        <CheckBox Content="Fixed" HorizontalAlignment="Right"/>
+                      </DockPanel>
+                      <Slider HorizontalAlignment="Stretch" Minimum="0" Maximum="10" Value="5"/>
+                      <CheckBox Content="Show component gizmos" IsChecked="{Binding Viewport.GizmosVisible, Mode=TwoWay}" Margin="0,2"/>
+                      <CheckBox Content="Camera preview" Margin="0,2"/>
+                      <CheckBox Content="Light probe volumes" Margin="0,2"/>
+                      <Separator Classes="studioToolSeparator" HorizontalAlignment="Stretch" Height="1" Margin="0,4"/>
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Content="All" Width="40" HorizontalContentAlignment="Center"/>
+                        <Button Content="None" Width="40" HorizontalContentAlignment="Center"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Grid>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Camera options -->
+            <Button x:Name="CameraSettingsButton" IsEnabled="{Binding Viewport.SceneInitialized}" Classes="viewportTool" ToolTip.Tip="Editor camera options...">
+              <Image Source="{StaticResource ImageCameraSettings}" Width="16" Height="16"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <Grid Background="{DynamicResource StudioBackgroundBrush}" MinWidth="180" Width="200">
+                    <StackPanel Spacing="4">
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Projection" FontWeight="Bold"/>
+                      </Border>
+                      <StackPanel Margin="6,2" Spacing="4">
+                        <RadioButton Content="Perspective" IsChecked="{Binding Viewport.CameraOrthographic, Converter={sd:InvertBool}, Mode=TwoWay}"/>
+                        <RadioButton Content="Orthographic" IsChecked="{Binding Viewport.CameraOrthographic, Mode=TwoWay}"/>
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4,0,0">
+                          <TextBlock Grid.Row="0" Grid.Column="0" Text="Near plane:" VerticalAlignment="Center" Margin="0,2,6,2"/>
+                          <sd:NumericTextBox x:Name="CameraNearField" Grid.Row="0" Grid.Column="1" DecimalPlaces="4" Value="{Binding Viewport.CameraNearPlane, Mode=TwoWay}" Minimum="0.0001" Maximum="1000000" Margin="0,2"/>
+                          <TextBlock Grid.Row="1" Grid.Column="0" Text="Far plane:" VerticalAlignment="Center" Margin="0,2,6,2"/>
+                          <sd:NumericTextBox x:Name="CameraFarField" Grid.Row="1" Grid.Column="1" DecimalPlaces="4" Value="{Binding Viewport.CameraFarPlane, Mode=TwoWay}" Minimum="0.001" Maximum="1000000" Margin="0,2"/>
+                          <TextBlock Grid.Row="2" Grid.Column="0" Text="Field of view:" VerticalAlignment="Center" Margin="0,2,6,2" IsVisible="{Binding Viewport.CameraOrthographic, Converter={sd:InvertBool}}"/>
+                          <sd:NumericTextBox x:Name="CameraFovField" Grid.Row="2" Grid.Column="1" DecimalPlaces="1" Value="{Binding Viewport.CameraFieldOfView, Mode=TwoWay}" Minimum="1" Maximum="179" Margin="0,2" IsVisible="{Binding Viewport.CameraOrthographic, Converter={sd:InvertBool}}"/>
+                          <TextBlock Grid.Row="3" Grid.Column="0" Text="Orthographic size:" VerticalAlignment="Center" Margin="0,2,6,2" IsVisible="{Binding Viewport.CameraOrthographic}"/>
+                          <sd:NumericTextBox x:Name="CameraSizeField" Grid.Row="3" Grid.Column="1" DecimalPlaces="4" Value="{Binding Viewport.CameraOrthographicSize, Mode=TwoWay}" Minimum="0.001" Maximum="1000000" Margin="0,2" IsVisible="{Binding Viewport.CameraOrthographic}"/>
+                        </Grid>
+                      </StackPanel>
+
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Movement" FontWeight="Bold"/>
+                      </Border>
+                      <Grid ColumnDefinitions="Auto,*" Margin="6,2">
+                        <TextBlock Grid.Column="0" Text="Speed:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <sd:NumericTextBox x:Name="CameraSpeedField" Grid.Column="1" DecimalPlaces="2" Value="{Binding Viewport.CameraMoveSpeed, Mode=TwoWay}" Minimum="0.05" Maximum="1000"/>
+                      </Grid>
+
+                      <Border Padding="8,2" Background="{DynamicResource StudioHoverBrush}" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Orientation" FontWeight="Bold"/>
+                      </Border>
+                      <UniformGrid Columns="2" Margin="4">
+                        <Button Content="Front" Click="CameraResetFront_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                        <Button Content="Back" Click="CameraResetBack_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                        <Button Content="Top" Click="CameraResetTop_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                        <Button Content="Bottom" Click="CameraResetBottom_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                        <Button Content="Left" Click="CameraResetLeft_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                        <Button Content="Right" Click="CameraResetRight_OnClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="2" Padding="2"/>
+                      </UniformGrid>
+                    </StackPanel>
+                  </Grid>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- RenderMode selector -->
+            <ComboBox x:Name="RenderModeSelector" IsEnabled="{Binding Viewport.SceneInitialized}" Width="80" Height="26" MinHeight="26" Padding="2,0" Margin="3,0"
+                      ItemsSource="{Binding Viewport.RenderModes}" SelectedItem="{Binding Viewport.RenderMode, Mode=TwoWay}"
+                      AutomationProperties.Name="Viewport rendering mode" ToolTip.Tip="Viewport rendering mode">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="ge:EditorRenderMode">
+                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+
+          <!-- Left toolbar tools: Move, Rotate, Scale, Snap, Spaces, MaterialMode, SelectionMask, CompilingAssets -->
+          <WrapPanel x:Name="ViewportTools" Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- Transformation Tools -->
+            <RadioButton x:Name="MoveTool" Classes="viewportTool" GroupName="ActiveTransformation"
+                         IsChecked="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Translation}, Mode=OneWay}"
+                         Command="{Binding Viewport.TranslateCommand}" ToolTip.Tip="Move (W)">
+              <Image Source="{StaticResource ImageTranslation}" Width="16" Height="16"/>
+            </RadioButton>
+            <RadioButton x:Name="RotateTool" Classes="viewportTool" GroupName="ActiveTransformation"
+                         IsChecked="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Rotation}, Mode=OneWay}"
+                         Command="{Binding Viewport.RotateCommand}" ToolTip.Tip="Rotate (E)">
+              <Image Source="{StaticResource ImageRotation}" Width="16" Height="16"/>
+            </RadioButton>
+            <RadioButton x:Name="ScaleTool" Classes="viewportTool" GroupName="ActiveTransformation"
+                         IsChecked="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Scale}, Mode=OneWay}"
+                         Command="{Binding Viewport.ScaleCommand}" ToolTip.Tip="Scale (R)">
+              <Image Source="{StaticResource ImageScale}" Width="16" Height="16"/>
+            </RadioButton>
+
+            <!-- Snapping Tool: Translation, Rotation, Scale snap values depending on active mode -->
+            <ToggleButton x:Name="SnapTool" Classes="viewportTool snapTool" IsChecked="{Binding Viewport.Snap, Mode=TwoWay}"
+                          IsVisible="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Translation}}"
+                          ToolTip.Tip="Snap translations to this value">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="{StaticResource ImageTranslateSnap}" Width="16" Height="16"/>
+                <sd:NumericTextBox Classes="snapValue" Width="50" Value="{Binding Viewport.TranslationSnap, Mode=TwoWay}" Minimum="0.0001" DecimalPlaces="3" Margin="2,0"/>
+              </StackPanel>
+            </ToggleButton>
+            <ToggleButton Classes="viewportTool snapTool" IsChecked="{Binding Viewport.Snap, Mode=TwoWay}"
+                          IsVisible="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Rotation}}"
+                          ToolTip.Tip="Snap rotations to this value">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="{StaticResource ImageRotateSnap}" Width="16" Height="16"/>
+                <sd:NumericTextBox Classes="snapValue" Width="50" Value="{Binding Viewport.RotationSnap, Mode=TwoWay}" Minimum="0.0001" Maximum="360" DecimalPlaces="3" Margin="2,0"/>
+              </StackPanel>
+            </ToggleButton>
+            <ToggleButton Classes="viewportTool snapTool" IsChecked="{Binding Viewport.Snap, Mode=TwoWay}"
+                          IsVisible="{Binding Viewport.ActiveTransformation, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:Transformation.Scale}}"
+                          ToolTip.Tip="Snap scale to this factor">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="{StaticResource ImageScaleSnap}" Width="16" Height="16"/>
+                <sd:NumericTextBox Classes="snapValue" Width="50" Value="{Binding Viewport.ScaleSnap, Mode=TwoWay}" Minimum="0.0001" DecimalPlaces="3" Margin="2,0"/>
+              </StackPanel>
+            </ToggleButton>
+
+            <Separator Classes="studioToolSeparator"/>
+
+            <!-- Coordinate Spaces: World, Object, View -->
+            <RadioButton Classes="viewportTool" GroupName="CoordinateSpace"
+                         IsChecked="{Binding Viewport.Space, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:TransformationSpace.WorldSpace}, Mode=OneWay}"
+                         Click="WorldSpace_OnClick" ToolTip.Tip="Use world coordinates for transformations">
+              <Image Source="{StaticResource ImageWorldSpace}" Width="16" Height="16"/>
+            </RadioButton>
+            <RadioButton Classes="viewportTool" GroupName="CoordinateSpace"
+                         IsChecked="{Binding Viewport.Space, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:TransformationSpace.ObjectSpace}, Mode=OneWay}"
+                         Click="ObjectSpace_OnClick" ToolTip.Tip="Use local coordinates for transformations">
+              <Image Source="{StaticResource ImageObjectSpace}" Width="16" Height="16"/>
+            </RadioButton>
+            <RadioButton Classes="viewportTool" GroupName="CoordinateSpace"
+                         IsChecked="{Binding Viewport.Space, Converter={sd:IsEqualToParam}, ConverterParameter={x:Static ge:TransformationSpace.ViewSpace}, Mode=OneWay}"
+                         Click="ViewSpace_OnClick" ToolTip.Tip="Use current camera projection coordinates for transformations">
+              <Image Source="{StaticResource ImageViewSpace}" Width="16" Height="16"/>
+            </RadioButton>
+
+            <Separator Classes="studioToolSeparator"/>
+
+            <!-- Material Selection & Selection Mask -->
+            <ToggleButton Classes="viewportTool" IsChecked="{Binding MaterialSelectionMode, Mode=TwoWay}"
+                          ToolTip.Tip="Toggle material selection (click a selected asset to select its material)">
+              <Image Source="{StaticResource ImageToggleMaterialMode}" Width="16" Height="16"/>
+            </ToggleButton>
+            <ToggleButton Classes="viewportTool" IsChecked="{Binding DisplaySelectionMask, Mode=TwoWay}"
+                          ToolTip.Tip="Show or hide selection mask">
+              <Image Source="{StaticResource ImageToggleSelectionMask}" Width="16" Height="16"/>
+            </ToggleButton>
+
+            <Separator Classes="studioToolSeparator"/>
+
+            <!-- Compiling assets indicator -->
+            <TextBlock Text="Loading assets..." IsVisible="{Binding CompilingAssets}"
+                       VerticalAlignment="Center" FontWeight="Bold" Foreground="#FF00FF70" Margin="0"/>
+          </WrapPanel>
+        </DockPanel>
       </Border>
-      <Border DockPanel.Dock="Bottom" Padding="6,3" Background="{DynamicResource StudioBackgroundBrush}">
-        <StackPanel>
-          <TextBlock Text="RMB + WASD: fly · Q/E: down/up · MMB: pan · Wheel: zoom · F: frame" FontSize="11" Opacity="0.7"/>
-          <TextBlock Text="{Binding Viewport.LastException.Message}" Foreground="#FFCC6666" TextWrapping="Wrap"/>
-        </StackPanel>
+      <Border DockPanel.Dock="Bottom" Padding="6,3" IsVisible="{Binding Viewport.LastException, Converter={sd:ObjectToBool}}" Background="{DynamicResource StudioBackgroundBrush}">
+        <TextBlock Text="{Binding Viewport.LastException.Message}" Foreground="#FFCC6666" TextWrapping="Wrap"/>
       </Border>
-      <ContentControl Content="{Binding Viewport.EditorHost}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+      <ContentControl x:Name="ViewportHostControl" Content="{Binding Viewport.EditorHost}" DragDrop.AllowDrop="True" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+        <ContentControl.ContextMenu>
+          <ContextMenu Opened="OnHierarchyContextMenuOpened">
+            <MenuItem Header="Create prefab from selection" Command="{Binding CreatePrefabFromSelectionCommand}"/>
+          </ContextMenu>
+        </ContentControl.ContextMenu>
+      </ContentControl>
     </DockPanel>
   </Grid>
 </UserControl>

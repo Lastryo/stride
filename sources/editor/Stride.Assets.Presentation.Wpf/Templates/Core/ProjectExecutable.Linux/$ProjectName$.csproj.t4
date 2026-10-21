@@ -13,10 +13,14 @@
 
     <!-- Force msbuild to check to rebuild this assembly instead of letting VS IDE guess -->
     <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    <StrideCurrentPackagePath>$(MSBuildThisFileDirectory)..\<#= Properties.PackageGameRelativePath #></StrideCurrentPackagePath>
+    <StrideProjectType>Executable</StrideProjectType>
+    <StridePlatform><#= Properties.CurrentPlatform #></StridePlatform>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\<#= Properties.ProjectGameRelativePath #>" />
+    <PackageReference Include="Stride.Core.Assets.CompilerApp" Version="<#= Stride.Assets.StrideConfig.GetLatestPackageDependency().Version #>" IncludeAssets="build;buildTransitive" />
   </ItemGroup>
 
 </Project>

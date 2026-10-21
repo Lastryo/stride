@@ -39,16 +39,7 @@ public sealed class StatusViewModel : DispatcherViewModel
                 jobList.Remove(token);
                 if (CurrentJob == job)
                 {
-                    job = null;
-                    foreach (JobPriority priority in Enum.GetValues(typeof(JobPriority)).Cast<JobPriority>().Reverse())
-                    {
-                        var nextJob = jobList.LastOrDefault(x => x.Value.Priority == priority).Value;
-                        if (nextJob is not null)
-                        {
-                            job = nextJob;
-                        }
-                    }
-                    CurrentJob = job;
+                    CurrentJob = jobList.Values.OrderBy(x => x.Priority).LastOrDefault();
                 }
             }
         });

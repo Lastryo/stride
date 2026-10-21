@@ -66,12 +66,10 @@ public class AssetBuilderService : IBuildService, IDisposable
                 {
                     return null;
                 }
+                if (queue.Peek().PriorityMajor > maxPriority)
+                    return null;
                 unit = queue.Dequeue();
             }
-
-            // Check that priority is good enough
-            if (unit.PriorityMajor > maxPriority)
-                return null;
 
             var buildStep = unit.GetBuildStep();
             
@@ -109,11 +107,15 @@ public class AssetBuilderService : IBuildService, IDisposable
         return result;
     }
 
-    public void RemoveBuildUnit(PriorityQueueNode<AssetBuildUnit> node)
+    public void RemoveBuildUnit(PriorityQueueNode<AssetBuildUnit> node) => TryRemoveBuildUnit(node);
+
+    public bool TryRemoveBuildUnit(PriorityQueueNode<AssetBuildUnit> node)
     {
         lock (queueLock)
         {
+            if (node.Index < 0) return false;
             queue.Remove(node);
+            return true;
         }
     }
 

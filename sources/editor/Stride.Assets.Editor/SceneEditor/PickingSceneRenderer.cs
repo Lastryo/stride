@@ -239,6 +239,12 @@ namespace Stride.Assets.Editor.SceneEditor
         /// <returns></returns>
         public void ClearCache() => idToEntity.Clear();
 
+        protected override void Destroy()
+        {
+            pickingTexture?.Dispose();
+            base.Destroy();
+        }
+
         public EntityPickingResult Pick()
         {
             return pickingResult.GetResult(idToEntity);

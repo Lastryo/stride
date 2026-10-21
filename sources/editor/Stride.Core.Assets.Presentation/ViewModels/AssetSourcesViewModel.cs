@@ -2,6 +2,8 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using Stride.Core.Assets.Tracking;
+using Stride.Core.Diagnostics;
+using Stride.Core.Presentation.Dirtiables;
 using Stride.Core.Extensions;
 using Stride.Core.IO;
 using Stride.Core.Presentation.ViewModels;
@@ -14,7 +16,7 @@ public sealed class AssetSourcesViewModel : DispatcherViewModel
     private readonly AssetViewModel asset;
     private readonly HashSet<UFile> currentSourceFiles = [];
     private bool needUpdateFromSource;
-    private readonly IReadOnlyDictionary<UFile, ObjectId> updatedHashes;
+    private IReadOnlyDictionary<UFile, ObjectId> updatedHashes;
 
     public AssetSourcesViewModel(AssetViewModel asset)
         : base(asset.ServiceProvider)
@@ -58,6 +60,25 @@ public sealed class AssetSourcesViewModel : DispatcherViewModel
 
         if (notifyTracker)
             asset.Session.SourceTracker?.UpdateAssetStatus(asset);
+    }
+
+    public async Task UpdateAssetFromSource(LoggerResult logger)
+    {
+        await asset.UpdateAssetFromSource(logger);
+        if (logger.HasErrors) return;
+
+        var oldHashes = updatedHashes.ToDictionary(x => x.Key, x => x.Value);
+        var newHashes = currentSourceFiles.ToDictionary(x => x, asset.Session.SourceTracker.GetCurrentHash);
+        asset.UndoRedoService.PushOperation(new AnonymousDirtyingOperation(asset.Dirtiables,
+            () => ApplyHashes(oldHashes), () => ApplyHashes(newHashes)));
+        ApplyHashes(newHashes);
+    }
+
+    private void ApplyHashes(IReadOnlyDictionary<UFile, ObjectId> hashes)
+    {
+        updatedHashes = hashes;
+        SourceHashesHelper.UpdateHashes(asset.Asset, hashes);
+        ComputeNeedUpdateFromSource();
     }
 
     public void UpdateUsedHashes(IReadOnlyList<UFile> files)

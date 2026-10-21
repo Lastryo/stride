@@ -146,8 +146,9 @@ namespace Stride.Core.ProjectTemplating
                         log.Warning($"Invalid empty file item [{fileItem}] with no source location");
                         continue;
                     }
-                    var sourceFilePath = Path.Combine(templateDirectory.FullName, fileItem.Source);
-                    var targetLocation = fileItem.Target ?? fileItem.Source;
+                    // Templates are authored with Windows separators; '/' works on every OS.
+                    var sourceFilePath = Path.Combine(templateDirectory.FullName, fileItem.Source.Replace('\\', '/'));
+                    var targetLocation = (fileItem.Target ?? fileItem.Source).Replace('\\', '/');
                     if (Path.IsPathRooted(targetLocation))
                     {
                         log.Error($"Invalid file item [{fileItem}]. TargetLocation must be a relative path");
@@ -243,7 +244,7 @@ namespace Stride.Core.ProjectTemplating
             }
 
             var templateDirectory = new FileInfo(FilePath).Directory;
-            var sourceFilePath = Path.Combine(templateDirectory.FullName, templatePathPart);
+            var sourceFilePath = Path.Combine(templateDirectory.FullName, templatePathPart.Replace('\\', '/'));
             var content = File.ReadAllText(sourceFilePath);
 
             var engine = new TemplatingEngine();

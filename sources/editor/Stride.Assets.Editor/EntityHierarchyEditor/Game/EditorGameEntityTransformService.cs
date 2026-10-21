@@ -64,14 +64,18 @@ public sealed class EditorGameEntityTransformService(SceneViewportController con
         return Task.FromResult(true);
     }
 
-    public void SetSettings(Transformation mode, TransformationSpace space, bool snap)
+    public void SetSettings(Transformation mode, TransformationSpace space, bool snap, float translationStep = 1, float rotationStep = 15, float scaleStep = .1f, TransformationPivot pivot = TransformationPivot.Pivot)
     {
         active.IsEnabled = false;
         active = gizmos[(int)mode];
         snapping = snap;
+        gizmos[0].SnapValue = translationStep;
+        gizmos[1].SnapValue = rotationStep;
+        gizmos[2].SnapValue = scaleStep;
         foreach (var gizmo in gizmos)
         {
             gizmo.Space = space;
+            gizmo.Pivot = pivot;
             gizmo.UseSnap = snap;
         }
         active.IsEnabled = active.AnchorEntity != null;
@@ -105,8 +109,11 @@ public sealed class EditorGameEntityTransformService(SceneViewportController con
                     if (input.IsKeyPressed(Keys.F)) controller.Frame(selection.GetSelectedRootIds().ToArray());
                 }
                 active.UseSnap = snapping || input.IsKeyDown(Keys.LeftShift);
+                var wasTransforming = active.IsTransforming;
                 await active.Update();
-                IsControllingMouse = active.IsUnderMouse();
+                // Hover must not block camera/reload; retain ownership on the release frame.
+                IsControllingMouse = wasTransforming || active.IsTransforming || active.IsUnderMouse()
+                    && (input.IsMouseButtonDown(MouseButton.Left) || input.IsMouseButtonReleased(MouseButton.Left));
             }
             else IsControllingMouse = false;
             await game.Script.NextFrame();

@@ -3,17 +3,21 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Stride.Core.Assets.Analysis;
 using Stride.Core.Assets.Editor.Components.Properties;
 using Stride.Core.Assets.Editor.Components.Transactions;
 using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Assets.Presentation.ViewModels;
 using Stride.Core.Assets.Quantum;
+using Stride.Core.Assets.Templates;
 using Stride.Core.Diagnostics;
 using Stride.Core.Extensions;
 using Stride.Core.IO;
 using Stride.Core.Presentation.Collections;
 using Stride.Core.Presentation.Commands;
+using Stride.Core.Presentation.Dirtiables;
 using Stride.Core.Presentation.Quantum.ViewModels;
 using Stride.Core.Presentation.Services;
 using Stride.Core.Presentation.ViewModels;
@@ -33,6 +37,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
     private readonly Dictionary<PackageViewModel, PackageContainer> packageMap = [];
     private readonly PackageSession session;
     private bool sessionStateUpdating;
+    private readonly LoggerResult outputLogger = new("Editor");
 
     private readonly IDebugPage? assetNodesDebugPage;
     private readonly IDebugPage? quantumDebugPage;
@@ -87,6 +92,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
         // Initialize logs
         AssetLog = new AssetLogViewModel(ServiceProvider, this);
+        OutputLog = new LoggerViewModel(ServiceProvider, outputLogger);
 
         // Initialize the reference view model related to the main asset view
         References = new ReferencesViewModel(this);
@@ -99,6 +105,8 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
         // Initialize commands
         EditSelectedContentCommand = new AnonymousCommand(serviceProvider, OnEditSelectedContent);
+        NewDirectoryCommand = new AnonymousCommand<object?>(serviceProvider, param => CreateNewFolder(param));
+        ExploreCommand = new AnonymousCommand<object?>(serviceProvider, Explore);
         PreviousSelectionCommand = new AnonymousCommand(serviceProvider, () => { SelectionService?.NavigateBackward(); UpdateSelectionCommands(); });
         NextSelectionCommand = new AnonymousCommand(serviceProvider, () => { SelectionService?.NextSelection(); UpdateSelectionCommands(); });
 
@@ -112,6 +120,8 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         Thumbnails = new ThumbnailsViewModel(this);
 
         GraphContainer = new AssetPropertyGraphContainer(AssetNodeContainer);
+        if (ServiceProvider.TryGet<ICopyPasteService>() is CopyPasteService copyPaste)
+            copyPaste.PropertyGraphContainer = GraphContainer;
 
         // Initialize session itself in plugins
         foreach (var plugin in PluginService.Plugins)
@@ -145,11 +155,21 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     public IEnumerable<PackageViewModel> AllPackages => PackageCategories.Values.SelectMany(x => x.Content);
 
+    public IEnumerable<ProjectViewModel> Projects => LocalPackages.OfType<ProjectViewModel>();
+
     public AssetCollectionViewModel AssetCollection { get; }
 
     public TagsViewModel AssetTags { get; }
 
     public AssetLogViewModel AssetLog { get; }
+
+    public LoggerViewModel OutputLog { get; }
+
+    private void InitializeOutputLog(LoggerResult loadingLog)
+    {
+        OutputLog.AddLoggerWithPast(loadingLog);
+        GlobalLogger.GlobalMessageLogged += outputLogger.Log;
+    }
 
     public AssetNodeContainer AssetNodeContainer { get; }
 
@@ -160,8 +180,10 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
     public ProjectViewModel? CurrentProject
     {
         get => currentProject;
-        private set
+        set
         {
+            if (value != null && !LocalPackages.Contains(value))
+                throw new ArgumentException("The current project must belong to this session.", nameof(value));
             var oldValue = currentProject;
             //SetValueUncancellable(ref currentProject, value, () => UpdateCurrentProject(oldValue, value));
             SetValue(ref currentProject, value, () => UpdateCurrentProject(oldValue, value));
@@ -187,6 +209,23 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     public UFile SolutionPath => session.SolutionPath;
 
+    private ICommandBase? importEffectLogCommand;
+    private int importEffectLogPendingCount;
+
+    public ICommandBase? ImportEffectLogCommand
+    {
+        get => importEffectLogCommand;
+        set => SetValue(ref importEffectLogCommand, value);
+    }
+
+    public int ImportEffectLogPendingCount
+    {
+        get => importEffectLogPendingCount;
+        set => SetValue(ref importEffectLogPendingCount, value);
+    }
+
+    public event EventHandler? Closing;
+
     public IAssetSourceTrackerViewModel SourceTracker { get; private set; }
 
     public IObservableCollection<PackageViewModel> StorePackages => PackageCategories[StorePackageCategoryName].Content;
@@ -194,6 +233,10 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
     public ThumbnailsViewModel Thumbnails { get; }
 
     public ICommandBase EditSelectedContentCommand { get; }
+
+    public ICommandBase NewDirectoryCommand { get; }
+
+    public ICommandBase ExploreCommand { get; }
 
     public ICommandBase NextSelectionCommand { get; }
 
@@ -213,7 +256,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
     /// <summary>
     /// Raised when some assets are deleted or undeleted.
     /// </summary>
-    public event EventHandler<NotifyCollectionChangedEventArgs?> DeletedAssetsChanged;
+    public event EventHandler<NotifyCollectionChangedEventArgs?>? DeletedAssetsChanged;
 
     /// <summary>
     /// Raised when the session state changed (e.g. current package).
@@ -227,11 +270,59 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         return result;
     }
 
+    public bool HasUnsavedChanges => session.IsDirty || LocalPackages.Any(package =>
+        package.IsDirty || package.Package.IsDirty || package.Package.Assets.IsDirty
+        || package.Content.OfType<SessionObjectViewModel>().Any(x => x.IsDirty)
+        || package.Assets.Any(asset => asset.IsDirty || asset.AssetItem.IsDirty)
+        || package.DeletedAssets.Any(asset => asset.IsDirty));
+
+    public bool Save(ILogger logger)
+    {
+        // Keep graph preparation and serialization on the UI thread to exclude concurrent edits.
+        Dispatcher.EnsureAccess();
+        var result = new LoggerResult("Save");
+        result.MessageLogged += (_, e) =>
+        {
+            logger.Log(e.Message);
+            outputLogger.Log(e.Message);
+        };
+        try
+        {
+            foreach (var package in LocalPackages)
+            {
+                if (package.IsDirty || package.Content.OfType<SessionObjectViewModel>().Any(x => x.IsDirty))
+                    package.Package.IsDirty = true;
+                if (package.DeletedAssets.Count > 0)
+                    package.Package.Assets.IsDirty = true;
+                foreach (var asset in package.Assets)
+                {
+                    // A clean undo snapshot does not guarantee that a newly created asset exists on disk.
+                    asset.AssetItem.IsDirty |= asset.IsDirty || !File.Exists(asset.AssetItem.FullPath.ToOSPath());
+                    asset.PropertyGraph?.PrepareForSave(result, asset.AssetItem);
+                }
+            }
+            if (result.HasErrors) return false;
+            session.Save(result, new PackageSaveParameters { DeleteFile = FileTrash.Move });
+            if (result.HasErrors) return false;
+            ActionHistory?.NotifySave();
+            UpdateSessionState();
+            return true;
+        }
+        catch (Exception exception)
+        {
+            result.Error("Unable to save the solution.", exception);
+            return false;
+        }
+    }
+
     public async Task CloseAsync()
     {
         await EditorCollection.CloseEditorsAsync();
         if (ServiceProvider.TryGet<IAssetPreviewService>() is { } preview)
             await preview.DisposeAsync();
+        // Build cancellation can wait for work that dispatches back to the UI.
+        if (ServiceProvider.TryGet<AssetBuilderService>() is { } builder)
+            await Task.Run(builder.Dispose);
         Destroy();
     }
 
@@ -240,11 +331,17 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
     {
         EnsureNotDestroyed(nameof(SessionViewModel));
 
+        Closing?.Invoke(this, EventArgs.Empty);
+        (SourceTracker as AssetSourceTrackerViewModel)?.Destroy();
+        GlobalLogger.GlobalMessageLogged -= outputLogger.Log;
+        OutputLog.Destroy();
+
         EditorCollection.Destroy();
         ServiceProvider.TryGet<IAssetPreviewService>()?.Dispose();
         ActionHistory?.Destroy();
         AssetTags.Destroy();
         AssetLog.Destroy();
+        ServiceProvider.TryGet<AssetBuilderService>()?.Dispose();
         Thumbnails.Destroy();
 
         var debugService = ServiceProvider.Get<IEditorDebugService>();
@@ -291,9 +388,11 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         ((IDictionary<AssetId, AssetViewModel>)assetIdMap).Remove(asset.Id);
     }
 
-    private void AutoSelectCurrentProject()
+    public void AutoSelectCurrentProject()
     {
-        var currentProject = LocalPackages.OfType<ProjectViewModel>().FirstOrDefault(/* FIXME sxplat-editor x => x.Type == ProjectType.Executable && x.Platform == PlatformType.Windows*/) ?? LocalPackages.FirstOrDefault();
+        var host = OperatingSystem.IsWindows() ? PlatformType.Windows : OperatingSystem.IsMacOS() ? PlatformType.macOS : PlatformType.Linux;
+        var currentProject = Projects.FirstOrDefault(x => x.Project.Type == ProjectType.Executable && (x.Project.Platform == host || x.Project.Platform == PlatformType.Shared))
+            ?? Projects.FirstOrDefault(x => x.Project.Type == ProjectType.Executable) ?? Projects.FirstOrDefault();
         if (currentProject != null)
         {
             SetCurrentProject(currentProject);
@@ -357,6 +456,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     private void LocalPackagesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        OnPropertyChanged(nameof(Projects));
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
             session.Projects.RemoveWhere(x => !x.Package.IsSystem);
@@ -382,6 +482,34 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         }
     }
 
+    /// <summary>
+    /// Creates view models for projects that were added directly to the underlying session (e.g. by a template generator).
+    /// </summary>
+    public void ProcessAddedProjects()
+    {
+        var newPackages = new List<PackageViewModel>();
+        var progress = 0.0;
+        foreach (var project in session.Projects.Where(x => !packageMap.ContainsValue(x)).ToList())
+        {
+            var viewModel = CreateProjectViewModel(project, true);
+            viewModel.LoadPackageInformation(null, ref progress);
+            newPackages.Add(viewModel);
+        }
+        ProcessAddedPackages(newPackages).Forget();
+    }
+
+    /// <summary>
+    /// Removes view models of projects that were removed directly from the underlying session.
+    /// </summary>
+    public void ProcessRemovedProjects()
+    {
+        foreach (var package in packageMap.Where(x => !session.Projects.Contains(x.Value)).ToList())
+        {
+            LocalPackages.Remove(package.Key);
+            packageMap.Remove(package.Key);
+        }
+    }
+
     private async Task ProcessAddedPackages(IEnumerable<PackageViewModel> packages)
     {
         var packageList = packages.ToList();
@@ -400,13 +528,13 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         }
 
         CurrentProject = project;
-        AllAssets.ForEach(x => x.Dependencies.NotifyRootAssetChange(false));
         // FIXME xplat-editor
         //SelectionIsRoot = AssetCollection.SelectedAssets.All(x => x.Dependencies.IsRoot);
     }
 
     private void UpdateCurrentProject(ProjectViewModel? oldValue, ProjectViewModel? newValue)
     {
+        AllAssets.ForEach(x => x.Dependencies.NotifyRootAssetChange(false));
         //if (oldValue != null)
         //{
         //    oldValue.IsCurrentProject = false;
@@ -440,6 +568,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
             UpdateSelectionCommands();
 
             sessionStateUpdating = false;
+            SessionStateChanged?.Invoke(this, new SessionStateChangedEventArgs());
         }
     }
 
@@ -463,6 +592,160 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
             AssetCollection.SelectedLocations.Clear();
             AssetCollection.SelectedLocations.Add(folder);
         }
+    }
+
+    public IEnumerable<TemplateDescription> FindTemplates(TemplateScope scope)
+    {
+        return TemplateManager.FindTemplates(scope, session);
+    }
+
+    public DirectoryViewModel? CreateNewFolder(object? target = null)
+    {
+        target ??= AssetCollection.SelectedLocations.FirstOrDefault();
+        var directory = target as DirectoryBaseViewModel;
+        var package = target as PackageViewModel ?? (target as IChildViewModel)?.GetParent() as PackageViewModel ?? LocalPackages.FirstOrDefault(p => p.IsEditable);
+        if (directory == null && package != null)
+        {
+            directory = package.AssetMountPoint;
+        }
+        if (directory == null || !directory.Package.IsEditable)
+            return null;
+
+        var baseName = "NewFolder";
+        var name = NamingHelper.ComputeNewName(baseName, directory.SubDirectories, x => x.Name, "{0}{1}");
+        DirectoryViewModel created;
+        using (var transaction = ActionService?.CreateTransaction())
+        {
+            created = new DirectoryViewModel(name, directory);
+            directory.Package.Package.ExplicitFolders.Add(created.Path);
+            ((IDirtiable)directory.Package).UpdateDirtiness(true);
+            ActionService?.PushOperation(new AnonymousDirtyingOperation(directory.Package.Dirtiables,
+                () => { directory.Package.Package.ExplicitFolders.Add(created.Path); ((IDirtiable)directory.Package).UpdateDirtiness(true); },
+                () => { directory.Package.Package.ExplicitFolders.Remove(created.Path); }));
+            ActionService?.SetName(transaction, $"Create folder '{created.Name}' in '{directory.Name}'");
+        }
+        return created;
+    }
+
+    public void Explore(object? param = null)
+    {
+        param ??= AssetCollection.SelectedAssets.FirstOrDefault() ?? AssetCollection.SelectedLocations.FirstOrDefault();
+        string? targetPath = null;
+        if (param is AssetViewModel asset)
+        {
+            targetPath = asset.AssetItem.FullPath;
+        }
+        else if (param is DirectoryBaseViewModel dir)
+        {
+            targetPath = Path.Combine(dir.Package.Package.RootDirectory, dir.Path);
+        }
+        else if (param is ProjectViewModel proj)
+        {
+            targetPath = proj.ProjectPath.GetFullDirectory();
+        }
+        else if (param is PackageViewModel pkg)
+        {
+            targetPath = pkg.PackagePath.GetFullDirectory();
+        }
+        else if (!string.IsNullOrEmpty(SolutionPath))
+        {
+            targetPath = SolutionPath.GetFullDirectory();
+        }
+
+        if (string.IsNullOrEmpty(targetPath)) return;
+        try
+        {
+            if (File.Exists(targetPath))
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{targetPath}\"") { UseShellExecute = true });
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    Process.Start("open", $"-R \"{targetPath}\"");
+                else
+                {
+                    var parentDir = Path.GetDirectoryName(targetPath);
+                    if (!string.IsNullOrEmpty(parentDir) && Directory.Exists(parentDir))
+                        Process.Start("xdg-open", $"\"{parentDir}\"");
+                }
+            }
+            else if (Directory.Exists(targetPath))
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"\"{targetPath}\"") { UseShellExecute = true });
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    Process.Start("open", $"\"{targetPath}\"");
+                else
+                    Process.Start("xdg-open", $"\"{targetPath}\"");
+            }
+        }
+        catch
+        {
+            // Ignore explorer process start errors
+        }
+    }
+
+    public async Task<AssetViewModel?> CreateAssetFromTemplate(TemplateDescription template, DirectoryBaseViewModel? targetDirectory = null, IEnumerable<UFile>? sourceFiles = null)
+    {
+        targetDirectory ??= AssetCollection.SelectedLocations.OfType<DirectoryBaseViewModel>().FirstOrDefault()
+            ?? LocalPackages.FirstOrDefault(p => p.IsEditable)?.AssetMountPoint;
+        if (targetDirectory == null || !targetDirectory.Package.IsEditable) return null;
+
+        var templateAsset = template as TemplateAssetDescription;
+        if (templateAsset != null && typeof(IProjectAsset).IsAssignableFrom(templateAsset.GetAssetType())
+            && targetDirectory.Package is ProjectViewModel project)
+            targetDirectory = project.Code;
+        var baseName = templateAsset?.DefaultOutputName ?? template.Name;
+        var name = NamingHelper.ComputeNewName(baseName, targetDirectory.Assets, x => x.Name, "{0}{1}");
+
+        var logger = new LoggerResult();
+        var parameters = new AssetTemplateGeneratorParameters(targetDirectory.Path, sourceFiles)
+        {
+            Name = name,
+            Description = template,
+            Package = targetDirectory.Package.Package,
+            Logger = logger,
+            Namespace = targetDirectory.Package.Package.RootNamespace ?? "MyGame",
+        };
+
+        var generator = TemplateManager.FindTemplateGenerator<AssetTemplateGeneratorParameters>(template);
+        if (generator == null)
+        {
+            GlobalLogger.GetLogger("Asset templates").Error($"No generator is registered for '{template.Name}'.");
+            return null;
+        }
+
+        var prepared = await generator.PrepareForRun(parameters);
+        if (!prepared) return null;
+
+        var ran = await Task.Run(() => generator.Run(parameters));
+        foreach (var message in logger.Messages) GlobalLogger.GetLogger("Asset templates").Log(message);
+        if (!ran || logger.HasErrors) return null;
+
+        var existingAssetItems = targetDirectory.Package.Assets.Select(x => x.AssetItem).ToHashSet();
+        var newAssetItems = targetDirectory.Package.Package.Assets.Where(x => !existingAssetItems.Contains(x)).ToList();
+        if (newAssetItems.Count == 0) return null;
+
+        AssetViewModel? lastCreated = null;
+        using (var transaction = ActionService?.CreateTransaction())
+        {
+            foreach (var newItem in newAssetItems)
+            {
+                var directory = newItem.Asset is IProjectAsset && targetDirectory.Package is ProjectViewModel codeProject
+                    ? codeProject.GetOrCreateProjectDirectory(newItem.Location.GetParent())
+                    : targetDirectory.Package.GetOrCreateAssetDirectory(newItem.Location.GetParent());
+                lastCreated = targetDirectory.Package.AddAsset(newItem, directory);
+            }
+            ActionService?.SetName(transaction, $"Add asset '{name}'");
+        }
+
+        if (lastCreated != null)
+        {
+            AssetCollection.SelectedLocations.Clear();
+            AssetCollection.SelectedLocations.Add(targetDirectory);
+            AssetCollection.SelectAssetCommand.Execute(lastCreated);
+        }
+
+        return lastCreated;
     }
     #endregion // Commands
 }
