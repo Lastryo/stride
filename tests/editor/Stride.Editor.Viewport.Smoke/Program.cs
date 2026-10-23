@@ -117,6 +117,13 @@ internal static class ViewportSmoke
             lifetime.Shutdown();
             return;
         }
+        if (lifetime.Args?.Contains("--hot-reload") == true)
+        {
+            await EditorAssemblyReloadSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
         if (lifetime.Args?.Contains("--asset-picker") == true)
         {
             await EditorAssetPickerSmoke.Check(session, lifetime.MainWindow!);

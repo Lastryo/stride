@@ -147,6 +147,11 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         }
     }
 
+    private AssemblyHotReloadService? hotReload;
+    public AssemblyHotReloadService? HotReload { get => hotReload; private set => SetValue(ref hotReload, value); }
+
+    public void StartHotReload(Func<bool> canReload) => HotReload ??= new AssemblyHotReloadService(this, canReload);
+
     public ActionHistoryViewModel? ActionHistory { get; }
 
     public IUndoRedoService? ActionService => ServiceProvider.TryGet<IUndoRedoService>();
@@ -242,6 +247,30 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     public ICommandBase PreviousSelectionCommand { get; }
 
+    public bool IsInFixupAssetContext { get; private set; }
+
+    public IDisposable CreateAssetFixupContext() => new AssetFixupContext(this);
+
+    private sealed class AssetFixupContext : IDisposable
+    {
+        private readonly SessionViewModel owner;
+        private readonly bool previous;
+        private readonly bool previousPropagation;
+        public AssetFixupContext(SessionViewModel owner)
+        {
+            this.owner = owner;
+            previous = owner.IsInFixupAssetContext;
+            previousPropagation = owner.GraphContainer.PropagateChangesFromBase;
+            owner.IsInFixupAssetContext = true;
+            owner.GraphContainer.PropagateChangesFromBase = false;
+        }
+        public void Dispose()
+        {
+            owner.IsInFixupAssetContext = previous;
+            owner.GraphContainer.PropagateChangesFromBase = previousPropagation;
+        }
+    }
+
     internal PackageSession PackageSession => session;
 
     internal IAssetsPluginService PluginService => ServiceProvider.Get<IAssetsPluginService>();
@@ -317,6 +346,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
 
     public async Task CloseAsync()
     {
+        if (HotReload != null) await HotReload.StopAsync();
         await EditorCollection.CloseEditorsAsync();
         if (ServiceProvider.TryGet<IAssetPreviewService>() is { } preview)
             await preview.DisposeAsync();
@@ -332,6 +362,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         EnsureNotDestroyed(nameof(SessionViewModel));
 
         Closing?.Invoke(this, EventArgs.Empty);
+        HotReload?.Destroy();
         (SourceTracker as AssetSourceTrackerViewModel)?.Destroy();
         GlobalLogger.GlobalMessageLogged -= outputLogger.Log;
         OutputLog.Destroy();

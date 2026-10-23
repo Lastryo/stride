@@ -12,6 +12,8 @@ namespace Stride.Core.Assets.Presentation.ViewModels;
 
 public interface ISessionViewModel
 {
+    bool IsInFixupAssetContext { get; }
+
     IEnumerable<AssetViewModel> AllAssets { get; }
 
     IEnumerable<PackageViewModel> AllPackages { get; }

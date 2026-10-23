@@ -111,7 +111,7 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
     /// </summary>
     public ObservableList<string> Tags { get; } = [];
 
-    public AssetPropertyGraph? PropertyGraph { get; }
+    public AssetPropertyGraph? PropertyGraph { get; private set; }
 
     /// <summary>
     /// Gets the view model of the sources of this asset.
@@ -204,6 +204,33 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
         if (!Initializing) _ = AssetDependenciesViewModel.NotifyAssetChanged(Session, this);
     }
 
+    /// <summary>Replaces a reloaded asset root while retaining its identity and editor view model.</summary>
+    public void UpdateAsset(Asset replacement, Stride.Core.Diagnostics.ILogger logger)
+    {
+        if (replacement.Id != Id) throw new ArgumentException("Assets must have the same Id.", nameof(replacement));
+        var item = AssetItem.Clone(newAsset: replacement);
+        if (PropertyGraph != null)
+        {
+            PropertyGraph.BaseContentChanged -= BaseContentChanged;
+            PropertyGraph.Changed -= AssetPropertyChanged;
+            PropertyGraph.ItemChanged -= AssetPropertyChanged;
+            PropertyGraph.Dispose();
+        }
+        Session.GraphContainer.UnregisterGraph(Id);
+        Package.Assets.Remove(AssetItem);
+        Package.Assets.Add(item);
+        AssetItem = item;
+        PropertyGraph = Session.GraphContainer.InitializeAsset(item, logger);
+        if (PropertyGraph != null)
+        {
+            PropertyGraph.BaseContentChanged += BaseContentChanged;
+            PropertyGraph.Changed += AssetPropertyChanged;
+            PropertyGraph.ItemChanged += AssetPropertyChanged;
+            PropertyGraph.Initialize();
+        }
+        OnPropertyChanged(nameof(Asset), nameof(AssetType), nameof(AssetRootNode));
+    }
+
     public static HashSet<AssetViewModel> ComputeRecursiveReferencerAssets(IEnumerable<AssetViewModel> assets)
     {
         var result = new HashSet<AssetViewModel>(assets.SelectMany(x => x.Dependencies.RecursiveReferencerAssets));
@@ -218,10 +245,7 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
     
     private void BaseContentChanged(INodeChangeEventArgs e, IGraphNode node)
     {
-        // FIXME xplat-editor
-        // Ignore base change if we are fixing up assets.
-        //if (Session.IsInFixupAssetContext)
-        //    return;
+        if (Session.IsInFixupAssetContext) return;
 
         if (!UndoRedoService.UndoRedoInProgress)
         {
@@ -232,10 +256,7 @@ public abstract class AssetViewModel : SessionObjectViewModel, IAssetPropertyPro
 
     private void AssetPropertyChanged(object? sender, INodeChangeEventArgs e)
     {
-        // FIXME xplat-editor
-        // Ignore asset property change if we are fixing up assets.
-        //if (Session.IsInFixupAssetContext)
-        //    return;
+        if (Session.IsInFixupAssetContext) return;
 
         var index = (e as ItemChangeEventArgs)?.Index ?? NodeIndex.Empty;
         var assetNodeChange = (IAssetNodeChangeEventArgs)e;

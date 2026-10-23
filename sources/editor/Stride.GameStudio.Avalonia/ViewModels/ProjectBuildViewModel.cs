@@ -37,6 +37,8 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
         CancelBuildCommand = new AnonymousCommand(ServiceProvider, Cancel);
         session.OutputLog.AddLogger(logger);
         session.PropertyChanged += SessionChanged;
+        session.StartHotReload(() => !IsBusy && !IsClosing);
+        session.HotReload!.PropertyChanged += HotReloadChanged;
         UpdateCommands();
     }
 
@@ -45,7 +47,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     public ICommandBase CancelBuildCommand { get; }
     public bool IsBusy { get => isBusy; private set => SetValue(ref isBusy, value, UpdateCommands); }
     public bool IsClosing { get => isClosing; set => SetValue(ref isClosing, value, UpdateCommands); }
-    public bool CanSelectProject => !IsDestroyed && !IsBusy && !IsClosing;
+    public bool CanSelectProject => !IsDestroyed && !IsBusy && !IsClosing && session.HotReload?.IsBusy != true;
     public string? LastBuiltAssemblyPath { get; private set; }
     public int? LastStartedProcessId { get; private set; }
 
@@ -53,7 +55,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     {
         Dispatcher.EnsureAccess();
         var project = session.CurrentProject;
-        if (IsDestroyed || IsClosing || IsBusy || project == null || !session.Projects.Contains(project) || run && !CanRun(project))
+        if (IsDestroyed || IsClosing || IsBusy || session.HotReload?.IsBusy == true || project == null || !session.Projects.Contains(project) || run && !CanRun(project))
             return Task.FromResult(false);
         cancelRequested = false;
         IsBusy = true;
@@ -71,6 +73,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     {
         Cancel();
         session.PropertyChanged -= SessionChanged;
+        if (session.HotReload != null) session.HotReload.PropertyChanged -= HotReloadChanged;
         session.OutputLog.RemoveLogger(logger);
         if (resultStatusToken is { } token) session.Main.Status.PopStatus(token);
         base.Destroy();
@@ -137,6 +140,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
                 return false;
             logger.Module = "Build";
             LastBuiltAssemblyPath = currentBuild.AssemblyPath;
+            if (session.HotReload != null) await session.HotReload.ReloadAsync(false);
             if (run)
             {
                 var assembly = Path.GetFullPath(currentBuild.AssemblyPath);
@@ -193,6 +197,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
             status.NotifyBackgroundJobFinished(job);
             resultStatusToken = status.PushStatus(message);
             IsBusy = false;
+            session.HotReload?.ResumePendingChanges();
         }
     }
 
@@ -212,6 +217,11 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
             && (project.Project.Platform == PlatformType.Shared || project.Project.Platform == host);
     }
 
+    private void HotReloadChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Stride.Core.Assets.Editor.Services.AssemblyHotReloadService.IsBusy)) UpdateCommands();
+    }
+
     private void SessionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(SessionViewModel.CurrentProject) or nameof(SessionViewModel.Projects)) UpdateCommands();
@@ -219,6 +229,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
 
     private void UpdateCommands()
     {
+        session.HotReload?.RefreshCommand();
         var project = session.CurrentProject;
         BuildProjectCommand.IsEnabled = CanSelectProject && project != null && session.Projects.Contains(project);
         RunProjectCommand.IsEnabled = BuildProjectCommand.IsEnabled && CanRun(project!);
