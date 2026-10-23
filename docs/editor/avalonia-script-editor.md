@@ -21,7 +21,7 @@ The workspace overlays unsaved source buffers without writing them to disk. Sour
 
 ## WPF layout
 
-The normal tab contains only the text editor, matching `ScriptEditorView.xaml`: there is no permanent toolbar, status row or diagnostics panel. The document uses the WPF background (`#1E1E1E` in dark mode, white in light mode), a default 12-point font and an installed monospace family selected once: `Consolas` when available, otherwise DejaVu Sans Mono, Liberation Mono, Cascadia Mono or Menlo. Avoiding a fallback chain beginning with a missing font prevents repeated native font matching during text layout. Ctrl+mouse-wheel zooms between 8 and 72 points within the view.
+The normal tab contains only the text editor, matching `ScriptEditorView.xaml`: there is no permanent toolbar, status row or diagnostics panel. The document uses the WPF background (`#1E1E1E` in dark mode, white in light mode), a default 12-point font and the bundled JetBrains Mono v2.304. Regular, italic, bold and bold italic faces load directly from Avalonia resources, without requiring a system font installation or searching a fallback chain. The metadata viewer and action preview use the same font. Ctrl+mouse-wheel zooms between 8 and 72 points within the view.
 
 A 16×16 bulb appears in the margin when actions are available at the caret/selection. Actions open as an anchored menu instead of a separate selection window; edits still have a Before/After preview before application. Commands and their vector icons remain available through the editor context menu.
 
@@ -48,11 +48,17 @@ F12 opens source assets known to the session, or displays metadata declarations.
 
 Context actions use the built-in C# providers. Diagnostics supplied to code fixes are compiler diagnostics; style/analyzer diagnostics, Fix All, external extensions and actions requiring new/deleted files, project/reference changes or non-text operations are not supported. Such actions are refused when their operations are inspected. Full WPF/RoslynPad feature parity is not claimed.
 
+## Bundled font
+
+The unmodified JetBrains Mono v2.304 TTFs are from the [official tagged release](https://github.com/JetBrains/JetBrainsMono/tree/v2.304/fonts/ttf). The editor embeds four faces from `Resources/Fonts/JetBrainsMono` as Avalonia resources. This is the original JetBrains Mono family, without Nerd Font additions.
+
+The original [SIL Open Font License and copyright notice](../../sources/editor/Stride.Assets.Editor.Avalonia/Resources/Fonts/JetBrainsMono/OFL.txt) are kept alongside the fonts, copied to build/publish output, and included in the NuGet package under `licenses/JetBrainsMono/OFL.txt`. Attribution is listed in the repository’s `THIRD PARTY.md`.
+
 ## Input responsiveness
 
 Diagnostics, semantic classification, completion and hover information run on worker threads. Unchanged source snapshots reuse the same Roslyn solution. Edits preserve incremental `SourceText` change ranges so unchanged syntax and method bodies can be reused. The semantic colorizer uses a binary search to visit only spans overlapping a rendered line and shares its brushes. Positioning the action bulb does not construct off-screen visual lines.
 
-The smoke check types in a 92,462-character fixture with 1,500 methods, including pauses that let background analysis run. It verifies Roslyn snapshot reuse and single-character change ranges, and checks input-handler time and dispatcher heartbeat gaps. On the Linux/X11 test machine, one before/after run reduced the maximum input-handler time from 25.7 to 6.9 ms and the maximum UI heartbeat gap from 9,946.3 to 60.7 ms. These are local regression measurements, not a guarantee for every project or machine. The fixed run used Liberation Mono. Restart an already running editor to load the updated assemblies.
+The smoke check types in a 92,462-character fixture with 1,500 methods, including pauses that let background analysis run. It verifies Roslyn snapshot reuse and single-character change ranges, and checks input-handler time and dispatcher heartbeat gaps. On the Linux/X11 test machine, one before/after run reduced the maximum input-handler time from 25.7 to 6.9 ms and the maximum UI heartbeat gap from 9,946.3 to 60.7 ms. These are local regression measurements, not a guarantee for every project or machine. The fixed run used Liberation Mono. A subsequent run with the bundled JetBrains Mono measured 3.4 ms for the maximum input-handler time and 39.4 ms for the maximum UI heartbeat gap on the same fixture. Restart an already running editor to load the updated assemblies.
 
 ## Verification
 
@@ -63,4 +69,4 @@ dotnet build tests/editor/Stride.Editor.Viewport.Smoke/Stride.Editor.Viewport.Sm
 dotnet tests/editor/Stride.Editor.Viewport.Smoke/bin/Debug/net10.0/Stride.Editor.Viewport.Smoke.dll /tmp/game-copy/Game.sln --script-editor --glx-presentation
 ```
 
-The smoke check opens the actual Avalonia tab and verifies text/highlighting, native Undo/Redo, editor-only WPF layout, compact search/replace with native Undo, inline action/severity icon wiring, symbol glyphs/access badges and a rendered light/dark icon sheet, project-aware `Transform.Position` completion, actual dot input opening a rendered list with icons, Enter acceptance with native Undo, and Roslyn insertion/description, semantic errors, symbol information, F12 and read-only metadata UI, positional/named parameter help and its caret popup, multi-file rename/preview/Undo/stale protection, an add-using compiler fix, a numeric refactoring, formatting, UTF-8 BOM/CRLF saving, external changes, conflict protection and closed-buffer retention. It restores the source fixture afterwards. Linux/X11 was checked; Windows and macOS were not checked.
+The smoke check verifies embedded font resources, all four actual JetBrains Mono faces and the distributed license, then opens the actual Avalonia tab and verifies text/highlighting, native Undo/Redo, editor-only WPF layout, compact search/replace with native Undo, inline action/severity icon wiring, symbol glyphs/access badges and a rendered light/dark icon sheet, project-aware `Transform.Position` completion, actual dot input opening a rendered list with icons, Enter acceptance with native Undo, and Roslyn insertion/description, semantic errors, symbol information, F12 and read-only metadata UI, positional/named parameter help and its caret popup, multi-file rename/preview/Undo/stale protection, an add-using compiler fix, a numeric refactoring, formatting, UTF-8 BOM/CRLF saving, external changes, conflict protection and closed-buffer retention. It restores the source fixture afterwards. Linux/X11 was checked; Windows and macOS were not checked.

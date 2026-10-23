@@ -51,6 +51,16 @@ internal static class EditorScriptSmoke
                 return view != null;
             });
             Require(view!.Editor.Text == code && view.Editor.ShowLineNumbers && view.Editor.SyntaxHighlighting != null, "Text editor/highlighting initialization");
+            foreach (var style in new[] { FontStyle.Normal, FontStyle.Italic })
+            foreach (var weight in new[] { FontWeight.Normal, FontWeight.Bold })
+            {
+                var face = new Typeface(view.Editor.FontFamily, style, weight).GlyphTypeface;
+                Require(face.FamilyName == "JetBrains Mono" && face.Style == style && face.Weight == weight, "Bundled JetBrains Mono face did not load: " + style + " " + weight);
+            }
+            foreach (var font in new[] { "Regular", "Italic", "Bold", "BoldItalic" })
+                Require(global::Avalonia.Platform.AssetLoader.Exists(new Uri("avares://Stride.Assets.Editor.Avalonia/Resources/Fonts/JetBrainsMono/JetBrainsMono-" + font + ".ttf")), "Font was not embedded: " + font);
+            var fontLicense = Path.Combine(AppContext.BaseDirectory, "Resources", "Fonts", "JetBrainsMono", "OFL.txt");
+            Require(File.Exists(fontLicense) && File.ReadAllText(fontLicense).Contains("Copyright 2020 The JetBrains Mono Project Authors"), "Font license was not distributed with the editor");
             view.Editor.Document.Insert(0, "// edit\r\n");
             Require(model.IsModified && asset.IsDirty && model.Text == view.Editor.Text, "Unsaved text/dirty state");
             view.Editor.Undo(); Require(model.Text == code && !model.IsModified, "Native text Undo");
@@ -216,6 +226,7 @@ internal static class EditorScriptSmoke
             Require(model.MetadataText?.Contains("WriteLine") == true && model.MetadataText.Contains("Assembly:"), "Metadata declarations navigation");
             var metadataWindow = ((IClassicDesktopStyleApplicationLifetime)global::Avalonia.Application.Current!.ApplicationLifetime!).Windows.FirstOrDefault(w => w != window && w.Content is AvaloniaEdit.TextEditor);
             Require(metadataWindow?.Content is AvaloniaEdit.TextEditor { IsReadOnly: true }, "Read-only metadata window");
+            Require(((AvaloniaEdit.TextEditor)metadataWindow!.Content!).FontFamily.Equals(view.Editor.FontFamily), "Metadata viewer font differs from code editor");
             metadataWindow!.Close();
             model.Text = code.Replace("Member++;", "Member++; MissingSymbol();");
             await model.AnalyzeAsync(); Require(model.Diagnostics.Any(d => d.Id == "CS0103"), "Semantic diagnostics");

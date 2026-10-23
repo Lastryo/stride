@@ -24,7 +24,7 @@ namespace Stride.Assets.Editor.Avalonia.Views;
 [AssetEditorView<ScriptSourceFileEditorViewModel>]
 public partial class ScriptSourceFileEditorView : UserControl, IAssetEditorView
 {
-    private static FontFamily? editorFont;
+    private static readonly FontFamily editorFont = new("avares://Stride.Assets.Editor.Avalonia/Resources/Fonts/JetBrainsMono#JetBrains Mono");
     private ScriptSourceFileEditorViewModel? model;
     private ScriptSourceFileEditorViewModel? initializedModel;
     private bool syncing;
@@ -36,7 +36,7 @@ public partial class ScriptSourceFileEditorView : UserControl, IAssetEditorView
     public ScriptSourceFileEditorView()
     {
         InitializeComponent();
-        CodeEditor.FontFamily = editorFont ??= ResolveEditorFont();
+        CodeEditor.FontFamily = editorFont;
         CodeEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
         CodeEditor.Options.ConvertTabsToSpaces = true; CodeEditor.Options.IndentationSize = 4;
         CodeEditor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(CodeEditor.Options);
@@ -58,17 +58,6 @@ public partial class ScriptSourceFileEditorView : UserControl, IAssetEditorView
         DetachedFromVisualTree += (_, _) => { completion?.Close(); request?.Cancel(); signatureRequest?.Cancel(); CloseInlineControls(); Unbind(); };
         AttachedToVisualTree += (_, _) => BindModel();
         CodeEditor.AddHandler(KeyDownEvent, HandleKeys, RoutingStrategies.Tunnel);
-    }
-    private static FontFamily ResolveEditorFont()
-    {
-        // A fallback chain beginning with an absent font makes Skia repeat native font matching for every text run.
-        var installed = FontManager.Current.SystemFonts.ToArray();
-        foreach (var name in new[] { "Consolas", "DejaVu Sans Mono", "Liberation Mono", "Cascadia Mono", "Menlo" })
-        {
-            var family = installed.FirstOrDefault(font => string.Equals(font.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (family != null) return family;
-        }
-        return new FontFamily("monospace");
     }
     public AvaloniaEdit.TextEditor Editor => CodeEditor;
     public CompletionWindow? CompletionPopup => completion;

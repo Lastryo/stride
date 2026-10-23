@@ -33,7 +33,7 @@ public partial class ScriptSourceFileEditorView
 
     private static TextEditor ReadOnlyEditor(string text) => new()
     {
-        Text = text, IsReadOnly = true, ShowLineNumbers = true, FontFamily = new FontFamily("monospace"), FontSize = 14,
+        Text = text, IsReadOnly = true, ShowLineNumbers = true, FontFamily = editorFont, FontSize = 14,
         SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#"), Background = Brushes.Transparent,
         HorizontalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
         VerticalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
