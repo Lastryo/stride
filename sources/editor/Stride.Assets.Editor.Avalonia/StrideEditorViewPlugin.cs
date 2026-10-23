@@ -61,6 +61,22 @@ public sealed class StrideEditorViewPlugin : AssetsEditorPlugin
     public override void InitializeSession(ISessionViewModel session)
     {
         session.ServiceProvider.RegisterService(new EditorGameViewFactory());
+        if (session is Stride.Core.Assets.Editor.ViewModels.SessionViewModel curveSession)
+        {
+            var windows = new Dictionary<object, global::Avalonia.Controls.Window>(ReferenceEqualityComparer.Instance);
+            curveSession.ActiveProperties.RegisterNodePresenterCommand(new Stride.Assets.Editor.CurveEditor.EditCurveCommand((curve, name) =>
+            {
+                if (windows.TryGetValue(curve, out var existing)) { existing.Activate(); return; }
+                var model = new Stride.Assets.Editor.CurveEditor.CurveEditorViewModel(curveSession, curve, name);
+                var view = new CurveEditor.CurveEditorView(model);
+                var window = new global::Avalonia.Controls.Window { Title = "Curve Editor — " + name, Width = 1100, Height = 650, Content = view };
+                windows.Add(curve, window);
+                window.Closed += (_, _) => { windows.Remove(curve); view.Detach(); model.Destroy(); };
+                var owner = (global::Avalonia.Application.Current?.ApplicationLifetime as global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+                if (owner != null) window.Show(owner); else window.Show();
+            }));
+            curveSession.Closing += (_, _) => { foreach (var window in windows.Values.ToArray()) window.Close(); };
+        }
         var pluginService = session.ServiceProvider.Get<IAssetsPluginService>();
         var previewFactories = new Dictionary<Type, AssetPreviewFactory>();
         foreach (var stridePlugin in pluginService.Plugins.OfType<AssetsEditorPlugin>())

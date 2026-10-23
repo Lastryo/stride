@@ -27,5 +27,10 @@
     <ProjectReference Include="..\Stride.Editor.Avalonia\Stride.Editor.Avalonia.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="..\Stride.Assets.Presentation.Wpf\Resources\Icons\curve_fit*-32.png" Link="CurveEditor/Icons/%(Filename)%(Extension)" />
+    <AvaloniaResource Include="..\Stride.Assets.Presentation.Wpf\Resources\Icons\curve-16.png" Link="CurveEditor/Icons/curve-16.png" />
+  </ItemGroup>
+
   <Import Project="$(StrideRoot)sources/sdk/Stride.Build.Sdk.Editor/Sdk/Sdk.targets" />
 </Project>
