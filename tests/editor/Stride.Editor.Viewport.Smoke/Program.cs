@@ -117,6 +117,13 @@ internal static class ViewportSmoke
             lifetime.Shutdown();
             return;
         }
+        if (lifetime.Args?.Contains("--sprite-sheet") == true)
+        {
+            await EditorSpriteSheetSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync();
+            lifetime.Shutdown();
+            return;
+        }
         if (lifetime.Args?.Contains("--graphics-compositor") == true)
         {
             await EditorGraphicsCompositorSmoke.Check(session, lifetime.MainWindow!);

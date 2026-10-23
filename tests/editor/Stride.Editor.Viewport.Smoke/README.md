@@ -198,3 +198,10 @@ Prefab checks also delete the generated prefab before its first save and after
 saving, verify that scene entities lose their base links while preserving values
 and references, check persisted scene data and the deleted file, and exercise
 Undo/Redo across saves. Reopening that temporary solution must still succeed.
+
+Use `--sprite-sheet` to check the Avalonia Sprite Sheet editor: cropped thumbnails,
+shared list/inspector selection, image loading, alpha/color-key magic wand,
+add/delete/duplicate/reorder, clipboard, routed mouse gestures, pixel bounds,
+locked borders, pivot and region Undo/Redo, initial source sizing, import,
+serialization and reopening. It writes `/tmp/stride-sprite-sheet.png` and never
+saves the project. See `docs/editor/avalonia-sprite-sheet.md` for the controls.

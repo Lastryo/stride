@@ -1,15 +1,48 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
              xmlns:vm="using:Stride.Assets.Editor.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:controls="using:Stride.Assets.Editor.Avalonia.SpriteEditor"
              x:Class="Stride.Assets.Editor.Avalonia.Views.SpriteSheetEditorView"
-             x:DataType="vm:SpriteSheetEditorViewModel">
-  <DockPanel>
-    <Grid DockPanel.Dock="Top">
-      <TextBlock Text="SpriteSheet Editor" />
+             x:DataType="vm:SpriteSheetEditorViewModel"
+             Focusable="True" KeyDown="EditorKeyDown">
+  <Grid RowDefinitions="Auto,*">
+    <WrapPanel Margin="4">
+      <Button Content="Sheet properties" Command="{Binding SheetPropertiesCommand}" Margin="2"/>
+      <Button Content="Add" Command="{Binding AddCommand}" Margin="2"/>
+      <Button Content="Import…" Click="ImportClicked" Margin="2"/>
+      <Button Content="Open image" Click="OpenImageClicked" Margin="2"/>
+      <Button Content="Show folder" Click="ShowFolderClicked" Margin="2"/>
+      <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="2"/>
+      <Button Content="Duplicate" Command="{Binding DuplicateCommand}" Margin="2"/>
+      <Button Content="↑" Command="{Binding MoveUpCommand}" ToolTip.Tip="Move up" Margin="2"/>
+      <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip.Tip="Move down" Margin="2"/>
+    </WrapPanel>
+    <Grid Grid.Row="1" ColumnDefinitions="200,5,*">
+      <ListBox x:Name="SpriteList" ItemsSource="{Binding Sprites}" SelectedItems="{Binding SelectedSprites}" SelectionMode="Multiple"
+               DoubleTapped="SpriteDoubleTapped" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      </ListBox>
+      <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
+      <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
+        <WrapPanel Margin="4">
+          <ComboBox x:Name="ToolSelector" SelectedItem="{Binding ToolMode, Mode=TwoWay}" MinWidth="115" Margin="2"/>
+          <Button Content="Fit" Click="FitClicked" Margin="2"/>
+          <Button Content="1:1" Click="RealSizeClicked" Margin="2"/>
+          <Button Content="−" Click="ZoomOutClicked" Margin="2"/>
+          <Button Content="+" Click="ZoomInClicked" Margin="2"/>
+          <Button Content="Frame" Click="FrameClicked" ToolTip.Tip="Focus region (F)" Margin="2"/>
+          <Button Content="Whole image" Click="WholeImageClicked" Margin="2"/>
+          <sd:ColorEditor Value="{Binding SelectionColor}" Width="85" Margin="2" ToolTip.Tip="Region outline color"/>
+          <CheckBox Content="Highlight" IsChecked="{Binding SelectionHighlightEnabled}" Margin="5,2"/>
+          <CheckBox Content="Alpha wand" IsChecked="{Binding MagicWandUseTransparency}" Margin="5,2"/>
+          <CheckBox Content="Lock borders" IsChecked="{Binding LockBorders}" Margin="5,2"/>
+        </WrapPanel>
+        <controls:SpriteSheetCanvas x:Name="SpriteCanvas" Grid.Row="1" Focusable="True" ClipToBounds="True"/>
+        <StackPanel Grid.Row="2" Margin="6,3" Spacing="2">
+          <TextBlock x:Name="ImageStatus" TextWrapping="Wrap"/>
+          <TextBlock Text="Wheel: zoom · Middle drag: pan · Region: drag handles or draw a new rectangle · F: frame · Ctrl+D: duplicate" FontSize="10" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Grid>
     </Grid>
-    <TextBlock Text="{Binding Asset.Name}" />
-  </DockPanel>
+  </Grid>
 </UserControl>
