@@ -13,7 +13,6 @@ using Avalonia.VisualTree;
 using Stride.Core.Assets.Editor.ViewModels;
 using Stride.Core.Assets.Presentation.ViewModels;
 using Stride.Core.Presentation.Avalonia.Extensions;
-using Stride.GameStudio.Avalonia.ViewModels;
 
 namespace Stride.GameStudio.Avalonia.Views;
 
@@ -122,12 +121,6 @@ public partial class SolutionExplorerView : UserControl
     {
         foreach (var item in SolutionTreeView.GetVisualDescendants().OfType<TreeViewItem>())
             item.IsExpanded = expanded;
-    }
-
-    private void ClosePanel_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (this.FindAncestorOfType<MainView>()?.DataContext is MainViewModel mainVm)
-            mainVm.Panels.SessionExplorerPanelVisible = false;
     }
 
     private void OnSolutionContextMenuOpened(object? sender, RoutedEventArgs e)

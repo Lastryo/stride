@@ -19,6 +19,8 @@ internal static class GameStudioInternalSettings
     public static readonly SettingsKey<int> WorkAreaWidth = new("Internal/WorkAreaWidth", SettingsContainer, (int)WorkArea.Value.Width);
     public static readonly SettingsKey<int> WorkAreaHeight = new("Internal/WorkAreaHeight", SettingsContainer, (int)WorkArea.Value.Height);
 
+    public static readonly SettingsKey<string> DockLayout = new("Internal/Layout/AvaloniaDockLayout", SettingsContainer, string.Empty);
+
     public static readonly SettingsKey<int> HierarchyWidth = new("Internal/Layout/HierarchyWidth", SettingsContainer, 210);
     public static readonly SettingsKey<double> InspectorWidthRatio = new("Internal/Layout/InspectorWidthRatio", SettingsContainer, 400.0 / 1230);
     public static readonly SettingsKey<double> EditorHeightRatio = new("Internal/Layout/EditorHeightRatio", SettingsContainer, 3.3 / 4.3);

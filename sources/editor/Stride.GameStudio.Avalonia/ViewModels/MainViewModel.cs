@@ -57,6 +57,8 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
         Panels = new EditionPanelViewModel(ServiceProvider);
     }
 
+    public event EventHandler? SessionClosing;
+
     public EditionPanelViewModel Panels { get; }
 
     public SessionViewModel? Session
@@ -219,6 +221,7 @@ internal sealed class MainViewModel : ViewModelBase, IMainViewModel
             }
             if (Session is not null)
             {
+                SessionClosing?.Invoke(this, EventArgs.Empty);
                 await Session.CloseAsync();
                 Session = null;
             }

@@ -123,10 +123,15 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Headless" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Controls.DataGrid" Version="12.0.0" />
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Dock.Avalonia" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.0.0.2" />
+    <PackageVersion Include="Dock.Serializer.Newtonsoft" Version="12.0.0.2" />
     <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1" />
     <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="$(AvaloniaBehaviorVersion)" />
     <PackageVersion Include="Xaml.Behaviors.Interactions" Version="$(AvaloniaBehaviorVersion)" />

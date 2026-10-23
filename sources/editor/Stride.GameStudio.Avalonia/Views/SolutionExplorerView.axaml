@@ -16,7 +16,7 @@
   </UserControl.Resources>
   <DockPanel>
     <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-      <DockPanel>
+      <DockPanel LastChildFill="False">
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
           <Button Width="16" Height="16" MinWidth="16" MinHeight="16"
                   Padding="0" Background="Transparent" BorderThickness="0" ToolTip.Tip="Panel options">
@@ -28,11 +28,8 @@
               </MenuFlyout>
             </Button.Flyout>
           </Button>
-          <Button Classes="studioPanelHeaderButton" Click="ClosePanel_OnClick" ToolTip.Tip="Close panel">
-            <Path Data="M2,2 L8,8 M8,2 L2,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="10" Height="10"/>
-          </Button>
         </StackPanel>
-        <TextBlock Text="Solution explorer" VerticalAlignment="Center"/>
+
       </DockPanel>
     </Border>
     <TreeView x:Name="SolutionTreeView" Classes="studioSolutionTree" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding PackageCategories.Values}"

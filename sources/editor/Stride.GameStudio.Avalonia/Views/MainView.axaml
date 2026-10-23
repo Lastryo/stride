@@ -12,14 +12,15 @@
              xmlns:gsh="using:Stride.GameStudio.Avalonia.Helpers"
              xmlns:gsvm="using:Stride.GameStudio.Avalonia.ViewModels"
              xmlns:gsvw="using:Stride.GameStudio.Avalonia.Views"
+             xmlns:dock="using:Dock.Avalonia.Controls"
              xmlns:gscontrols="using:Stride.GameStudio.Avalonia.Controls"
              mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
              x:Class="Stride.GameStudio.Avalonia.Views.MainView"
              Classes="editorShell"
              x:DataType="gsvm:MainViewModel">
-  <sd:EditorLayout.State>
-    <sd:EditorLayout/>
-  </sd:EditorLayout.State>
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+F4" Command="{Binding Session.EditorCollection.CloseEditorCommand}" CommandParameter="{Binding Session.EditorCollection.ActiveEditor}"/>
+  </UserControl.KeyBindings>
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
          to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -30,6 +31,139 @@
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
       </ResourceDictionary.MergedDictionaries>
+      <DataTemplate x:Key="SessionExplorerTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <gsvw:SolutionExplorerView Classes="studioSurface"
+                                     BorderThickness="1" BorderBrush="{DynamicResource StudioBorderBrush}"
+                                     Padding="0" DataContext="{Binding Session}"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="PropertyGridTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <gsvw:PropertyGridView Classes="studioSurface" BorderThickness="1"
+                                  BorderBrush="{DynamicResource StudioBorderBrush}" Padding="0"
+                                  DataContext="{Binding Session?.ActiveProperties}"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="AssetViewTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <gsvw:AssetExplorerView BorderThickness="1"
+                                BorderBrush="{DynamicResource StudioBorderBrush}"
+                                Padding="0"
+                                DataContext="{Binding Session?.AssetCollection}"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="AssetLogTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <sd:TextLogViewer x:Name="AssetErrorsViewer" LogMessages="{Binding Session?.AssetLog.FilteredMessages}" CanClearLog="False"
+                            ShowDebugMessages="False" ShowVerboseMessages="False" ShowInfoMessages="False"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="BuildLogTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <sd:TextLogViewer x:Name="OutputViewer" LogMessages="{Binding Session?.OutputLog.Messages}"
+                            ShowDebugMessages="False" ShowVerboseMessages="False"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="AssetPreviewTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <gsvw:AssetPreviewView BorderThickness="1"
+                               BorderBrush="{DynamicResource StudioBorderBrush}"
+                               Padding="0"
+                               DataContext="{Binding Session}"/>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="ActionHistoryTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <ListBox ItemsSource="{Binding Session?.ActionHistory?.Transactions}"
+                   HorizontalAlignment="Stretch">
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="caect:TransactionViewModel">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Left" x:Name="Text"
+                             Text="{Binding Name}"/>
+                  <Image DockPanel.Dock="Right" x:Name="Image"
+                         HorizontalAlignment="Right"
+                         IsVisible="{Binding IsSavePoint, Mode=OneWay}"
+                         Source="{StaticResource ImageSave}"/>
+                </DockPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </UserControl>
+      </DataTemplate>
+      <DataTemplate x:Key="ReferencesTemplate" x:DataType="gsvm:MainViewModel">
+        <UserControl Classes="editorShell">
+          <DockPanel>
+            <!-- Toolbar -->
+            <DockPanel DockPanel.Dock="Top" Margin="4,2">
+              <ToggleButton DockPanel.Dock="Left" IsChecked="{Binding !Session.References.ShowReferencers}" Content="{sd:LocalizeString References}" MinWidth="76"/>
+              <ToggleButton DockPanel.Dock="Left" IsChecked="{Binding Session.References.ShowReferencers}" Content="{sd:LocalizeString Referenced by}" MinWidth="76"/>
+              <Menu DockPanel.Dock="Right" Background="Transparent">
+                <MenuItem Header="⋯" Padding="4,0" ToolTip.Tip="Reference display options">
+                  <MenuItem Header="Sort by name" Command="{Binding Session.References.DisplayedReferences.SortAssetsCommand}" CommandParameter="{x:Static caevm:SortRule.Name}"/>
+                  <MenuItem Header="Sort by type" Command="{Binding Session.References.DisplayedReferences.SortAssetsCommand}" CommandParameter="{x:Static caevm:SortRule.TypeOrderThenName}"/>
+                  <MenuItem Header="Clear filters" Command="{Binding Session.References.DisplayedReferences.ClearAssetFiltersCommand}"/>
+                </MenuItem>
+              </Menu>
+              <sd:SearchComboBox MinWidth="40" Margin="4,0" PlaceholderText="Add a filter..."
+                                 ItemsSource="{Binding Session.References.DisplayedReferences.AvailableAssetFilters}"
+                                 SearchText="{Binding Session.References.DisplayedReferences.AssetFilterPattern}"
+                                 ClearTextAfterSelection="True" Command="{Binding Session.References.DisplayedReferences.AddAssetFilterCommand}">
+                <sd:SearchComboBox.ItemTemplate>
+                  <DataTemplate DataType="caevm:AssetFilterViewModel">
+                    <TextBlock Text="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}"/>
+                  </DataTemplate>
+                </sd:SearchComboBox.ItemTemplate>
+              </sd:SearchComboBox>
+            </DockPanel>
+            <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Session.References.DisplayedReferences.CurrentAssetFilters}"
+                          IsVisible="{Binding Session.References.DisplayedReferences.CurrentAssetFilters.Count, Converter={sd:NumericToBool}}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="caevm:AssetFilterViewModel">
+                  <Button Command="{Binding RemoveFilterCommand}" CommandParameter="{Binding}" Margin="2" Padding="4,0" ToolTip.Tip="Remove this filter">
+                    <TextBlock Text="{Binding DisplayName}" MaxWidth="160" TextTrimming="CharacterEllipsis"/>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Asset references -->
+            <Border DockPanel.Dock="Bottom"
+                    Padding="8,4">
+              <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
+                         TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                <ToolTip.Tip>
+                  <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
+                             TextTrimming="None" TextWrapping="Wrap"/>
+                </ToolTip.Tip>
+              </TextBlock>
+            </Border>
+            <ListBox Classes="studioAssetList" ItemsSource="{Binding Session.References.DisplayedReferences.FilteredAssets}"
+                     SelectedItems="{Binding Session.References.DisplayedReferences.SelectedContent}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <gscontrols:AssetTilePanel ThumbnailSize="68"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
+                  <gsvw:AssetCard ThumbnailSize="68">
+                    <Interaction.Behaviors>
+                      <EventTriggerBehavior EventName="DoubleTapped">
+                        <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.SelectAssetCommand}"
+                                             CommandParameter="{Binding}"/>
+                      </EventTriggerBehavior>
+                    </Interaction.Behaviors>
+                  </gsvw:AssetCard>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </UserControl>
+      </DataTemplate>
     </ResourceDictionary>
   </UserControl.Resources>
 
@@ -202,242 +336,7 @@
       </StackPanel>
     </Border>
 
-    <!-- The inspector and references share a column; their divider is independent of the asset pane. -->
-    <Grid Grid.Row="2" x:Name="SessionColumns">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="2.05*" MinWidth="480"/>
-        <ColumnDefinition Width="4"/>
-        <ColumnDefinition Width="*" MinWidth="280"/>
-      </Grid.ColumnDefinitions>
-      <Grid Grid.Column="0" x:Name="EditorRows">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="3.3*" MinHeight="200"/>
-          <RowDefinition Height="4"/>
-          <RowDefinition Height="*" MinHeight="140"/>
-        </Grid.RowDefinitions>
-        <gsvw:EditorCollectionView Grid.Row="0" Classes="studioSurface"
-                                 BorderThickness="1" BorderBrush="{DynamicResource StudioBorderBrush}"
-                                 Padding="0" DataContext="{Binding Session?.EditorCollection}"/>
-        <GridSplitter Grid.Row="1" ResizeDirection="Rows" HorizontalAlignment="Stretch"
-                      IsVisible="{Binding Panels.BottomRowVisible}"/>
-        <Grid Grid.Row="2" x:Name="AssetColumns"
-              IsVisible="{Binding Panels.BottomRowVisible}">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="{Binding $parent[UserControl].(sd:EditorLayout.State).HierarchyWidth, Mode=TwoWay}" MinWidth="140" MaxWidth="500"/>
-            <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="*" MinWidth="240"/>
-          </Grid.ColumnDefinitions>
-          <Border Grid.Column="0" IsVisible="{Binding Panels.SessionExplorerPanelVisible}">
-            <gsvw:SolutionExplorerView Classes="studioSurface"
-                                     BorderThickness="1" BorderBrush="{DynamicResource StudioBorderBrush}"
-                                     Padding="0" DataContext="{Binding Session}"/>
-          </Border>
-          <GridSplitter Grid.Column="1" ResizeDirection="Columns" VerticalAlignment="Stretch"
-                        IsVisible="{Binding Panels.SolutionExplorerSplitterVisible}"/>
-        <!-- Asset view and logs -->
-        <DockPanel Grid.Column="2" Classes="studioPanel" IsVisible="{Binding Panels.BottomCenterPanelVisible}">
-          <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-            <DockPanel>
-              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
-                <Button Width="16" Height="16" MinWidth="16" MinHeight="16"
-                        Padding="0" Background="Transparent" BorderThickness="0" ToolTip.Tip="Select panel">
-                  <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10"/>
-                  <Button.Flyout>
-                    <MenuFlyout>
-                    <MenuItem x:Name="AssetTabsMenu0" Header="Asset view" Tag="{Binding #AssetTabs}" CommandParameter="{sd:Int 0}" Click="ActivateDockTab_OnClick"/>
-                    <MenuItem x:Name="AssetTabsMenu1" Header="{Binding #AssetErrorsTab.Header}" Tag="{Binding #AssetTabs}" CommandParameter="{sd:Int 1}" Click="ActivateDockTab_OnClick"/>
-                    <MenuItem x:Name="AssetTabsMenu2" Header="Output" Tag="{Binding #AssetTabs}" CommandParameter="{sd:Int 2}" Click="ActivateDockTab_OnClick"/>
-                    </MenuFlyout>
-                  </Button.Flyout>
-                </Button>
-                <Button Classes="studioPanelHeaderButton" Click="CloseBottomCenter_OnClick" ToolTip.Tip="Close panel">
-                  <Path Data="M2,2 L8,8 M8,2 L2,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="10" Height="10"/>
-                </Button>
-              </StackPanel>
-              <TextBlock Text="{ReflectionBinding #AssetTabs.SelectedItem.Header}" VerticalAlignment="Center"/>
-            </DockPanel>
-          </Border>
-          <TabControl x:Name="AssetTabs" Classes="studioDockTabs" Padding="0" TabStripPlacement="Bottom">
-            <Interaction.Behaviors>
-              <DataTriggerBehavior Binding="{Binding ProjectBuild?.IsBusy, TargetNullValue={sd:False}}" Value="{sd:True}">
-                <ChangePropertyAction PropertyName="SelectedIndex" Value="{sd:Int 2}"/>
-              </DataTriggerBehavior>
-            </Interaction.Behaviors>
-            <TabItem Header="Asset view" IsVisible="{Binding Panels.AssetViewPanelVisible}">
-              <gsvw:AssetExplorerView BorderThickness="1"
-                                    BorderBrush="{DynamicResource StudioBorderBrush}"
-                                    Padding="0"
-                                    DataContext="{Binding Session?.AssetCollection}"/>
-            </TabItem>
-            <TabItem x:Name="AssetErrorsTab" Header="{Binding Session?.AssetLog.ErrorCount, TargetNullValue=0, StringFormat='Asset errors ({0})'}"
-                     IsVisible="{Binding Panels.AssetLogPanelVisible}"
-                     ToolTip.Tip="Warnings and errors for the selected assets and their dependencies; all assets when nothing is selected.">
-              <sd:TextLogViewer x:Name="AssetErrorsViewer" LogMessages="{Binding Session?.AssetLog.FilteredMessages}" CanClearLog="False"
-                                ShowDebugMessages="False" ShowVerboseMessages="False" ShowInfoMessages="False"/>
-            </TabItem>
-            <TabItem Header="Output" IsVisible="{Binding Panels.BuildLogPanelVisible}">
-              <sd:TextLogViewer x:Name="OutputViewer" LogMessages="{Binding Session?.OutputLog.Messages}"
-                                ShowDebugMessages="False" ShowVerboseMessages="False"/>
-            </TabItem>
-          </TabControl>
-        </DockPanel>
-        </Grid>
-      </Grid>
-      <GridSplitter Grid.Column="1" ResizeDirection="Columns" VerticalAlignment="Stretch"
-                    IsVisible="{Binding Panels.InspectorColumnVisible}"/>
-      <Grid Grid.Column="2" x:Name="InspectorRows" IsVisible="{Binding Panels.InspectorColumnVisible}">
-        <Grid.RowDefinitions>
-          <RowDefinition Height="2*" MinHeight="200"/>
-          <RowDefinition Height="4"/>
-          <RowDefinition Height="*" MinHeight="140"/>
-        </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" Classes="studioPanel" IsVisible="{Binding Panels.PropertyGridPanelVisible}">
-          <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-            <DockPanel>
-              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
-                <Button Width="16" Height="16" MinWidth="16" MinHeight="16"
-                        Padding="0" Background="Transparent" BorderThickness="0" ToolTip.Tip="Panel options">
-                  <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10"/>
-                  <Button.Flyout>
-                    <MenuFlyout>
-                      <MenuItem Header="Property grid" IsEnabled="False"/>
-                    </MenuFlyout>
-                  </Button.Flyout>
-                </Button>
-                <Button Classes="studioPanelHeaderButton" Command="{Binding Panels.ClosePropertyGridCommand}" ToolTip.Tip="Close panel">
-                  <Path Data="M2,2 L8,8 M8,2 L2,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="10" Height="10"/>
-                </Button>
-              </StackPanel>
-              <TextBlock Text="Property grid" VerticalAlignment="Center"/>
-            </DockPanel>
-          </Border>
-          <gsvw:PropertyGridView Classes="studioSurface" BorderThickness="1"
-                                BorderBrush="{DynamicResource StudioBorderBrush}" Padding="0"
-                                DataContext="{Binding Session?.ActiveProperties}"/>
-        </DockPanel>
-        <GridSplitter Grid.Row="1" ResizeDirection="Rows" HorizontalAlignment="Stretch"
-                      IsVisible="{Binding Panels.PropertyGridSplitterVisible}"/>
-        <!-- Asset preview, history and references -->
-        <DockPanel Grid.Row="2" Classes="studioPanel" IsVisible="{Binding Panels.BottomRightPanelVisible}">
-          <Border DockPanel.Dock="Top" Classes="studioPanelHeader">
-            <DockPanel>
-              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
-                <Button Width="16" Height="16" MinWidth="16" MinHeight="16"
-                        Padding="0" Background="Transparent" BorderThickness="0" ToolTip.Tip="Select panel">
-                  <Image Source="{StaticResource ImageDropDown}" Width="10" Height="10"/>
-                  <Button.Flyout>
-                    <MenuFlyout>
-                    <MenuItem x:Name="PreviewTabsMenu0" Header="Asset preview" Tag="{Binding #PreviewTabs}" CommandParameter="{sd:Int 0}" Click="ActivateDockTab_OnClick"/>
-                    <MenuItem x:Name="PreviewTabsMenu1" Header="Edit history" Tag="{Binding #PreviewTabs}" CommandParameter="{sd:Int 1}" Click="ActivateDockTab_OnClick"/>
-                    <MenuItem x:Name="PreviewTabsMenu2" Header="References" Tag="{Binding #PreviewTabs}" CommandParameter="{sd:Int 2}" Click="ActivateDockTab_OnClick"/>
-                    </MenuFlyout>
-                  </Button.Flyout>
-                </Button>
-                <Button Classes="studioPanelHeaderButton" Click="CloseBottomRight_OnClick" ToolTip.Tip="Close panel">
-                  <Path Data="M2,2 L8,8 M8,2 L2,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1.2" Width="10" Height="10"/>
-                </Button>
-              </StackPanel>
-              <TextBlock Text="{ReflectionBinding #PreviewTabs.SelectedItem.Header}" VerticalAlignment="Center"/>
-            </DockPanel>
-          </Border>
-          <TabControl x:Name="PreviewTabs" SelectedIndex="2" Classes="studioDockTabs" Padding="0" TabStripPlacement="Bottom">
-            <TabItem Header="Asset preview" IsVisible="{Binding Panels.AssetPreviewPanelVisible}">
-              <gsvw:AssetPreviewView BorderThickness="1"
-                                   BorderBrush="{DynamicResource StudioBorderBrush}"
-                                   Padding="0"
-                                   DataContext="{Binding Session}"/>
-            </TabItem>
-            <TabItem Header="Edit history" IsVisible="{Binding Panels.ActionHistoryPanelVisible}">
-              <ListBox ItemsSource="{Binding Session?.ActionHistory?.Transactions}"
-                       HorizontalAlignment="Stretch">
-                <ListBox.ItemTemplate>
-                  <DataTemplate DataType="caect:TransactionViewModel">
-                    <DockPanel>
-                      <TextBlock DockPanel.Dock="Left" x:Name="Text"
-                                 Text="{Binding Name}"/>
-                      <Image DockPanel.Dock="Right" x:Name="Image"
-                             HorizontalAlignment="Right"
-                             IsVisible="{Binding IsSavePoint, Mode=OneWay}"
-                             Source="{StaticResource ImageSave}"/>
-                    </DockPanel>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </TabItem>
-            <TabItem Header="References" IsVisible="{Binding Panels.ReferencesPanelVisible}">
-              <DockPanel>
-                <!-- Toolbar -->
-                <DockPanel DockPanel.Dock="Top" Margin="4,2">
-                  <ToggleButton DockPanel.Dock="Left" IsChecked="{Binding !Session.References.ShowReferencers}" Content="{sd:LocalizeString References}" MinWidth="76"/>
-                  <ToggleButton DockPanel.Dock="Left" IsChecked="{Binding Session.References.ShowReferencers}" Content="{sd:LocalizeString Referenced by}" MinWidth="76"/>
-                  <Menu DockPanel.Dock="Right" Background="Transparent">
-                    <MenuItem Header="⋯" Padding="4,0" ToolTip.Tip="Reference display options">
-                      <MenuItem Header="Sort by name" Command="{Binding Session.References.DisplayedReferences.SortAssetsCommand}" CommandParameter="{x:Static caevm:SortRule.Name}"/>
-                      <MenuItem Header="Sort by type" Command="{Binding Session.References.DisplayedReferences.SortAssetsCommand}" CommandParameter="{x:Static caevm:SortRule.TypeOrderThenName}"/>
-                      <MenuItem Header="Clear filters" Command="{Binding Session.References.DisplayedReferences.ClearAssetFiltersCommand}"/>
-                    </MenuItem>
-                  </Menu>
-                  <sd:SearchComboBox MinWidth="40" Margin="4,0" PlaceholderText="Add a filter..."
-                                     ItemsSource="{Binding Session.References.DisplayedReferences.AvailableAssetFilters}"
-                                     SearchText="{Binding Session.References.DisplayedReferences.AssetFilterPattern}"
-                                     ClearTextAfterSelection="True" Command="{Binding Session.References.DisplayedReferences.AddAssetFilterCommand}">
-                    <sd:SearchComboBox.ItemTemplate>
-                      <DataTemplate DataType="caevm:AssetFilterViewModel">
-                        <TextBlock Text="{Binding Converter={caec:AssetFilterViewModelToFullDisplayName}}"/>
-                      </DataTemplate>
-                    </sd:SearchComboBox.ItemTemplate>
-                  </sd:SearchComboBox>
-                </DockPanel>
-                <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Session.References.DisplayedReferences.CurrentAssetFilters}"
-                              IsVisible="{Binding Session.References.DisplayedReferences.CurrentAssetFilters.Count, Converter={sd:NumericToBool}}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="caevm:AssetFilterViewModel">
-                      <Button Command="{Binding RemoveFilterCommand}" CommandParameter="{Binding}" Margin="2" Padding="4,0" ToolTip.Tip="Remove this filter">
-                        <TextBlock Text="{Binding DisplayName}" MaxWidth="160" TextTrimming="CharacterEllipsis"/>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <!-- Asset references -->
-                <Border DockPanel.Dock="Bottom"
-                        Padding="8,4">
-                  <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
-                             TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
-                    <ToolTip.Tip>
-                      <TextBlock Text="{Binding Session.References.TypeCountersAsText}"
-                                 TextTrimming="None" TextWrapping="Wrap"/>
-                    </ToolTip.Tip>
-                  </TextBlock>
-                </Border>
-                <ListBox Classes="studioAssetList" ItemsSource="{Binding Session.References.DisplayedReferences.FilteredAssets}"
-                         SelectedItems="{Binding Session.References.DisplayedReferences.SelectedContent}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <gscontrols:AssetTilePanel ThumbnailSize="68"/>
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type capvm:AssetViewModel}">
-                      <gsvw:AssetCard ThumbnailSize="68">
-                        <Interaction.Behaviors>
-                          <EventTriggerBehavior EventName="DoubleTapped">
-                            <InvokeCommandAction Command="{Binding ((caevm:SessionViewModel)Session).AssetCollection.SelectAssetCommand}"
-                                                 CommandParameter="{Binding}"/>
-                          </EventTriggerBehavior>
-                        </Interaction.Behaviors>
-                      </gsvw:AssetCard>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ListBox>
-              </DockPanel>
-            </TabItem>
-          </TabControl>
-        </DockPanel>
-      </Grid>
-    </Grid>
+    <dock:DockControl Grid.Row="2" x:Name="WorkspaceDock"/>
 
     <!-- Status bar -->
     <Grid Grid.Row="3"

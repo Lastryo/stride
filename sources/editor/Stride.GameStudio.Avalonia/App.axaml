@@ -1,8 +1,13 @@
 <Application xmlns="https://github.com/avaloniaui"
+             xmlns:layout="using:Stride.GameStudio.Avalonia.Layout"
+             xmlns:dockTheme="using:Dock.Avalonia.Themes.Fluent"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Stride.GameStudio.Avalonia.App"
              RequestedThemeVariant="Default">
   <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+  <Application.DataTemplates>
+    <layout:DockContentTemplate/>
+  </Application.DataTemplates>
   <Application.Resources>
     <ResourceDictionary>
       <DrawingImage x:Key="StrideLogo">
@@ -46,6 +51,7 @@
         <ColorPaletteResources x:Key="Light"/>
       </FluentTheme.Palettes>
     </FluentTheme>
+    <dockTheme:DockFluentTheme DensityStyle="Compact"/>
     <StyleInclude Source="avares://MarkView.Avalonia/Themes/MarkdownTheme.axaml" />
     <!-- FIXME xplat-editor aggregate all custom styles into a single style/theme -->
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/EditorStyles.axaml"/>
@@ -54,5 +60,6 @@
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/TextLogViewerStyle.axaml"/>
     <StyleInclude Source="avares://Stride.Core.Presentation.Avalonia/Themes/ToolBarStyle.axaml"/>
     <StyleInclude Source="avares://Stride.GameStudio.Avalonia/Themes/GameStudioTheme.axaml"/>
+    <StyleInclude Source="avares://Stride.GameStudio.Avalonia/Theme.AvalonDock.axaml"/>
   </Application.Styles>
 </Application>
