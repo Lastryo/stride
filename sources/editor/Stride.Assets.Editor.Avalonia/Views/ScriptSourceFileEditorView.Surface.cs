@@ -8,6 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using AvaloniaEdit.Rendering;
 using Stride.Assets.Editor.Avalonia.ScriptEditor;
+using ScriptEditorPreferences = Stride.Core.Assets.Editor.Settings.EditorSettings;
 using Stride.Assets.Editor.ViewModels;
 
 namespace Stride.Assets.Editor.Avalonia.Views;
@@ -59,7 +60,13 @@ public partial class ScriptSourceFileEditorView
         CodeEditor.AddHandler(PointerWheelChangedEvent, (_, e) =>
         {
             if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
-            CodeEditor.FontSize = Math.Clamp(CodeEditor.FontSize + Math.Sign(e.Delta.Y), 8, 72);
+            var size = Math.Clamp(CodeEditor.FontSize + Math.Sign(e.Delta.Y), 8, 72);
+            if (CodeEditor.FontSize != size)
+            {
+                CodeEditor.FontSize = size;
+                ScriptEditorPreferences.ScriptEditorFontSize.SetValue((int)size);
+                ScriptEditorPreferences.Save();
+            }
             e.Handled = true;
         }, global::Avalonia.Interactivity.RoutingStrategies.Tunnel);
         CodeEditor.PointerMoved += async (_, e) =>

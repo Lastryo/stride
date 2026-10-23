@@ -4,6 +4,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls.Primitives;
 using Stride.Assets.Editor.Avalonia.ScriptEditor;
+using ScriptEditorPreferences = Stride.Core.Assets.Editor.Settings.EditorSettings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -37,6 +38,7 @@ public partial class ScriptSourceFileEditorView : UserControl, IAssetEditorView
     {
         InitializeComponent();
         CodeEditor.FontFamily = editorFont;
+        CodeEditor.FontSize = Math.Clamp(ScriptEditorPreferences.ScriptEditorFontSize.GetValue(), 8, 72);
         CodeEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
         CodeEditor.Options.ConvertTabsToSpaces = true; CodeEditor.Options.IndentationSize = 4;
         CodeEditor.TextArea.IndentationStrategy = new CSharpIndentationStrategy(CodeEditor.Options);
@@ -63,6 +65,7 @@ public partial class ScriptSourceFileEditorView : UserControl, IAssetEditorView
     public CompletionWindow? CompletionPopup => completion;
     private void BindModel()
     {
+        CodeEditor.FontSize = Math.Clamp(ScriptEditorPreferences.ScriptEditorFontSize.GetValue(), 8, 72);
         if (ReferenceEquals(model, DataContext)) return;
         Unbind(); model = DataContext as ScriptSourceFileEditorViewModel;
         if (model == null) return;

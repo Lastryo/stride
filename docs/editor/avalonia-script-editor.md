@@ -6,7 +6,7 @@ Double-click a C# source asset in the Asset View to open its editor tab. The edi
 
 - Syntax and semantic highlighting, line numbers, indentation and text selection.
 - Native text Undo/Redo (`Ctrl+Z` / `Ctrl+Y`) Find (`Ctrl+F`) and Replace (`Ctrl+H`).
-- Project-aware completion after `.` or `Ctrl+Space`, including Stride types. Suggestions are grouped by symbol kind (properties, fields, constants, methods, extension methods, events, locals/parameters, types, namespaces and keywords), alphabetically within each group. Filtering preserves this order. Vector glyphs distinguish symbol kinds and add private/protected/internal access badges.
+- Project-aware completion after `.` or `Ctrl+Space`, including Stride types. Suggestions are grouped by symbol kind (properties, fields, constants, methods, extension methods, events, locals/parameters, types, namespaces and keywords), alphabetically within each group. Filtering preserves this order. Original RoslynPad WPF vector glyphs distinguish symbol kinds and public/private/protected/internal access.
 - Symbol information at the caret and in completion descriptions, and the Format button.
 - Parameter help after `(`, `[` or `,`, or on `Ctrl+Shift+Space`. Help opens next to the caret. The current parameter is enclosed in brackets; use the dropdown to select an overload. Named arguments are supported. Escape dismisses the help.
 - Source definition navigation (`F12`). Library symbols open a read-only window with the assembly identity and public type/member declarations.
@@ -21,7 +21,7 @@ The workspace overlays unsaved source buffers without writing them to disk. Sour
 
 ## WPF layout
 
-The normal tab contains only the text editor, matching `ScriptEditorView.xaml`: there is no permanent toolbar, status row or diagnostics panel. The document uses the WPF background (`#1E1E1E` in dark mode, white in light mode), a default 12-point font and the bundled JetBrains Mono v2.304. Regular, italic, bold and bold italic faces load directly from Avalonia resources, without requiring a system font installation or searching a fallback chain. The metadata viewer and action preview use the same font. Ctrl+mouse-wheel zooms between 8 and 72 points within the view.
+The normal tab contains only the text editor, matching `ScriptEditorView.xaml`: there is no permanent toolbar, status row or diagnostics panel. The document uses the WPF background (`#1E1E1E` in dark mode, white in light mode), a default 12-point font and the bundled JetBrains Mono v2.304. Regular, italic, bold and bold italic faces load directly from Avalonia resources, without requiring a system font installation or searching a fallback chain. The metadata viewer and action preview use the same font. Ctrl+mouse-wheel zooms between 8 and 72 points. The size is saved immediately using the WPF-compatible `ScriptEditor/FontSize` setting and restored when a tab opens or the editor restarts.
 
 A 16×16 bulb appears in the margin when actions are available at the caret/selection. Actions open as an anchored menu instead of a separate selection window; edits still have a Before/After preview before application. Commands and their vector icons remain available through the editor context menu.
 
@@ -29,7 +29,7 @@ AvaloniaEdit's base theme is installed in `App.axaml`, so completion lists and t
 
 The search/replace template follows WPF `ThemeScriptEditor.xaml`: it opens at the top right, uses 150×24 text fields, 24×24 navigation buttons with 16×16 icons, an options dropdown and a three-pixel blue bottom border. The replacement row appears only in replace mode. The underlying AvaloniaEdit search implementation is retained.
 
-Conflict controls and project-load errors appear only when intervention is required. Completion glyphs use the ported vector palette rather than RoslynPad's complete original glyph library. WPF cannot be launched on this Linux test machine, so the comparison is against its XAML and settings; a pixel-level comparison on Windows remains to be done. Font rendering depends on installed fonts and the platform. Font zoom is currently local to the view rather than persisted like WPF’s font-size setting.
+Conflict controls and project-load errors appear only when intervention is required. Completion uses all 61 original drawings from the RoslynPad 4.12.1 WPF dictionary (commit `7b33fe8865984f975e7090da55e532d40988f7e5`), preserving geometry and colors, with its license and image-library notice. Locals and type parameters reuse the original field/class glyphs because that dictionary contains no separate drawings for them. WPF cannot be launched on this Linux test machine, so the comparison is against its XAML and settings; a pixel-level comparison on Windows remains to be done. Font rendering depends on installed fonts and the platform.
 
 ## External changes and saving
 
@@ -66,7 +66,8 @@ Build the viewport smoke project and run it against a disposable copy of a Strid
 
 ```sh
 dotnet build tests/editor/Stride.Editor.Viewport.Smoke/Stride.Editor.Viewport.Smoke.csproj -m:1 -p:StrideSkipWorktreeVersion=true
-dotnet tests/editor/Stride.Editor.Viewport.Smoke/bin/Debug/net10.0/Stride.Editor.Viewport.Smoke.dll /tmp/game-copy/Game.sln --script-editor --glx-presentation
+mkdir -p /tmp/stride-script-parity-config
+XDG_CONFIG_HOME=/tmp/stride-script-parity-config dotnet tests/editor/Stride.Editor.Viewport.Smoke/bin/Debug/net10.0/Stride.Editor.Viewport.Smoke.dll /tmp/game-copy/Game.sln --script-editor --glx-presentation
 ```
 
-The smoke check verifies embedded font resources, all four actual JetBrains Mono faces and the distributed license, then opens the actual Avalonia tab and verifies text/highlighting, native Undo/Redo, editor-only WPF layout, compact search/replace with native Undo, inline action/severity icon wiring, symbol glyphs/access badges and a rendered light/dark icon sheet, project-aware `Transform.Position` completion, actual dot input opening a rendered list with icons, Enter acceptance with native Undo, and Roslyn insertion/description, semantic errors, symbol information, F12 and read-only metadata UI, positional/named parameter help and its caret popup, multi-file rename/preview/Undo/stale protection, an add-using compiler fix, a numeric refactoring, formatting, UTF-8 BOM/CRLF saving, external changes, conflict protection and closed-buffer retention. It restores the source fixture afterwards. Linux/X11 was checked; Windows and macOS were not checked.
+The smoke check verifies embedded font resources, all four actual JetBrains Mono faces and the distributed license, then opens the actual Avalonia tab and verifies text/highlighting, native Undo/Redo, editor-only WPF layout, compact search/replace with native Undo, inline action/severity icon wiring, original glyph/access-variant mapping, distributed RoslynPad license, font zoom saved/reloaded from an isolated configuration (including bounds), and a rendered light/dark icon sheet, project-aware `Transform.Position` completion, actual dot input opening a rendered list with icons, Enter acceptance with native Undo, and Roslyn insertion/description, semantic errors, symbol information, F12 and read-only metadata UI, positional/named parameter help and its caret popup, multi-file rename/preview/Undo/stale protection, an add-using compiler fix, a numeric refactoring, formatting, UTF-8 BOM/CRLF saving, external changes, conflict protection and closed-buffer retention. It restores the source fixture afterwards. Linux/X11 was checked; Windows and macOS were not checked.

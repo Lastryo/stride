@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Resources/Fonts/JetBrainsMono/*.ttf" />
+    <None Update="ScriptEditor/RoslynPad.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/RoslynPad/LICENSE.txt" />
     <None Update="Resources/Fonts/JetBrainsMono/OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/JetBrainsMono/OFL.txt" />
     <AvaloniaResource Include="..\Stride.Assets.Presentation.Wpf\Resources\Icons\curve_fit*-32.png" Link="CurveEditor/Icons/%(Filename)%(Extension)" />
     <AvaloniaResource Include="..\Stride.Assets.Presentation.Wpf\Resources\Icons\curve-16.png" Link="CurveEditor/Icons/curve-16.png" />

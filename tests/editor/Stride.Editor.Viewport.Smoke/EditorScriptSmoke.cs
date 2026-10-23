@@ -7,6 +7,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.VisualTree;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
+using Stride.Core.Assets.Editor;
+using Stride.Core.Assets.Editor.Settings;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -61,6 +64,15 @@ internal static class EditorScriptSmoke
                 Require(global::Avalonia.Platform.AssetLoader.Exists(new Uri("avares://Stride.Assets.Editor.Avalonia/Resources/Fonts/JetBrainsMono/JetBrainsMono-" + font + ".ttf")), "Font was not embedded: " + font);
             var fontLicense = Path.Combine(AppContext.BaseDirectory, "Resources", "Fonts", "JetBrainsMono", "OFL.txt");
             Require(File.Exists(fontLicense) && File.ReadAllText(fontLicense).Contains("Copyright 2020 The JetBrains Mono Project Authors"), "Font license was not distributed with the editor");
+            CheckFontZoom(view);
+            foreach (var kind in new[] { "Class", "Structure", "Interface", "Enum", "EnumMember", "Constant", "Delegate", "Method", "ExtensionMethod", "Property", "Field", "Event" })
+            foreach (var access in new[] { "Public", "Private", "Protected", "Internal" })
+            {
+                var icon = ScriptEditorIcons.Completion(System.Collections.Immutable.ImmutableArray.Create(kind, access));
+                Require(ReferenceEquals(icon, ScriptEditorIcons.Get("Roslyn" + kind + access)), "Original RoslynPad glyph mapping: " + kind + access);
+                Require(icon.Size.Width > 0 && icon.Size.Height > 0, "Empty original glyph");
+            }
+            Require(File.Exists(Path.Combine(AppContext.BaseDirectory, "ScriptEditor", "RoslynPad.LICENSE.txt")), "RoslynPad license was not distributed");
             view.Editor.Document.Insert(0, "// edit\r\n");
             Require(model.IsModified && asset.IsDirty && model.Text == view.Editor.Text, "Unsaved text/dirty state");
             view.Editor.Undo(); Require(model.Text == code && !model.IsModified, "Native text Undo");
@@ -105,7 +117,7 @@ internal static class EditorScriptSmoke
             var position = completions.FirstOrDefault(c => c.Text == "Position");
             Require(position != null, "Project-aware completion did not offer Transform.Position");
             var propertyIcon = ScriptEditorIcons.Completion(position!.Item.Tags);
-            Require(propertyIcon.Size.Width == 16 && propertyIcon.Size.Height == 16, "Completion icon dimensions");
+            Require(Math.Abs(propertyIcon.Size.Width - 16) < 1 && Math.Abs(propertyIcon.Size.Height - 16) < 1, "Completion icon dimensions");
             Require(!ReferenceEquals(ScriptEditorIcons.Completion([WellKnownTags.Class]), ScriptEditorIcons.Completion([WellKnownTags.Method])), "Completion symbol glyph distinctions");
             Require(!ReferenceEquals(ScriptEditorIcons.Completion([WellKnownTags.Class, WellKnownTags.Private]), ScriptEditorIcons.Completion([WellKnownTags.Class])), "Completion access badge");
             Require(!ReferenceEquals(ScriptEditorIcons.Diagnostic(DiagnosticSeverity.Error), ScriptEditorIcons.Diagnostic(DiagnosticSeverity.Warning)), "Diagnostic severity glyphs");
@@ -304,6 +316,28 @@ internal static class EditorScriptSmoke
         Console.WriteLine($"C# typing performance ({view.Editor.FontFamily.Name}): {large.Length} characters, maximum input handler {maxEdit:F1} ms, maximum UI heartbeat gap {maxGap:F1} ms.");
         Require(maxEdit < 200 && maxGap < 500, $"Typing blocked the UI: handler {maxEdit:F1} ms, heartbeat {maxGap:F1} ms");
     }
+    private static void CheckFontZoom(ScriptSourceFileEditorView view)
+    {
+        Require(Path.GetFullPath(EditorPath.EditorConfigPath).StartsWith(Path.GetTempPath(), StringComparison.Ordinal), "Run script smoke with XDG_CONFIG_HOME under /tmp to isolate zoom preferences.");
+        EditorSettings.ScriptEditorFontSize.SetValue(12);
+        view.Editor.FontSize = 12;
+        var pointer = new Pointer(91, PointerType.Mouse, true);
+        var wheel = new PointerWheelEventArgs(view.Editor, pointer, view.Editor, new Point(10, 10), 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.Other), KeyModifiers.Control, new Vector(0, 1));
+        view.Editor.RaiseEvent(wheel);
+        Require(wheel.Handled && view.Editor.FontSize == 13 && EditorSettings.ScriptEditorFontSize.GetValue() == 13, "Ctrl+wheel font zoom");
+        EditorSettings.ScriptEditorFontSize.SetValue(12);
+        EditorSettings.Initialize();
+        Require(EditorSettings.ScriptEditorFontSize.GetValue() == 13 && new ScriptSourceFileEditorView().Editor.FontSize == 13, "Font zoom did not survive settings reload/new view");
+        EditorSettings.ScriptEditorFontSize.SetValue(999);
+        Require(new ScriptSourceFileEditorView().Editor.FontSize == 72, "Font zoom upper bound");
+        EditorSettings.ScriptEditorFontSize.SetValue(1);
+        Require(new ScriptSourceFileEditorView().Editor.FontSize == 8, "Font zoom lower bound");
+        EditorSettings.ScriptEditorFontSize.SetValue(12);
+        EditorSettings.Save();
+        view.Editor.FontSize = 12;
+    }
+
     private static void RenderIcons()
     {
         var keys = new[] { "GlyphClass", "GlyphStruct", "GlyphInterface", "GlyphEnum", "GlyphDelegate", "GlyphMethod", "GlyphExtensionMethod", "GlyphProperty", "GlyphField", "GlyphEvent", "GlyphLocal", "GlyphParameter", "GlyphNamespace", "GlyphKeyword", "Bulb", "ImageError", "ImageWarning" };

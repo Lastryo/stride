@@ -213,3 +213,7 @@ Contact
 ### Folders 2 Bold
 The folder icon in the asset view is licensed under creative commons and derived from:
 - Alfredo Hernandez: https://www.alfredocreates.com
+
+### RoslynPad completion glyphs
+
+The Avalonia script editor ports the original WPF glyph dictionary from [RoslynPad 4.12.1](https://github.com/roslynpad/roslynpad/tree/7b33fe8865984f975e7090da55e532d40988f7e5), distributed under the MIT license (Copyright 2021 Eli Arbel). The upstream notice “Licensed from the Visual Studio Image Library” is retained in the resource. See `sources/editor/Stride.Assets.Editor.Avalonia/ScriptEditor/RoslynPad.LICENSE.txt`.

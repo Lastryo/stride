@@ -17,6 +17,10 @@ public static class EditorSettings
 
     static EditorSettings()
     {
+        ScriptEditorFontSize = new SettingsKey<int>("ScriptEditor/FontSize", SettingsContainer, 12)
+        {
+            DisplayName = $"{Tr._p("Settings", "Script editor")}/{Tr._p("Settings", "Font size")}",
+        };
         Language = new SettingsKey<string>("Interface/Language", SettingsContainer, "MachineDefault")
         {
             DisplayName = $"{Interface}/{Tr._p("Settings", "Language")}",
@@ -31,6 +35,8 @@ public static class EditorSettings
             GetAcceptableValues = () => ["Default", "Dark", "Light"],
         };
     }
+
+    public static SettingsKey<int> ScriptEditorFontSize { get; }
 
     public static SettingsKey<string> Language { get; }
 
