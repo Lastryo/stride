@@ -6,36 +6,64 @@
              x:Class="Stride.Assets.Editor.Avalonia.Views.SpriteSheetEditorView"
              x:DataType="vm:SpriteSheetEditorViewModel"
              Focusable="True" KeyDown="EditorKeyDown">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+        <ResourceInclude Source="../SpriteEditor/SpriteSheetIcons.axaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Image.spriteActionIcon">
+      <Setter Property="Width" Value="16"/>
+      <Setter Property="Height" Value="16"/>
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
     <WrapPanel Margin="4">
-      <Button Content="Sheet properties" Command="{Binding SheetPropertiesCommand}" Margin="2"/>
-      <Button Content="Add" Command="{Binding AddCommand}" Margin="2"/>
-      <Button Content="Import…" Click="ImportClicked" Margin="2"/>
-      <Button Content="Open image" Click="OpenImageClicked" Margin="2"/>
-      <Button Content="Show folder" Click="ShowFolderClicked" Margin="2"/>
-      <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="2"/>
-      <Button Content="Duplicate" Command="{Binding DuplicateCommand}" Margin="2"/>
-      <Button Content="↑" Command="{Binding MoveUpCommand}" ToolTip.Tip="Move up" Margin="2"/>
-      <Button Content="↓" Command="{Binding MoveDownCommand}" ToolTip.Tip="Move down" Margin="2"/>
+      <Button Command="{Binding SheetPropertiesCommand}" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageEditAsset}"/><TextBlock Text="Sheet properties" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Command="{Binding AddCommand}" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageAdd}"/><TextBlock Text="Add" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Click="ImportClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageFolder}"/><TextBlock Text="Import…" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Click="OpenImageClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageOpenSourceFile}"/><TextBlock Text="Open image" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Click="ShowFolderClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageExplore}"/><TextBlock Text="Show folder" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Command="{Binding DeleteCommand}" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageRemove}"/><TextBlock Text="Delete" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Command="{Binding DuplicateCommand}" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageDuplicateSprite}"/><TextBlock Text="Duplicate" VerticalAlignment="Center"/></StackPanel></Button>
+      <Button Command="{Binding MoveUpCommand}" ToolTip.Tip="Move up" Margin="2"><Image Classes="spriteActionIcon" Source="{StaticResource ImageUp}"/></Button>
+      <Button Command="{Binding MoveDownCommand}" ToolTip.Tip="Move down" Margin="2"><Image Classes="spriteActionIcon" Source="{StaticResource ImageDown}"/></Button>
     </WrapPanel>
     <Grid Grid.Row="1" ColumnDefinitions="200,5,*">
       <ListBox x:Name="SpriteList" ItemsSource="{Binding Sprites}" SelectedItems="{Binding SelectedSprites}" SelectionMode="Multiple"
                DoubleTapped="SpriteDoubleTapped" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.ContextMenu><ContextMenu>
+          <MenuItem Header="Add new sprite" Command="{Binding AddCommand}"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageAdd}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Duplicate sprite" Command="{Binding DuplicateCommand}"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageDuplicateSprite}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Edit image" Click="OpenImageClicked"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageOpenSourceFile}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Show image in folder" Click="ShowFolderClicked"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageExplore}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Copy" Click="CopyClicked"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageCopy}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Paste" Click="PasteClicked"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImagePaste}"/></MenuItem.Icon></MenuItem>
+          <MenuItem Header="Delete" Command="{Binding DeleteCommand}"><MenuItem.Icon><Image Classes="spriteActionIcon" Source="{StaticResource ImageRemove}"/></MenuItem.Icon></MenuItem>
+        </ContextMenu></ListBox.ContextMenu>
       </ListBox>
       <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
       <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
         <WrapPanel Margin="4">
           <ComboBox x:Name="ToolSelector" SelectedItem="{Binding ToolMode, Mode=TwoWay}" MinWidth="115" Margin="2"/>
-          <Button Content="Fit" Click="FitClicked" Margin="2"/>
-          <Button Content="1:1" Click="RealSizeClicked" Margin="2"/>
-          <Button Content="−" Click="ZoomOutClicked" Margin="2"/>
-          <Button Content="+" Click="ZoomInClicked" Margin="2"/>
-          <Button Content="Frame" Click="FrameClicked" ToolTip.Tip="Focus region (F)" Margin="2"/>
-          <Button Content="Whole image" Click="WholeImageClicked" Margin="2"/>
+          <Button Click="FitClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageFitOnScreen}"/><TextBlock Text="Fit" VerticalAlignment="Center"/></StackPanel></Button>
+          <Button Click="RealSizeClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageScaleOnRealSize}"/><TextBlock Text="1:1" VerticalAlignment="Center"/></StackPanel></Button>
+          <Button Click="ZoomOutClicked" Margin="2" ToolTip.Tip="Zoom out"><Image Classes="spriteActionIcon" Source="{StaticResource ImageZoomOut}"/></Button>
+          <Button Click="ZoomInClicked" Margin="2" ToolTip.Tip="Zoom in"><Image Classes="spriteActionIcon" Source="{StaticResource ImageZoomIn}"/></Button>
+          <Button Click="FrameClicked" ToolTip.Tip="Focus region (F)" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageFocusOnRegion}"/><TextBlock Text="Frame" VerticalAlignment="Center"/></StackPanel></Button>
+          <Button Click="WholeImageClicked" Margin="2"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageSelectAll}"/><TextBlock Text="Whole image" VerticalAlignment="Center"/></StackPanel></Button>
           <sd:ColorEditor Value="{Binding SelectionColor}" Width="85" Margin="2" ToolTip.Tip="Region outline color"/>
-          <CheckBox Content="Highlight" IsChecked="{Binding SelectionHighlightEnabled}" Margin="5,2"/>
-          <CheckBox Content="Alpha wand" IsChecked="{Binding MagicWandUseTransparency}" Margin="5,2"/>
-          <CheckBox Content="Lock borders" IsChecked="{Binding LockBorders}" Margin="5,2"/>
+          <CheckBox IsChecked="{Binding SelectionHighlightEnabled}" Margin="5,2" ToolTip.Tip="Highlight"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageHighlightSelection}"/><TextBlock Text="Highlight"/></StackPanel></CheckBox>
+          <CheckBox IsChecked="{Binding MagicWandUseTransparency}" Margin="5,2" ToolTip.Tip="Alpha wand"><StackPanel Orientation="Horizontal" Spacing="4"><Image Classes="spriteActionIcon" Source="{StaticResource ImageMagicWand}"/><TextBlock Text="Alpha wand"/></StackPanel></CheckBox>
+          <CheckBox IsChecked="{Binding LockBorders}" Margin="5,2" ToolTip.Tip="Lock borders">
+            <StackPanel Orientation="Horizontal" Spacing="4"><Grid>
+              <Image Classes="spriteActionIcon" Source="{StaticResource ImageLocked}" IsVisible="{Binding LockBorders}"/>
+              <Image Classes="spriteActionIcon" Source="{StaticResource ImageUnlocked}" IsVisible="{Binding !LockBorders}"/>
+            </Grid><TextBlock Text="Lock borders"/></StackPanel>
+          </CheckBox>
         </WrapPanel>
         <controls:SpriteSheetCanvas x:Name="SpriteCanvas" Grid.Row="1" Focusable="True" ClipToBounds="True"/>
         <StackPanel Grid.Row="2" Margin="6,3" Spacing="2">

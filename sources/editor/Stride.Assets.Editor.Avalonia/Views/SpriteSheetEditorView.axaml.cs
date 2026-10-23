@@ -65,6 +65,21 @@ public partial class SpriteSheetEditorView : UserControl, IAssetEditorView
         SpriteList.AddHandler(PointerMovedEvent, ListPointerMoved);
         SpriteList.AddHandler(PointerReleasedEvent, (_, _) => listDragStart = null);
         ToolSelector.ItemsSource = Enum.GetValues<SpriteSheetEditorToolMode>();
+        ToolSelector.ItemTemplate = new FuncDataTemplate<SpriteSheetEditorToolMode>((mode, _) =>
+        {
+            var key = mode switch
+            {
+                SpriteSheetEditorToolMode.ColorPick => "ImagePicker",
+                SpriteSheetEditorToolMode.MagicWand => "ImageMagicWand",
+                SpriteSheetEditorToolMode.SpriteCenter => "ImageSpriteCenter",
+                SpriteSheetEditorToolMode.Borders => "ImageSpriteBorders",
+                _ => "ImageSelectAll"
+            };
+            var panel = new StackPanel { Orientation = global::Avalonia.Layout.Orientation.Horizontal, Spacing = 4 };
+            panel.Children.Add(new Image { Source = this.FindResource(key) as global::Avalonia.Media.IImage, Width = 16, Height = 16 });
+            panel.Children.Add(new TextBlock { Text = mode.ToString() });
+            return panel;
+        });
         SpriteCanvas.StatusChanged += status => ImageStatus.Text = status;
         reloadTimer.Tick += (_, _) =>
         {
@@ -181,6 +196,15 @@ public partial class SpriteSheetEditorView : UserControl, IAssetEditorView
         Process.Start(new ProcessStartInfo(folder ? Path.GetDirectoryName(source)! : source) { UseShellExecute = true });
         return Task.CompletedTask;
     });
+
+    private async void CopyClicked(object? sender, RoutedEventArgs e)
+    {
+        if (editor != null) await Run(editor.CopyAsync);
+    }
+    private async void PasteClicked(object? sender, RoutedEventArgs e)
+    {
+        if (editor != null) await Run(editor.PasteAsync);
+    }
 
     private async void ImportClicked(object? sender, RoutedEventArgs e)
     {

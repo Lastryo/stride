@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Stride.Core.Assets.Editor.Services;
 using Stride.Core.Assets.Editor.Settings;
 using Stride.Core.Assets.Editor.ViewModels;
+using Stride.Core.Assets.Presentation.ViewModels;
 using Stride.Core.Presentation.Avalonia.Services;
 using Stride.Core.Presentation.Services;
 using Stride.Core.Presentation.ViewModels;
@@ -21,6 +22,17 @@ internal class EditorDialogService : DialogService, IEditorDialogService
         : base(serviceProvider.Get<IDispatcherService>())
     {
         this.serviceProvider = serviceProvider;
+    }
+
+    public async Task<IReadOnlyList<AssetViewModel>> ShowAssetPickerAsync(AssetPickerViewModel picker)
+    {
+        if (MainWindow is null) return [];
+        return await Dispatcher.InvokeTask(async () =>
+        {
+            var window = new AssetPickerWindow { DataContext = picker };
+            var result = await window.ShowDialog<bool>(MainWindow);
+            return result ? picker.GetSelection() : [];
+        });
     }
 
     public async Task ShowAboutWindowAsync()

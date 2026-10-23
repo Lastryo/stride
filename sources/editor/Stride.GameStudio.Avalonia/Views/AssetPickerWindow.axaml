@@ -1,0 +1,75 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Stride.Core.Assets.Editor.ViewModels"
+        xmlns:assets="using:Stride.Core.Assets.Presentation.ViewModels"
+        xmlns:controls="using:Stride.GameStudio.Avalonia.Controls"
+        x:Class="Stride.GameStudio.Avalonia.Views.AssetPickerWindow"
+        x:DataType="vm:AssetPickerViewModel"
+        Title="Select an asset" Icon="/Assets/GameStudio.ico"
+        Width="1000" Height="700" MinWidth="600" MinHeight="400"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        KeyDown="WindowKeyDown">
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto">
+    <Grid ColumnDefinitions="Auto,*,200" Margin="0,0,0,10">
+      <Button x:Name="AllPackagesButton" Content="All packages" Click="AllPackagesClicked" Margin="0,0,8,0"/>
+      <TextBox x:Name="SearchBox" Grid.Column="1" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="Search name, path, type or tags…"/>
+      <ComboBox x:Name="TypeFilter" Grid.Column="2" Margin="8,0,0,0" HorizontalAlignment="Stretch"
+                ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedType, Mode=TwoWay}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:AssetPickerTypeFilter"><TextBlock Text="{Binding Name}"/></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </Grid>
+    <Grid Grid.Row="1" ColumnDefinitions="240,5,*">
+      <TreeView x:Name="DirectoryTree" ItemsSource="{Binding Session.PackageCategories.Values}"
+                SelectedItem="{Binding SelectedLocation, Mode=TwoWay}">
+        <TreeView.DataTemplates>
+          <TreeDataTemplate DataType="assets:PackageCategoryViewModel" ItemsSource="{Binding Content}">
+            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+          </TreeDataTemplate>
+          <TreeDataTemplate DataType="assets:PackageViewModel" ItemsSource="{Binding AssetMountPoint.SubDirectories}">
+            <TextBlock Text="{Binding Name}"/>
+          </TreeDataTemplate>
+          <TreeDataTemplate DataType="assets:DirectoryViewModel" ItemsSource="{Binding SubDirectories}">
+            <TextBlock Text="{Binding Name}"/>
+          </TreeDataTemplate>
+        </TreeView.DataTemplates>
+      </TreeView>
+      <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
+      <Grid Grid.Column="2" RowDefinitions="Auto,*">
+        <DockPanel Margin="8,0,0,8">
+          <CheckBox x:Name="IncludeSubfolders" DockPanel.Dock="Right" Content="Include subfolders" IsChecked="{Binding IncludeSubfolders, Mode=TwoWay}"/>
+          <TextBlock Text="{Binding LocationText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
+        </DockPanel>
+        <ListBox x:Name="AssetList" Grid.Row="1" ItemsSource="{Binding Assets}" SelectedItems="{Binding SelectedAssets}"
+                 DoubleTapped="AssetDoubleTapped" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="assets:AssetViewModel">
+              <Grid ColumnDefinitions="56,*,Auto" Margin="3" ToolTip.Tip="{Binding Url}">
+                <Border Width="48" Height="48" Background="{DynamicResource StudioAssetHoverBrush}">
+                  <controls:ThumbnailImage Image="{Binding ThumbnailData.Presenter, Mode=OneWay}" Stretch="Uniform"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding Url, Mode=OneWay}" Opacity="0.6" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" MaxWidth="180">
+                  <TextBlock Text="{Binding TypeDisplayName}" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding Directory.Package.Name}" Opacity="0.6" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock x:Name="EmptyMessage" Grid.Row="1" IsVisible="{Binding !HasAssets}" Text="No matching assets."
+                   HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+      <Button x:Name="SelectButton" Grid.Column="1" Content="Select" MinWidth="90" Margin="0,0,8,0" IsDefault="True"
+              IsEnabled="{Binding CanAccept}" Click="SelectClicked"/>
+      <Button x:Name="CancelButton" Grid.Column="2" Content="Cancel" MinWidth="90" IsCancel="True" Click="CancelClicked"/>
+    </Grid>
+  </Grid>
+</Window>

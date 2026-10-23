@@ -205,3 +205,11 @@ add/delete/duplicate/reorder, clipboard, routed mouse gestures, pixel bounds,
 locked borders, pivot and region Undo/Redo, initial source sizing, import,
 serialization and reopening. It writes `/tmp/stride-sprite-sheet.png` and never
 saves the project. See `docs/editor/avalonia-sprite-sheet.md` for the controls.
+
+Use `--asset-picker` to check the real inspector button and modal Asset Picker:
+initial location/selection, mandatory type and custom filters, folders/search,
+empty results, independent selection, cancellation, combined reference assignment,
+unchanged-reference preservation, Undo/Redo, multiple selection and read-only
+commands. The disposable project must contain two local textures. It writes
+`/tmp/stride-asset-picker.png` without saving the project. See
+`docs/editor/avalonia-asset-picker.md` for controls and the service contract.

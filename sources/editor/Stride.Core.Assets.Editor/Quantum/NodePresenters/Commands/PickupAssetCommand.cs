@@ -39,49 +39,54 @@ public class PickupAssetCommand : ChangeValueWithPickerCommandBase
     /// <inheritdoc/>
     public override bool CanAttach(INodePresenter nodePresenter)
     {
+        if (nodePresenter.Descriptor == null) return false;
         var type = nodePresenter.Descriptor.GetInnerCollectionType();
         return AssetRegistry.CanBeAssignedToContentTypes(type, checkIsUrlType: true);
     }
 
     /// <inheritdoc/>
-    protected override async Task<PickerResult> ShowPicker(IReadOnlyCollection<INodePresenter> nodePresenters, object currentValue, object parameter)
+    public override bool CanExecute(IReadOnlyCollection<INodePresenter> nodePresenters, object? parameter) =>
+        parameter is Type type && AssetRegistry.CanBeAssignedToContentTypes(type, checkIsUrlType: true)
+        && nodePresenters.Count > 0 && nodePresenters.All(node => !node.IsReadOnly && node.Type == type);
+
+    protected override async Task<PickerResult> ShowPicker(IReadOnlyCollection<INodePresenter> nodePresenters, object currentValue, object? parameter)
     {
-        // FIXME xplat-editor
-        //var targetType = (Type)parameter;
-        //var assetPicker = Session.Dispatcher.Invoke(() => Session.ServiceProvider.Get<IEditorDialogService>().CreateAssetPickerDialog(Session));
-        //assetPicker.Filter = x => FilterAsset(x, targetType);
-
-        //var asset = GetCurrentTarget(currentValue);
-        //if (asset != null)
-        //{
-        //    assetPicker.InitialLocation = asset.Directory;
-        //    assetPicker.InitialAsset = asset;
-        //}
-        //else
-        //{
-        //    assetPicker.InitialLocation = Session.AssetCollection.SelectedAssets.Select(x => x.Directory).FirstOrDefault();
-        //}
-        //assetPicker.AllowMultiSelection = false;
-
-        //var assetTypes = GetAssetTypes(targetType);
-        //assetPicker.AcceptedTypes.AddRange(assetTypes);
-
-        //var result = await assetPicker.ShowModal();
-
-        var pickerResult = new PickerResult
+        if (!CanExecute(nodePresenters, parameter) || parameter is not Type targetType) return default;
+        var asset = GetCurrentTarget(currentValue);
+        var picker = Session.Dispatcher.Invoke(() => new AssetPickerViewModel(Session)
         {
-            // FIXME xplat-editor
-            //ProcessChange = result == DialogResult.Ok,
-            //NewValue = result == DialogResult.Ok ? assetPicker.SelectedAssets.FirstOrDefault() : null
-        };
-        return pickerResult;
+            Filter = candidate => FilterAsset(candidate, targetType),
+            InitialAsset = asset,
+            InitialLocation = asset?.Directory ?? Session.AssetCollection.SelectedAssets.FirstOrDefault()?.Directory,
+            AllowMultiSelection = false,
+        });
+        picker.AcceptedTypes.AddRange(GetAssetTypes(targetType));
+        try
+        {
+            var selection = await Session.ServiceProvider.Get<IEditorDialogService>().ShowAssetPickerAsync(picker);
+            var selected = selection.FirstOrDefault();
+            return new PickerResult
+            {
+                ProcessChange = selected != null && picker.IsAccepted(selected) && CanExecute(nodePresenters, parameter),
+                NewValue = selected,
+            };
+        }
+        finally { Session.Dispatcher.Invoke(picker.Destroy); }
+    }
+
+    protected override void ExecuteSync(INodePresenter nodePresenter, object? parameter, object? preExecuteResult)
+    {
+        // Cancellation must not write even the original value back into a combined selection.
+        if (preExecuteResult is PickerResult { ProcessChange: true, NewValue: AssetViewModel selected } && !nodePresenter.IsReadOnly
+            && GetCurrentTarget(nodePresenter.Value)?.Id != selected.Id)
+            base.ExecuteSync(nodePresenter, parameter, preExecuteResult);
     }
 
     /// <inheritdoc/>
-    protected override object ConvertPickerValue(object newValue, object parameter)
+    protected override object ConvertPickerValue(object newValue, object? parameter)
     {
-        var targetType = (Type)parameter;
-        return CreateReference((AssetViewModel)newValue, targetType);
+        var targetType = (Type)parameter!;
+        return CreateReference((AssetViewModel)newValue, targetType)!;
     }
 
     /// <summary>
@@ -102,12 +107,12 @@ public class PickupAssetCommand : ChangeValueWithPickerCommandBase
         return [];
     }
 
-    protected virtual AssetViewModel GetCurrentTarget(object currentValue)
+    protected virtual AssetViewModel? GetCurrentTarget(object? currentValue)
     {
-        return ContentReferenceHelper.GetReferenceTarget(Session, currentValue);
+        return currentValue == null ? null : ContentReferenceHelper.GetReferenceTarget(Session, currentValue);
     }
 
-    protected virtual object CreateReference(AssetViewModel asset, Type referenceType)
+    protected virtual object? CreateReference(AssetViewModel asset, Type referenceType)
     {
         return ContentReferenceHelper.CreateReference(asset, referenceType);
     }
