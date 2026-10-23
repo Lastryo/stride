@@ -108,6 +108,8 @@ All concrete asset editors live in `Stride.Assets.Presentation` under `sources/e
 
 ### VisualScriptEditorViewModel
 
+**Avalonia port:** [avalonia-visual-script.md](avalonia-visual-script.md).
+
 **What it does:** Node-graph editor for visual scripting. Blocks represent operations; edges represent data and control flow between them.
 
 **Key types:**

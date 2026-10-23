@@ -75,8 +75,16 @@ internal sealed class ScriptWorkspace
     }
     private sealed class SourceState(ScriptSourceFileViewModel asset, string baseline)
     { public ScriptSourceFileViewModel Asset => asset; public string Baseline = baseline; }
+    public event EventHandler? SourceChanged;
+    public void NotifySourceChanged() => SourceChanged?.Invoke(this, EventArgs.Empty);
+    public async Task ReloadProjectsAsync()
+    {
+        await gate.WaitAsync();
+        try { workspace?.CloseSolution(); solution = null; appliedTexts.Clear(); }
+        finally { gate.Release(); }
+    }
     public static ScriptWorkspace For(SessionViewModel session) => Workspaces.GetValue(session, s => new(s));
-    public async Task<Document> DocumentAsync(string path, string text, CancellationToken token)
+    public async Task<Document> DocumentAsync(string path, string text, CancellationToken token, string? projectFile = null)
     {
         // Capture project paths on the dispatcher; loading and compilation run on the worker.
         var projects = session.LocalPackages.SelectMany(p => p.PackageContainer.Package.LoadedAssemblies)
@@ -102,7 +110,7 @@ internal sealed class ScriptWorkspace
                     workspace = MSBuildWorkspace.Create(new Dictionary<string, string> { ["Configuration"] = "Debug", ["Platform"] = "AnyCPU" }, MefHostServices.Create(composition));
                     workspace.LoadMetadataForReferencedProjects = true;
                 }
-                var projectPath = projects.Where(p => Within(path, Path.GetDirectoryName(p)!)).OrderByDescending(p => p.Length).FirstOrDefault()
+                var projectPath = projectFile ?? projects.Where(p => Within(path, Path.GetDirectoryName(p)!)).OrderByDescending(p => p.Length).FirstOrDefault()
                     ?? throw new InvalidOperationException("This script does not belong to a loaded local code project.");
                 if (!workspace.CurrentSolution.Projects.Any(p => PathComparer.Equals(p.FilePath, projectPath)))
                 {
@@ -115,7 +123,7 @@ internal sealed class ScriptWorkspace
                 foreach (var buffer in buffers)
                 {
                     var ids = solution.GetDocumentIdsWithFilePath(buffer.Key);
-                    if (ids.Count() == 0 && Within(buffer.Key, Path.GetDirectoryName(projectPath)!))
+                    if (ids.Count() == 0 && (Within(buffer.Key, Path.GetDirectoryName(projectPath)!) || PathComparer.Equals(buffer.Key, path)))
                     {
                         var added = solution.AddDocument(DocumentId.CreateNewId(project.Id), Path.GetFileName(buffer.Key), SourceText.From(buffer.Value), filePath: buffer.Key);
                         solution = added;

@@ -37,6 +37,7 @@ internal static class AssetTemplates
         TemplateManager.Register(AssetFactoryTemplateGenerator.Default);
         TemplateManager.Register(new SourceAssetTemplateGenerator());
         TemplateManager.Register(new ScriptAssetTemplateGenerator());
+        TemplateManager.Register(new VisualScriptAssetTemplateGenerator());
         TemplateManager.Register(GraphicsCompositorTemplateGenerator.Default);
     }
 }

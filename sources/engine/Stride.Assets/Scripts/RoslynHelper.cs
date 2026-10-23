@@ -23,6 +23,10 @@ namespace Stride.Assets.Scripts
             // Create a compilation unit with our expression
             var compilationUnit = CreateCompilationUnitFromBlock(ref block);
 
+            // Project parse features must match, including those enabled by the SDK.
+            var options = compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions ?? CSharpParseOptions.Default;
+            compilationUnit = (CompilationUnitSyntax)CSharpSyntaxTree.Create(compilationUnit, options).GetRoot();
+            block = compilationUnit.DescendantNodes().OfType<BlockSyntax>().First();
             compilation = compilation.AddSyntaxTrees(compilationUnit.SyntaxTree);
 
             // Detect missing variables
@@ -77,6 +81,7 @@ namespace Stride.Assets.Scripts
                             .WithVariables(SyntaxFactory.SeparatedList<VariableDeclaratorSyntax>(syntaxNodesOrToken))))
                         .AddRange(block.Statements)));
 
+                newCompilationUnit = (CompilationUnitSyntax)CSharpSyntaxTree.Create(newCompilationUnit, options).GetRoot();
                 compilation = compilation.ReplaceSyntaxTree(compilationUnit.SyntaxTree, newCompilationUnit.SyntaxTree);
                 compilationUnit = newCompilationUnit;
             }
@@ -124,7 +129,7 @@ namespace Stride.Assets.Scripts
             {
                 var returnType = semanticModel.GetTypeInfo(returnStatement.Expression);
 
-                if (returnType.Type.SpecialType != SpecialType.System_Void)
+                if (returnType.Type?.SpecialType != SpecialType.System_Void)
                 {
                     // Output value
                     newSlots.Add(new Slot(SlotDirection.Output, SlotKind.Value));

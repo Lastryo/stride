@@ -1,0 +1,10 @@
+!TemplateAsset
+Id: 4b30dff1-e9d5-43d6-a8ca-7a0f387ca00b
+AssetTypeName: VisualScriptAsset
+Name: Visual script
+Scope: Asset
+Description: A visual script with an Update function and a Start block
+Group: Script
+Order: -96
+Icon: ..\.sdtpl\SourceCode.png
+DefaultOutputName: VisualScript

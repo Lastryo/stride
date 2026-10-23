@@ -1,15 +1,96 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="using:Stride.Assets.Editor.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="Stride.Assets.Editor.Avalonia.Views.VisualScriptEditorView"
-             x:DataType="vm:VisualScriptEditorViewModel">
-  <DockPanel>
-    <Grid DockPanel.Dock="Top">
-      <TextBlock Text="VisualScript Editor" />
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Stride.Assets.Editor.ViewModels" xmlns:controls="using:Stride.Assets.Editor.Avalonia.Controls"
+             x:Class="Stride.Assets.Editor.Avalonia.Views.VisualScriptEditorView" x:DataType="vm:VisualScriptEditorViewModel"
+             KeyDown="EditorKeyDown">
+  <UserControl.Resources>
+    <ResourceDictionary><ResourceDictionary.MergedDictionaries>
+      <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/>
+    </ResourceDictionary.MergedDictionaries></ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.scriptAction"><Setter Property="Margin" Value="2"/><Setter Property="Padding" Value="3"/><Setter Property="MinWidth" Value="24"/><Setter Property="MinHeight" Value="24"/></Style>
+    <Style Selector="ListBox.scriptList"><Setter Property="Margin" Value="8"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style Selector="ListBox.scriptList ListBoxItem"><Setter Property="MinHeight" Value="22"/><Setter Property="Padding" Value="0,2"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="*,5,3*">
+    <Grid RowDefinitions="Auto,5,Auto,5,*" MinWidth="190">
+      <DockPanel>
+        <TextBox DockPanel.Dock="Top" Text="{Binding BaseType}" PlaceholderText="Base type..."/>
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Classes="scriptAction" Command="{Binding AddNewPropertyCommand}" ToolTip.Tip="Add variable"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="scriptAction" Command="{Binding RemoveSelectedPropertiesCommand}" ToolTip.Tip="Remove selected variables"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel><TextBlock Text="Variables:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="VariablesList" Classes="scriptList" ItemsSource="{Binding Properties}" SelectedItems="{Binding SelectedProperties}" SelectionMode="Multiple" KeyDown="ListKeyDown">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:VisualScriptSymbolViewModel">
+            <Grid>
+              <TextBlock Margin="5,0,0,0" DoubleTapped="BeginRename" TextTrimming="CharacterEllipsis">
+                <Run Text="{Binding RefPrefix, Mode=OneWay}"/><Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold"/>
+                <Run Text="{Binding Type, Mode=OneWay, StringFormat=' ({0})'}" Foreground="Gray"/>
+              </TextBlock>
+              <Grid ColumnDefinitions="*,*" IsVisible="False" Tag="SymbolEdit">
+                <TextBox Grid.Column="0" Text="{Binding Type, Mode=OneWay}" PlaceholderText="Type" KeyDown="CommitEdit" LostFocus="EditLostFocus"/>
+                <TextBox Grid.Column="1" Text="{Binding Name, Mode=OneWay}" PlaceholderText="Name" KeyDown="CommitEdit" LostFocus="EditLostFocus"/>
+              </Grid>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows"/>
+      <DockPanel Grid.Row="2">
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button x:Name="AddMethodButton" IsEnabled="{Binding Asset.IsEditable}" Classes="scriptAction" Click="AddMethodClicked" ToolTip.Tip="Add function or override"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="scriptAction" Command="{Binding RemoveSelectedMethodCommand}" ToolTip.Tip="Remove selected function"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel><TextBlock Text="Functions:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="MethodsList" Classes="scriptList" ItemsSource="{Binding Methods}" SelectedItem="{Binding SelectedMethod}" KeyDown="ListKeyDown">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:VisualScriptMethodViewModel">
+            <Grid>
+              <TextBlock Text="{Binding Name, Mode=OneWay}" Margin="5,0,0,0" DoubleTapped="BeginRename" TextTrimming="CharacterEllipsis"/>
+              <TextBox Text="{Binding Name, Mode=OneWay}" IsVisible="False" KeyDown="CommitEdit" LostFocus="EditLostFocus"/>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows"/>
+      <DockPanel Grid.Row="4">
+        <StackPanel DockPanel.Dock="Top" DataContext="{Binding SelectedMethod}" x:DataType="vm:VisualScriptMethodViewModel">
+          <ComboBox x:Name="AccessibilityBox" Margin="2" SelectedItem="{Binding Accessibility}" HorizontalAlignment="Stretch"/>
+          <ComboBox x:Name="ModifierBox" Margin="2" SelectedItem="{Binding VirtualModifier}" HorizontalAlignment="Stretch"/>
+          <CheckBox Content="Static method" IsChecked="{Binding IsStatic}" Margin="2"/>
+          <TextBox Text="{Binding ReturnType}" PlaceholderText="Return type..."/>
+        </StackPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="8">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Classes="scriptAction" Command="{Binding AddNewParameterCommand}" ToolTip.Tip="Add parameter"><Image Source="{StaticResource ImageAdd}" Width="16" Height="16"/></Button>
+            <Button Classes="scriptAction" Command="{Binding RemoveSelectedParametersCommand}" ToolTip.Tip="Remove selected parameters"><Image Source="{StaticResource ImageRemove}" Width="16" Height="16"/></Button>
+          </StackPanel><TextBlock Text="Function parameters:" VerticalAlignment="Center"/>
+        </DockPanel>
+        <ListBox x:Name="ParametersList" Classes="scriptList" ItemsSource="{Binding SelectedMethod.Parameters}" SelectedItems="{Binding SelectedParameters}" SelectionMode="Multiple" KeyDown="ListKeyDown">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="vm:VisualScriptSymbolViewModel">
+            <Grid>
+              <TextBlock Margin="5,0,0,0" DoubleTapped="BeginRename" TextTrimming="CharacterEllipsis">
+                <Run Text="{Binding RefPrefix, Mode=OneWay}"/><Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold"/>
+                <Run Text="{Binding Type, Mode=OneWay, StringFormat=' ({0})'}" Foreground="Gray"/>
+              </TextBlock>
+              <Grid ColumnDefinitions="Auto,*,*" IsVisible="False" Tag="SymbolEdit">
+                <ComboBox Grid.Column="0" x:Name="RefKindBox" SelectedItem="{Binding RefKind, Mode=OneWay}" Loaded="RefKindLoaded"/>
+                <TextBox Grid.Column="1" Text="{Binding Type, Mode=OneWay}" PlaceholderText="Type" KeyDown="CommitEdit" LostFocus="EditLostFocus"/>
+                <TextBox Grid.Column="2" Text="{Binding Name, Mode=OneWay}" PlaceholderText="Name" KeyDown="CommitEdit" LostFocus="EditLostFocus"/>
+              </Grid>
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
     </Grid>
-    <TextBlock Text="{Binding Asset.Name}" />
-  </DockPanel>
+    <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns"/>
+    <Grid Grid.Column="2">
+      <controls:VisualScriptGraph x:Name="Graph"/>
+      <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Background="#C0303030" IsVisible="{Binding !!AnalysisError}">
+        <TextBlock Text="{Binding AnalysisError}" TextWrapping="Wrap" MaxWidth="600" Margin="6"/>
+      </Border>
+    </Grid>
+  </Grid>
 </UserControl>

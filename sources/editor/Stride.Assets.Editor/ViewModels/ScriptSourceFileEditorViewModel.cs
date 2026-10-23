@@ -89,6 +89,7 @@ public sealed partial class ScriptSourceFileEditorViewModel : AssetEditorViewMod
             if (!Asset.IsEditable || text == value) return;
             text = value; revision++;
             Asset.Asset.Text = value;
+            workspace.NotifySourceChanged();
             SetDirty(value != baseline);
             OnPropertyChanged(nameof(Text), nameof(IsModified));
             ScheduleAnalysis();

@@ -169,7 +169,7 @@ namespace Stride.Assets.Scripts
             var compilerOptions = new VisualScriptCompilerOptions
             {
                 FilePath = generatedAbsolutePath,
-                Class = Path.GetFileNameWithoutExtension(generatedAbsolutePath),
+                Class = Path.GetFileNameWithoutExtension(assetItem.FullPath.ToOSPath()),
             };
 
             // Try to get root namespace from containing project

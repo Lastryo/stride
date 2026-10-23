@@ -582,8 +582,8 @@ namespace Stride.Assets.Scripts
                 .WithMembers(List(members))
                 .WithModifiers(classModifiers);
 
-            if (visualScriptAsset.BaseType != null)
-                @class = @class.WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(SimpleBaseType(IdentifierName(visualScriptAsset.BaseType)))));
+            if (!string.IsNullOrWhiteSpace(visualScriptAsset.BaseType))
+                @class = @class.WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(SimpleBaseType(ParseTypeName(visualScriptAsset.BaseType)))));
 
             // Generate namespace around class (if any)
             MemberDeclarationSyntax namespaceOrClass = @class;
@@ -592,7 +592,7 @@ namespace Stride.Assets.Scripts
             {
                 namespaceOrClass =
                     NamespaceDeclaration(
-                        IdentifierName(@namespace))
+                        ParseName(@namespace))
                     .WithMembers(
                         SingletonList<MemberDeclarationSyntax>(@class));
             }
@@ -603,7 +603,7 @@ namespace Stride.Assets.Scripts
                 .WithUsings(
                     List(visualScriptAsset.UsingDirectives.Select(x => 
                         UsingDirective(
-                            IdentifierName(x)))))
+                            ParseName(x)))))
                 .WithMembers(
                     SingletonList(namespaceOrClass))
                 .NormalizeWhitespace();

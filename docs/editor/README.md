@@ -56,3 +56,4 @@ The editor codebase spans `sources/presentation/` (MVVM framework, Quantum-to-UI
 | [avalonia-live-play.md](avalonia-live-play.md) | LivePlay child game, assembly updates, runtime state preservation and verification |
 | [avalonia-script-editor.md](avalonia-script-editor.md) | Avalonia C# editor, Roslyn completion, parameter help, code actions, rename, metadata navigation and source saving |
 | [avalonia-curve-editor.md](avalonia-curve-editor.md) | Curve channels, key editing, Quantum Undo/Redo and Avalonia verification |
+| [avalonia-visual-script.md](avalonia-visual-script.md) | Visual Script graph, functions/variables, Roslyn search/diagnostics, inspector completion, Quantum Undo/Redo and `.sdvs` persistence |

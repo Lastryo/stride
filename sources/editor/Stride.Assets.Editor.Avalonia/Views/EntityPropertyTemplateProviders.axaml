@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sd="http://schemas.stride3d.net/xaml/presentation"
+                    xmlns:visualScript="using:Stride.Assets.Editor.Avalonia.VisualScriptEditor"
                     xmlns:curve="using:Stride.Assets.Editor.Avalonia.CurveEditor"
                     xmlns:aev="using:Stride.Assets.Editor.Avalonia.Views"
                     xmlns:caec="using:Stride.Core.Assets.Editor.Avalonia.Converters"
@@ -15,6 +16,9 @@
     <ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/DefaultPropertyTemplateProviders.axaml"/>
   </ResourceDictionary.MergedDictionaries>
 
+  <visualScript:VisualScriptPropertyTemplateProvider x:Key="VisualScriptPropertyTemplateProvider" caev:PropertyViewHelper.TemplateCategory="PropertyEditor" OverrideRule="All">
+    <DataTemplate><visualScript:VisualScriptPropertyEditor/></DataTemplate>
+  </visualScript:VisualScriptPropertyTemplateProvider>
   <curve:ComputeCurveTemplateProvider
       x:Key="ComputeCurveTemplateProvider" caev:PropertyViewHelper.TemplateCategory="PropertyEditor" OverrideRule="Most">
     <DataTemplate DataType="cpqvm:NodeViewModel">
