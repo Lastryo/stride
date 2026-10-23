@@ -1,0 +1,101 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Existing WPF GameStudio vectors; symbol glyphs below use a fixed 16px canvas. -->
+  <ResourceDictionary.MergedDictionaries><ResourceInclude Source="avares://Stride.Core.Assets.Editor.Avalonia/Views/ImageResources.axaml"/></ResourceDictionary.MergedDictionaries>
+<DrawingImage x:Key="Bulb">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        
+          <GeometryDrawing Brush="#00FFFFFF"
+                                     Geometry="F1M16,16L0,16 0,0 16,0z" />
+          <GeometryDrawing Brush="#FFF6F6F6"
+                                     Geometry="F1M13.5391,4.249C13.0961,2.076,10.7531,8.88178419700125E-16,9.2711,8.88178419700125E-16L6.7031,8.88178419700125E-16C6.3291,8.88178419700125E-16 6.1351,0.152 6.1351,0.152 4.0371,0.793000000000001 2.4981,2.725 2.4761,4.878 2.4301,5.341 2.3731,7.16 4.1761,8.658 4.6891,9.125 5.3941,10.629 5.4761,11.026L5.4951,11.1 5.5391,11.214 5.5391,13.035 5.5391,14.436 7.0531,16 9.0331,16 10.5391,14.433 10.5391,13.035 10.5391,12.035 10.5391,11.208 10.5771,11.093 10.5901,11.026C10.6701,10.644 11.3901,9.133 11.8601,8.703 12.9581,7.791 13.3831,6.789 13.5391,6.039z" />
+          <GeometryDrawing Brush="#FFFFCC00"
+                                     Geometry="F1M9.5781,6.0029L9.1011,8.9999 8.5391,8.9999 8.5391,6.0559 8.5561,5.9999C9.6381,5.9999,9.4831,4.9999,9.4831,4.9999L6.5391,4.9999 6.5391,5.0719C6.5431,5.2949,6.6271,5.9999,7.5391,5.9999L7.5391,8.9999 6.9761,8.9999 6.8281,8.2889 6.4651,6.0029C5.8141,6.0029,5.6061,5.5719,5.5391,5.2739L5.5391,4.8749C5.5391,4.0769,6.4301,3.9999,6.4301,3.9999L9.5391,3.9999C9.5391,3.9999 10.5391,4.1249 10.5391,4.9999 10.5391,4.9999 10.5671,6.0029 9.5781,6.0029 M12.6131,5.0499L12.6111,5.0359 12.6191,4.9589C12.6191,2.7809 10.7641,0.9809 8.4801,0.942900000000001 8.4281,0.8529 7.1371,0.9649 7.1371,0.9649L7.1371,0.976900000000001C5.0641,1.2319 3.4671,2.9639 3.4761,4.9469 3.4671,5.0139 3.2461,6.5889 4.8481,7.9219 5.5681,8.5749 6.3491,10.3099 6.4571,10.8259L6.5331,10.9999 9.5351,10.9999 9.6091,10.8239C9.7171,10.3089 10.5151,8.5759 11.2231,7.9359 12.8031,6.6199 12.6231,5.1129 12.6131,5.0499" />
+          <GeometryDrawing Brush="#FF838383"
+                                     Geometry="F1M6.549,13L9.549,13 9.549,12.035 6.549,12.035z" />
+          <GeometryDrawing Brush="#FF838383"
+                                     Geometry="F1M7.4785,15.0205L8.6035,15.0205 9.5355,14.0355 6.5335,14.0355z" />
+          <GeometryDrawing Brush="#FF838383"
+                                     Geometry="F1M6.549,13L9.549,13 9.549,12.035 6.549,12.035z" />
+          <GeometryDrawing Brush="#FF838383"
+                                     Geometry="F1M7.4785,15.0205L8.6035,15.0205 9.5355,14.0355 6.5335,14.0355z" />
+          <GeometryDrawing Brush="#FFEFEFF0"
+                                     Geometry="F1M9.5781,6.0029L9.1011,8.9999 8.5081,8.9999 8.5081,6.0559 8.5401,5.9999C9.6221,5.9999,9.4831,4.9999,9.4831,4.9999L6.5081,4.9999 6.5081,5.0719C6.5081,5.2949,6.5081,5.9999,7.5081,5.9999L7.5081,8.9999 6.9761,8.9999 6.8201,8.2889 6.4491,6.0029C5.7991,6.0029,5.5081,5.5719,5.5081,5.2739L5.5081,4.8749C5.5081,4.0769,6.4301,3.9999,6.4301,3.9999L9.5391,3.9999C9.5391,3.9999 10.5391,4.1249 10.5391,4.9999 10.5391,4.9999 10.5671,6.0029 9.5781,6.0029" />
+        
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+<DrawingImage x:Key="ImageRename">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+        <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M0,14L16,14 16,1.999 0,1.999z" />
+        <GeometryDrawing Brush="#FF424242"
+                         Geometry="F1M5,10L6,10 6,11 5,11z M4,11L3,11 3,10 4,10z M6,6L5,6 5,5 6,5z M4,6L3,6 3,5 4,5z M5,10L4,10 4,6 5,6z M14,12L2,12 2,4 14,4z M1,13L15,13 15,3 1,3z" />
+        <GeometryDrawing Brush="#FFF0EFF1"
+                         Geometry="F1M6,6L5,6 5,10 6,10 6,11 5,11 5,10 4,10 4,11 3,11 3,10 4,10 4,6 3,6 3,5 4,5 4,6 5,6 5,5 6,5z M2,12L14,12 14,4 2,4z" />
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+<DrawingImage x:Key="ImageCodeEditor">
+    <DrawingImage.Drawing>
+      <DrawingGroup ClipGeometry="M0,0 V40 H40 V0 H0 Z">
+        <DrawingGroup Opacity="1" Transform="1,0,0,1,-19.865234,-18.761719">
+          <GeometryDrawing Brush="#FF000000" Geometry="F1 M40,40z M0,0z M19.865234,18.761719L19.865234,46.761719 30.865234,46.761719 31.146484,46.761719 31.146484,43.761719 30.865234,43.761719 22.865234,43.761719 22.865234,23.761719 56.865234,23.761719 56.865234,30.726562 56.865234,31.271484 56.865234,34.431641 59.865234,34.431641 59.865234,30.726562 59.865234,18.761719z M50.806641,58.234375A15.451583,15.096182,0,0,1,49.107422,58.595703C49.685451,58.509013,50.252171,58.385051,50.806641,58.234375z M42.976562,58.251955C43.467892,58.383506,43.968664,58.48878,44.478516,58.570314A15.451583,15.096182,0,0,1,42.976562,58.251955z M48.955078,58.613283A15.451583,15.096182,0,0,1,46.865234,58.761721C47.575175,58.761721,48.271416,58.708681,48.955078,58.613283z M44.798828,58.617183C44.864108,58.626183,44.928594,58.638323,44.994141,58.646483L44.998041,58.630853A15.451583,15.096182,0,0,1,44.798822,58.617183z M45.273438,58.650383L45.261718,58.677723 46.804687,58.757803A15.451583,15.096182,0,0,1,45.273437,58.650382z" />
+          <GeometryDrawing Brush="#FF000000" Geometry="F1 M40,40z M0,0z M46.560261,44.350001L33.147243,37.945321 33.147243,35.505564 46.560261,28.795999 46.560261,32.36999 36.937858,36.649285 36.937858,36.739795 46.560261,40.771238z M61.87489,45.543405L48.461873,51.948024 48.461873,48.383579 58.084276,44.371169 58.084276,44.309179 48.461873,39.987045 48.461873,36.394021 61.87489,43.103586z" />
+        </DrawingGroup>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+<DrawingImage x:Key="ImageWarning" >
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+        <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M7.0002,-0.000199999999999534L0.000200000000000422,13.9998 2.0002,15.9998 14.0002,15.9998 16.0002,13.9998 9.0002,-0.000199999999999534z" />
+        <GeometryDrawing Brush="#FFFFCC00" Geometry="F1M9,10L7,10 7,5 9,5z M9,13L7,13 7,11 9,11z M8.382,1L7.618,1 1.217,13.803 2.5,15 13.5,15 14.783,13.803z" />
+        <GeometryDrawing Brush="#FF000000" Geometry="F1M9,11L7,11 7,13 9,13z M9,10L7,10 7,5 9,5z" />
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+<DrawingImage x:Key="GlyphClass"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#B58ADB" Geometry="M8,1L15,5V11L8,15L1,11V5Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M7.5,8L2,5V6L7.5,9V14H8.5V9L14,6V5L8,8Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphStruct"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#4EC9B0" Geometry="M1,2H7V8H1Z M9,2H15V8H9Z M5,10H11V16H5Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphInterface"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#B58ADB" Geometry="M7,4A4,4 0 1 1 7,12A4,4 0 1 1 7,4 M10,7H16V9H10Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M7,6A2,2 0 1 0 7,10A2,2 0 1 0 7,6"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphEnum"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#D7BA7D" Geometry="M1,2H5V6H1Z M1,7H5V11H1Z M1,12H5V16H1Z M7,3H15V5H7Z M7,8H15V10H7Z M7,13H15V15H7Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphDelegate"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#B58ADB" Geometry="M1,3H12V12H1Z M11,1L16,6L11,11V8H6V4H11Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphMethod"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#B58ADB" Geometry="M2,5L8,1L14,5V11L8,15L2,11Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M8,3L4,5L8,7L12,5Z M7,9H9V13H7Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphExtensionMethod"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#B58ADB" Geometry="M1,5L7,1L13,5V11L7,15L1,11Z"/><GeometryDrawing Brush="#4EC9B0" Geometry="M12,7H14V10H16V12H14V15H12V12H9V10H12Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphProperty"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M1,10L10,1L15,6L6,15H1Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M9,4L12,7L13,6L10,3Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphField"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M1,7L9,2L15,6L7,11Z M1,8L7,12L15,7V10L7,15L1,11Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphConstant"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#D7BA7D" Geometry="M1,5H15V13H1Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M4,7H12V9H4Z M4,10H9V11H4Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphEvent"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#EAC54F" Geometry="M8,0L2,9H7L5,16L15,6H10L13,0Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphLocal"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M2,5H14V13H2Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M4,7H12V8H4Z M4,10H9V11H4Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphParameter"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M2,3H14V13H2Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M7,5H9V11H7Z M5,7H11V9H5Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphNamespace"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#D7BA7D" Geometry="M0,4H4V12H0Z M6,1H10V5H6Z M6,11H10V15H6Z M12,4H16V12H12Z M3,7H13V9H3Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphKeyword"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#569CD6" Geometry="M1,3H15V13H1Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M3,5H5V8L7,5H9L6,8L9,11H7L5,9V11H3Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphTypeParameter"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#4EC9B0" Geometry="M1,2H15V5H10V15H6V5H1Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphSymbol"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M2,1H11L15,5V15H2Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M4,7H12V8H4Z M4,10H12V11H4Z M4,13H9V14H4Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphPrivate"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#D7BA7D" Geometry="M10,11V9A2,2 0 0 1 14,9V11H15V16H9V11Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M11,11H13V9A1,1 0 0 0 11,9Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphProtected"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#4EC9B0" Geometry="M12,8L16,10V13L12,16L8,13V10Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="GlyphInternal"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#D7BA7D" Geometry="M12,8L16,12L12,16L8,12Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="ImageError"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#E05252" Geometry="M4,1H12L16,5V12L12,16H4L0,12V5Z"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M4,5L5,4L8,7L11,4L12,5L9,8L12,11L11,12L8,9L5,12L4,11L7,8Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="ImageInformation"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#569CD6" Geometry="M8,0A8,8 0 1 1 8,16A8,8 0 1 1 8,0"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M7,3H9V5H7Z M7,7H9V13H7Z"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="ImageFind"><DrawingImage.Drawing><DrawingGroup><GeometryDrawing Brush="Transparent" Geometry="M0,0H16V16H0Z"/><GeometryDrawing Brush="#8BBBE8" Geometry="M6,1A5,5 0 1 1 3,10L0,14L2,16L6,12A5,5 0 0 1 6,1"/><GeometryDrawing Brush="#FFF6F6F6" Geometry="M6,3A3,3 0 1 0 6,9A3,3 0 1 0 6,3"/></DrawingGroup></DrawingImage.Drawing></DrawingImage>
+<DrawingImage x:Key="FindPrevious" >
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M16,16L0,16 0,0 16,0z" />
+        <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M7.6716,-0.000199999999999534L0.3786,7.2938 3.2066,10.1208 6.0006,7.3288 6.0006,15.9998 9.9996,15.9998 9.9996,7.3288 12.7926,10.1208 15.6216,7.2938 8.3276,-0.000199999999999534z" />
+        <GeometryDrawing Brush="#FF00529C" Geometry="F1M12.793,8.707L9,4.914 9,15 7,15 7,4.914 3.207,8.707 1.793,7.293 8,1.086 14.207,7.293z" />
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+<DrawingImage x:Key="FindNext" >
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#00FFFFFF" Geometry="F1M0,0L16,0 16,16 0,16z" />
+        <GeometryDrawing Brush="#FFF6F6F6" Geometry="F1M6.0003,-0.000199999999999534L6.0003,8.6718 3.2063,5.8788 0.3793,8.7078 7.6713,15.9998 8.3273,15.9998 15.6213,8.7078 12.7923,5.8788 10.0003,8.6718 10.0003,-0.000199999999999534z" />
+        <GeometryDrawing Brush="#FF00529C" Geometry="F1M3.207,7.293L7,11.086 7,0.999999999999999 9,0.999999999999999 9,11.086 12.793,7.293 14.207,8.707 8,14.914 1.793,8.707z" />
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+</ResourceDictionary>

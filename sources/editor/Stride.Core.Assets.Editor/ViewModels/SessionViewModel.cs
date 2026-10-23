@@ -305,6 +305,9 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         || package.Assets.Any(asset => asset.IsDirty || asset.AssetItem.IsDirty)
         || package.DeletedAssets.Any(asset => asset.IsDirty));
 
+    public event EventHandler<System.ComponentModel.CancelEventArgs>? Saving;
+    public event EventHandler? Saved;
+
     public bool Save(ILogger logger)
     {
         // Keep graph preparation and serialization on the UI thread to exclude concurrent edits.
@@ -317,6 +320,9 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
         };
         try
         {
+            var saving = new System.ComponentModel.CancelEventArgs();
+            Saving?.Invoke(this, saving);
+            if (saving.Cancel) return false;
             foreach (var package in LocalPackages)
             {
                 if (package.IsDirty || package.Content.OfType<SessionObjectViewModel>().Any(x => x.IsDirty))
@@ -334,6 +340,7 @@ public sealed partial class SessionViewModel : DispatcherViewModel, ISessionView
             session.Save(result, new PackageSaveParameters { DeleteFile = FileTrash.Move });
             if (result.HasErrors) return false;
             ActionHistory?.NotifySave();
+            Saved?.Invoke(this, EventArgs.Empty);
             UpdateSessionState();
             return true;
         }

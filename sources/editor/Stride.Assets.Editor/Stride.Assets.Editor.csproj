@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources/Thumbnails/*.png" />
     <EmbeddedResource Include="Resources/Gizmos/*.png" />
   </ItemGroup>

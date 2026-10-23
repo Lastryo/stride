@@ -117,6 +117,11 @@ internal static class ViewportSmoke
             lifetime.Shutdown();
             return;
         }
+        if (lifetime.Args?.Contains("--script-editor") == true)
+        {
+            await EditorScriptSmoke.Check(session, lifetime.MainWindow!);
+            await session.CloseAsync(); lifetime.Shutdown(); return;
+        }
         if (lifetime.Args?.Contains("--curve-editor") == true)
         {
             await EditorCurveSmoke.Check(session, lifetime.MainWindow!);

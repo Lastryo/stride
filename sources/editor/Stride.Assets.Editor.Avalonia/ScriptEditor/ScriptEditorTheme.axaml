@@ -1,0 +1,60 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:search="using:AvaloniaEdit.Search">
+  <!-- Layout and dimensions ported from WPF ThemeScriptEditor.xaml. -->
+  <Style Selector="search|SearchPanel">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Margin" Value="0,0,18,0"/>
+    <Setter Property="Template">
+      <ControlTemplate x:CompileBindings="False">
+        <Border Name="PART_Border" Background="{DynamicResource StudioBackgroundBrush}" BorderBrush="#3F74D1"
+                BorderThickness="0,0,0,3" HorizontalAlignment="Right" VerticalAlignment="Top">
+          <Grid ColumnDefinitions="Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
+            <ToggleButton Name="SearchReplaceToggle" Width="16" Height="24" MinWidth="0" MinHeight="0" Padding="2" Margin="2"
+                          ToolTip.Tip="Toggle between find and replace modes"
+                          IsChecked="{Binding IsReplaceMode, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+              <Path Data="M2,1L6,5L2,9" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1" Width="8" Height="10"/>
+            </ToggleButton>
+            <TextBox Name="PART_searchTextBox" Grid.Column="1" Width="150" Height="24" MinHeight="0" Margin="3,3,3,0"
+                     Text="{Binding SearchPattern, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+            <TextBox Name="PART_replaceTextBox" Grid.Column="1" Grid.Row="1" Width="150" Height="24" MinHeight="0" Margin="3,3,3,0"
+                     IsVisible="{Binding IsReplaceMode, RelativeSource={RelativeSource TemplatedParent}}"
+                     Text="{Binding ReplacePattern, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+              <Button Name="SearchOptions" Height="24" Width="20" MinHeight="0" MinWidth="0" Padding="2" Margin="0,3,0,0" ToolTip.Tip="Search options">
+                <Path Data="M0,0L4,4L8,0" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1" Width="8" Height="4"/>
+              </Button>
+              <Button Name="FindPreviousButton" Width="24" Height="24" MinWidth="0" MinHeight="0" Padding="4" Margin="3"
+                      Command="{x:Static search:SearchCommands.FindPrevious}" ToolTip.Tip="Find previous (Shift+F3)">
+                <Image Width="16" Height="16" Source="{StaticResource FindPrevious}"/>
+              </Button>
+              <Button Name="FindNextButton" Width="24" Height="24" MinWidth="0" MinHeight="0" Padding="4" Margin="3"
+                      Command="{x:Static search:SearchCommands.FindNext}" ToolTip.Tip="Find next (F3)">
+                <Image Width="16" Height="16" Source="{StaticResource FindNext}"/>
+              </Button>
+              <Button Name="CloseSearchButton" Width="16" Height="16" MinWidth="0" MinHeight="0" Padding="3" Focusable="False"
+                      VerticalAlignment="Top" HorizontalAlignment="Right" Command="{x:Static search:SearchCommands.CloseSearchPanel}" ToolTip.Tip="Close search (Escape)">
+                <Path Data="M0,0L8,8M8,0L0,8" Stroke="{DynamicResource StudioTextBrush}" StrokeThickness="1" Width="8" Height="8"/>
+              </Button>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" IsVisible="{Binding IsReplaceMode, RelativeSource={RelativeSource TemplatedParent}}">
+              <Button Name="ReplaceNextButton" Width="16" Height="16" MinWidth="0" MinHeight="0" Padding="0" Margin="3"
+                      Command="{x:Static search:SearchCommands.ReplaceNext}" ToolTip.Tip="Replace next (Alt+R)">
+                <Image Width="16" Height="16" Source="{StaticResource ImageRefresh}"/>
+              </Button>
+              <Button Name="ReplaceAllButton" Width="16" Height="16" MinWidth="0" MinHeight="0" Padding="0" Margin="3"
+                      Command="{x:Static search:SearchCommands.ReplaceAll}" ToolTip.Tip="Replace all (Alt+A)">
+                <Image Width="16" Height="16" Source="{StaticResource ImageCodeEditor}"/>
+              </Button>
+            </StackPanel>
+            <StackPanel Name="PART_MessageView" Grid.Row="2" Grid.ColumnSpan="3" IsVisible="False" Margin="3">
+              <TextBlock Name="PART_MessageContent" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="search|SearchPanel /template/ ToggleButton:checked Path">
+    <Setter Property="RenderTransform" Value="rotate(90deg)"/>
+  </Style>
+</Styles>

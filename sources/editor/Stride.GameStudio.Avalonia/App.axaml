@@ -51,6 +51,8 @@
         <ColorPaletteResources x:Key="Light"/>
       </FluentTheme.Palettes>
     </FluentTheme>
+    <!-- Completion and description popups are parented to the main window, outside the editor view. -->
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
     <dockTheme:DockFluentTheme DensityStyle="Compact"/>
     <StyleInclude Source="avares://MarkView.Avalonia/Themes/MarkdownTheme.axaml" />
     <!-- FIXME xplat-editor aggregate all custom styles into a single style/theme -->

@@ -1,15 +1,43 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:icons="using:Stride.Assets.Editor.Avalonia.ScriptEditor"
              xmlns:vm="using:Stride.Assets.Editor.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
              x:Class="Stride.Assets.Editor.Avalonia.Views.ScriptSourceFileEditorView"
              x:DataType="vm:ScriptSourceFileEditorViewModel">
-  <DockPanel>
-    <Grid DockPanel.Dock="Top">
-      <TextBlock Text="ScriptSourceFile Editor" />
-    </Grid>
-    <TextBlock Text="{Binding Asset.Name}" />
-  </DockPanel>
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries><ResourceInclude Source="../ScriptEditor/ScriptEditorIcons.axaml"/></ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+          <SolidColorBrush x:Key="ScriptBackground" Color="#1E1E1E"/>
+          <SolidColorBrush x:Key="ScriptForeground" Color="#E6E6E6"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="ScriptBackground" Color="White"/>
+          <SolidColorBrush x:Key="ScriptForeground" Color="#202020"/>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <StyleInclude Source="../ScriptEditor/ScriptEditorTheme.axaml"/>
+    <Style Selector="Image.scriptIcon"><Setter Property="Width" Value="16"/><Setter Property="Height" Value="16"/></Style>
+    <Style Selector="MenuItem"><Setter Property="FontSize" Value="12"/><Setter Property="MinHeight" Value="22"/><Setter Property="Padding" Value="4,2"/></Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,Auto,*">
+    <!-- These banners only appear when user intervention is required. The normal surface is the editor alone, as in WPF. -->
+    <Border IsVisible="{Binding HasExternalConflict}" Background="{DynamicResource StudioHeaderBrush}" Padding="4">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <TextBlock Text="Source changed on disk." VerticalAlignment="Center"/>
+        <Button Content="Reload from disk" Click="ReloadClick" ToolTip.Tip="Discard the current buffer and reload the file"/>
+        <Button Content="Keep changes" Click="KeepClick"/>
+      </StackPanel>
+    </Border>
+    <TextBlock x:Name="ProjectProblem" Grid.Row="1" IsVisible="False" Text="{Binding Status}" TextWrapping="Wrap" Margin="4"/>
+    <edit:TextEditor x:Name="CodeEditor" Grid.Row="2" ShowLineNumbers="True"
+                     FontFamily="monospace" FontSize="12"
+                     Background="{DynamicResource ScriptBackground}" Foreground="{DynamicResource ScriptForeground}"
+                     HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+  </Grid>
 </UserControl>
