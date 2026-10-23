@@ -53,13 +53,14 @@ namespace Stride.Debugger.Target
         {
             lock (loadedAssemblies)
             {
-                return loadedAssemblies.Values.FirstOrDefault(x => x.FullName == args.Name);
+                return loadedAssemblies.Values.LastOrDefault(x => x.FullName == args.Name);
             }
         }
 
         /// <inheritdoc/>
         public void Exit()
         {
+            game?.Exit();
             requestedExit = true;
         }
 
@@ -110,22 +111,25 @@ namespace Stride.Debugger.Target
             // Unload and load assemblies in assemblyContainer, serialization, etc...
             lock (loadedAssemblies)
             {
-                if (game != null)
+                var oldAssemblies = assembliesToUnregister.Select(x => loadedAssemblies[x]).ToList();
+                var newAssemblies = assembliesToRegister.Select(x => loadedAssemblies[x]).ToList();
+                try
                 {
-                    lock (game.TickLock)
+                    if (game != null)
                     {
-                        LiveAssemblyReloader.Reload(game, assemblyContainer,
-                            assembliesToUnregister.Select(x => loadedAssemblies[x]).ToList(),
-                            assembliesToRegister.Select(x => loadedAssemblies[x]).ToList());
+                        lock (game.TickLock) LiveAssemblyReloader.Reload(game, assemblyContainer, oldAssemblies, newAssemblies);
                     }
+                    else LiveAssemblyReloader.Reload(null, assemblyContainer, oldAssemblies, newAssemblies);
+                    foreach (var old in assembliesToUnregister) loadedAssemblies.Remove(old);
                 }
-                else
+                catch (Exception exception)
                 {
-                    LiveAssemblyReloader.Reload(game, assemblyContainer,
-                        assembliesToUnregister.Select(x => loadedAssemblies[x]).ToList(),
-                        assembliesToRegister.Select(x => loadedAssemblies[x]).ToList());
+                    foreach (var added in assembliesToRegister) loadedAssemblies.Remove(added);
+                    Log.Error("Live assembly update failed; previous components were retained.", exception);
+                    return false;
                 }
             }
+
             return true;
         }
 
@@ -155,11 +159,10 @@ namespace Stride.Debugger.Target
                     throw new InvalidOperationException($"Could not find type [{gameTypeName}] in project [{projectName}]");
 
                 game = (Game)Activator.CreateInstance(gameType);
+                gameFinished.Reset();
 
-                // TODO: Bind database
                 Task.Run(() =>
                 {
-                    gameFinished.Reset();
                     try
                     {
                         using (game)
@@ -174,15 +177,14 @@ namespace Stride.Debugger.Target
                         Log.Error("Exception while running game", e);
                     }
 
-                    host.OnGameExited();
-
-                    // Notify we are done
                     gameFinished.Set();
+                    host.OnGameExited();
                 });
             }
             catch (Exception ex)
             {
                 Log.Error($"Game [{gameTypeName}] from project [{projectName}] failed to run", ex);
+                host.OnGameExited();
             }
         }
 
@@ -195,7 +197,7 @@ namespace Stride.Debugger.Target
             game.Exit();
 
             // Wait for game to actually exit?
-            gameFinished.WaitOne();
+            gameFinished.WaitOne(TimeSpan.FromSeconds(10));
 
             game = null;
         }
@@ -217,10 +219,11 @@ namespace Stride.Debugger.Target
         public void MainLoop(IGameDebuggerHost gameDebuggerHost)
         {
             host = gameDebuggerHost;
-            string callbackChannelEndpoint = "Stride/Debugger/GameDebuggerTarget/CallbackChannel";
+            string callbackChannelEndpoint = "StrideDebuggerTarget-" + Guid.NewGuid().ToString("N");
             using (var callbackHost = new NpHost(callbackChannelEndpoint, null, null))
             {
                 callbackHost.AddService<IGameDebuggerTarget>(this);
+                callbackHost.Open();
                 host.RegisterTarget(callbackChannelEndpoint);
 
                 Log.MessageLogged += Log_MessageLogged;

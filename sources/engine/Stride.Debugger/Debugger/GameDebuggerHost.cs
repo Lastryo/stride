@@ -8,9 +8,9 @@ using Stride.Core.Diagnostics;
 
 namespace Stride.Debugger.Target
 {
-    public class GameDebuggerHost : IGameDebuggerHost
+    public class GameDebuggerHost : IGameDebuggerHost, IDisposable
     {
-        private TaskCompletionSource<IGameDebuggerTarget> target = new TaskCompletionSource<IGameDebuggerTarget>();
+        private TaskCompletionSource<IGameDebuggerTarget> target = new TaskCompletionSource<IGameDebuggerTarget>(TaskCreationOptions.RunContinuationsAsynchronously);
         private NpClient<IGameDebuggerTarget> callbackChannel;
 
         public event Action GameExited;
@@ -45,7 +45,9 @@ namespace Stride.Debugger.Target
 
         public void Dispose()
         {
-            this.callbackChannel.Dispose();
+            try { this.callbackChannel?.Dispose(); }
+            catch (System.IO.IOException) { /* The child may already have exited. */ }
+            this.callbackChannel = null;
         }
     }
 }

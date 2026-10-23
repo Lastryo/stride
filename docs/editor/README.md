@@ -53,3 +53,4 @@ The editor codebase spans `sources/presentation/` (MVVM framework, Quantum-to-UI
 | [custom-editor.md](custom-editor.md) | Custom asset editor: base class, registration, lifecycle, services, MVVM patterns |
 | [editors.md](editors.md) | Existing editors catalogue: SpriteSheet, Scene, Prefab, UIPage, UILibrary, GraphicsCompositor, Script, VisualScript |
 | [avalonia-hot-reload.md](avalonia-hot-reload.md) | Avalonia assembly reload, source watching, state preservation, Undo/Redo and smoke verification |
+| [avalonia-live-play.md](avalonia-live-play.md) | LivePlay child game, assembly updates, runtime state preservation and verification |

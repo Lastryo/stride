@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
+// Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
 using System;
@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Stride.Core;
+using Stride.Core.Diagnostics;
 using Stride.Core.Reflection;
 using Stride.Core.Serialization;
 using Stride.Core.Yaml;
@@ -18,145 +19,95 @@ namespace Stride.Debugger
 {
     public static class LiveAssemblyReloader
     {
+        /// <summary>Replaces live components while the caller holds the game's TickLock.</summary>
         public static void Reload(Game game, AssemblyContainer assemblyContainer, List<Assembly> assembliesToUnregister, List<Assembly> assembliesToRegister)
         {
-            List<Entity> entities = new List<Entity>();
-
-            if (game != null)
-                entities.AddRange(game.SceneSystem.SceneInstance);
-
-            CloneReferenceSerializer.References = new List<object>();
-
-            var loadedAssembliesSet = new HashSet<Assembly>(assembliesToUnregister);
-            var reloadedComponents = new List<ReloadedComponentEntryLive>();
-
-            throw new NotImplementedException("Need to reimplement this to use IUnloadable");
-#if FALSE
-            foreach (var assembly in assembliesToUnregister)
+            var components = game?.SceneSystem.SceneInstance?.SelectMany(e => e.Components
+                .Select((component, index) => new ComponentEntry(e, index, component)))
+                .Where(e => assembliesToUnregister.Contains(e.Old.GetType().Assembly)).ToList() ?? new List<ComponentEntry>();
+            var logger = new LoggerResult();
+            var settings = new SerializerContextSettings
             {
-                // Unregisters assemblies that have been registered in Package.Load => Package.LoadAssemblyReferencesForPackage
-                AssemblyRegistry.Unregister(assembly);
-
-                // Unload binary serialization
-                DataSerializerFactory.UnregisterSerializationAssembly(assembly);
-
-                // Unload assembly
-                assemblyContainer.UnloadAssembly(assembly);
+                MemberMask = DataMemberAttribute.DefaultMask | ScriptComponent.LiveScriptingMask,
+                Logger = logger,
+            };
+            CloneReferenceSerializer.References = new List<object>();
+            try
+            {
+                // Snapshot all components before any registry or entity mutation.
+                foreach (var entry in components)
+                    AssetYamlSerializer.Default.Serialize(new ParsingEventListEmitter(entry.Events), entry.Old, typeof(EntityComponent), settings);
+                try
+                {
+                    Switch(assembliesToUnregister, assembliesToRegister);
+                    // Instantiate every replacement before resolving cyclic component references.
+                    foreach (var entry in components)
+                    {
+                        var oldType = entry.Old.GetType();
+                        var assembly = assembliesToRegister.Single(a => a.GetName().Name == oldType.Assembly.GetName().Name);
+                        var type = assembly.GetType(oldType.FullName, true);
+                        entry.New = (EntityComponent)Activator.CreateInstance(type);
+                    }
+                    for (var i = 0; i < CloneReferenceSerializer.References.Count; i++)
+                    {
+                        var reference = CloneReferenceSerializer.References[i];
+                        var replacement = components.FirstOrDefault(e => ReferenceEquals(e.Old, reference));
+                        if (replacement != null) CloneReferenceSerializer.References[i] = replacement.New;
+                    }
+                    foreach (var entry in components)
+                    {
+                        var reader = new EventReader(new MemoryParser(entry.Events));
+                        var restored = AssetYamlSerializer.Default.Deserialize(reader, entry.New, typeof(EntityComponent), out _, settings);
+                        if (!ReferenceEquals(restored, entry.New) || logger.HasErrors)
+                            throw new InvalidOperationException($"Cannot restore live component {entry.Old.GetType().FullName}.");
+                    }
+                    foreach (var entry in components)
+                    {
+                        if (entry.Old is ScriptComponent oldScript && entry.New is ScriptComponent newScript)
+                            game.Script.LiveReload(oldScript, newScript);
+                        entry.Entity.Components[entry.Index] = entry.New;
+                    }
+                }
+                catch
+                {
+                    Switch(assembliesToRegister, assembliesToUnregister);
+                    foreach (var entry in components)
+                        if (!ReferenceEquals(entry.Entity.Components[entry.Index], entry.Old)) entry.Entity.Components[entry.Index] = entry.Old;
+                    throw;
+                }
+                foreach (var entry in components)
+                {
+                    try { (entry.Old as ScriptComponent)?.Cancel(); }
+                    catch (Exception exception) { GlobalLogger.GetLogger("LivePlay").Error("A replaced script threw during cancellation.", exception); }
+                }
             }
+            finally { CloneReferenceSerializer.References = null; }
+        }
 
-            foreach (var assembly in assembliesToRegister)
+        private static void Switch(IEnumerable<Assembly> oldAssemblies, IEnumerable<Assembly> newAssemblies)
+        {
+            foreach (var assembly in oldAssemblies)
+            {
+                AssemblyRegistry.Unregister(assembly);
+                DataSerializerFactory.UnregisterSerializationAssembly(assembly);
+            }
+            foreach (var assembly in newAssemblies)
             {
                 ModuleRuntimeHelpers.RunModuleConstructor(assembly.ManifestModule);
-
-                // Unregisters assemblies that have been registered in Package.Load => Package.LoadAssemblyReferencesForPackage
-                AssemblyRegistry.Register(assembly, AssemblyCommonCategories.Assets);
-
+                AssemblyRegistry.Register(assembly, AssemblyCommonCategories.Engine, AssemblyCommonCategories.Assets);
                 DataSerializerFactory.RegisterSerializationAssembly(assembly);
             }
-
-            // First pass of deserialization: recreate the scripts
-            foreach (ReloadedComponentEntryLive reloadedScript in reloadedComponents)
-            {
-                // Try to create object
-                var objectStart = reloadedScript.YamlEvents.OfType<MappingStart>().FirstOrDefault();
-                if (objectStart != null)
-                {
-                    // Get type info
-                    var objectStartTag = objectStart.Tag;
-                    bool alias;
-                    var componentType = AssetYamlSerializer.Default.GetSerializerSettings().TagTypeRegistry.TypeFromTag(objectStartTag, out alias);
-                    if (componentType != null)
-                    {
-                        reloadedScript.NewComponent = (EntityComponent)Activator.CreateInstance(componentType);
-                    }
-                }
-            }
-
-            // Second pass: update script references in live objects
-            // As a result, any script references processed by Yaml serializer will point to updated objects (script reference cycle will work!)
-            for (int index = 0; index < CloneReferenceSerializer.References.Count; index++)
-            {
-                var component = CloneReferenceSerializer.References[index] as EntityComponent;
-                if (component != null)
-                {
-                    var reloadedComponent = reloadedComponents.FirstOrDefault(x => x.OriginalComponent == component);
-                    if (reloadedComponent != null)
-                    {
-                        CloneReferenceSerializer.References[index] = reloadedComponent.NewComponent;
-                    }
-                }
-            }
-
-            // Third pass: deserialize
-            reloadedComponents.ForEach(x => ReplaceComponent(game, x));
-
-            CloneReferenceSerializer.References = null;
-#endif
         }
 
-        private static EntityComponent DeserializeComponent(ReloadedComponentEntryLive reloadedComponent)
+        private sealed class ComponentEntry
         {
-            var eventReader = new EventReader(new MemoryParser(reloadedComponent.YamlEvents));
-            var components = new EntityComponentCollection();
-
-            // Use the newly created component during second pass for proper cycle deserialization
-            var newComponent = reloadedComponent.NewComponent;
-            if (newComponent != null)
-                components.Add(newComponent);
-
-            // Try to create component first
-            PropertyContainer properties;
-            AssetYamlSerializer.Default.Deserialize(eventReader, components, typeof(EntityComponentCollection), out properties);
-            var component = components.Count == 1 ? components[0] : null;
-            return component;
-        }
-
-        private static List<ParsingEvent> SerializeComponent(EntityComponent component)
-        {
-            // Wrap component in a EntityComponentCollection to properly handle errors
-            var components = new Entity { component }.Components;
-
-            // Serialize with Yaml layer
-            var parsingEvents = new List<ParsingEvent>();
-            // We also want to serialize live component variables
-            var serializerContextSettings = new SerializerContextSettings { MemberMask = DataMemberAttribute.DefaultMask | ScriptComponent.LiveScriptingMask };
-            AssetYamlSerializer.Default.Serialize(new ParsingEventListEmitter(parsingEvents), components, typeof(EntityComponentCollection), serializerContextSettings);
-            return parsingEvents;
-        }
-
-        private static void ReplaceComponent(Game game, ReloadedComponentEntryLive reloadedComponent)
-        {
-            // Create new component instance
-            var newComponent = DeserializeComponent(reloadedComponent);
-
-            // Dispose and unregister old component (and their MicroThread, if any)
-            var oldComponent = reloadedComponent.Entity.Components[reloadedComponent.ComponentIndex];
-
-            // Flag scripts as being live reloaded
-            if (game != null && oldComponent is ScriptComponent)
-            {
-                game.Script.LiveReload((ScriptComponent)oldComponent, (ScriptComponent)newComponent);
-            }
-
-            // Replace with new component
-            // TODO: Remove component before serializing it, so cancellation code can run
-            reloadedComponent.Entity.Components[reloadedComponent.ComponentIndex] = newComponent;
-
-            // TODO: Dispose or Cancel on script?
-            (oldComponent as ScriptComponent)?.Cancel();
-        }
-
-        private class ReloadedComponentEntryLive
-        {
-            public Entity Entity { get { throw new NotImplementedException(); } }
-
-            public int ComponentIndex { get { throw new NotImplementedException(); } }
-
-            public readonly List<ParsingEvent> YamlEvents;
-
-            public EntityComponent OriginalComponent { get { throw new NotImplementedException(); } }
-
-            public EntityComponent NewComponent { get; set; }
+            public readonly Entity Entity;
+            public readonly int Index;
+            public readonly EntityComponent Old;
+            public readonly List<ParsingEvent> Events = new List<ParsingEvent>();
+            public EntityComponent New;
+            public ComponentEntry(Entity entity, int index, EntityComponent component)
+            { Entity = entity; Index = index; Old = component; }
         }
     }
 }

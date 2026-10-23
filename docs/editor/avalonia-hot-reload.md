@@ -49,9 +49,10 @@ a `.stride-disposable-smoke-project` marker in the code project directory.
 
 ## Current scope
 
-This reloads assemblies and asset objects inside the editor. WPF LivePlay's
-separate running-game connection and incremental Roslyn compiler are not ported
-by this change; an already launched game process does not receive these updates.
+This service reloads assemblies and asset objects inside the editor.
+[LivePlay](avalonia-live-play.md) forwards successful reloads to a separately
+launched game when started with Project → LivePlay. A normal Run project process
+does not receive these updates.
 
 The existing assembly loader uses `Assembly.Load(byte[])`, so old CLR assemblies
 remain in memory. Generation files in the temporary `stride-hot-reload` directory

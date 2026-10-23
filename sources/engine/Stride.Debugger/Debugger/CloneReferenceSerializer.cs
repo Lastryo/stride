@@ -35,7 +35,7 @@ namespace Stride.Debugger.Target
 
         public override IYamlSerializable TryCreate(SerializerContext context, ITypeDescriptor typeDescriptor)
         {
-            if (CanVisit(typeDescriptor.Type))
+            if (References != null && CanVisit(typeDescriptor.Type))
                 return this;
 
             return null;

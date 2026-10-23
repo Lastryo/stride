@@ -22,6 +22,8 @@ namespace Stride
 
             string hostPipe = null;
             bool waitDebuggerAttach = false;
+            string dataPath = null;
+            int parentId = 0;
 
             var p = new OptionSet
             {
@@ -39,6 +41,8 @@ namespace Stride
                 string.Empty,
                 { "h|help", "Show this message and exit", v => showHelp = v != null },
                 { "host=", "Host pipe", v => hostPipe = v },
+                { "data-path=", "Built game data directory", v => dataPath = v },
+                { "parent-id=", "Owning editor process", (int v) => parentId = v },
                 { "wait-debugger-attach", "Process will wait for a debuggger to attach, for 5 seconds", v => waitDebuggerAttach = true },
             };
 
@@ -69,7 +73,15 @@ namespace Stride
                     throw new OptionException("Host pipe not specified", "host");
                 }
 
-                // Open WCF channel with master builder
+                if (dataPath != null) PlatformFolders.ApplicationDataSubDirectory = Path.GetFullPath(dataPath);
+                using var parentWatch = parentId == 0 ? null : new Timer(_ =>
+                {
+                    try { using var parent = System.Diagnostics.Process.GetProcessById(parentId); if (!parent.HasExited) return; }
+                    catch (ArgumentException) { }
+                    Environment.Exit(0);
+                }, null, 2000, 2000);
+
+                // Connect to the editor.
                 try
                 {
                     using (var channel = new NpClient<IGameDebuggerHost>(new NpEndPoint(hostPipe)))

@@ -9,7 +9,7 @@ namespace Stride.Debugger.Target
     /// <summary>
     /// Represents the debugger host commands that the target can access
     /// </summary>
-    public interface IGameDebuggerHost : IDisposable
+    public interface IGameDebuggerHost
     {
         void RegisterTarget(string callbackAddress);
 

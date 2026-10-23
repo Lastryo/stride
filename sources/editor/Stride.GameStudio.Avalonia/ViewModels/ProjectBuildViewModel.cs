@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Build.Execution;
+using Stride.GameStudio.Avalonia.Debugging;
 using Stride.Core;
 using Stride.Core.Assets;
 using Stride.Core.Assets.Editor.Components.Status;
@@ -22,6 +23,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     private readonly LoggerResult logger = new("Build");
     private ICancellableAsyncBuild? currentBuild;
     private Task<bool>? buildTask;
+    private Task<bool>? livePlayTask;
     private bool isBusy;
     private bool isClosing;
     private bool cancelRequested;
@@ -39,7 +41,29 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
         session.PropertyChanged += SessionChanged;
         session.StartHotReload(() => !IsBusy && !IsClosing);
         session.HotReload!.PropertyChanged += HotReloadChanged;
+        LivePlay = new LivePlayService(session);
+        LivePlay.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(LivePlayService.IsRunning)) UpdateCommands(); };
+        LivePlayCommand = new AnonymousTaskCommand(ServiceProvider, async () => await StartLivePlayAsync());
+        StopLivePlayCommand = new AnonymousCommand(ServiceProvider, LivePlay.Stop);
         UpdateCommands();
+    }
+
+    public LivePlayService LivePlay { get; }
+    public ICommandBase LivePlayCommand { get; }
+    public ICommandBase StopLivePlayCommand { get; }
+
+    public Task<bool> StartLivePlayAsync()
+    {
+        if (LivePlay.IsRunning || !CanSelectProject || session.CurrentProject is not { } project || !CanRun(project)) return Task.FromResult(false);
+        return livePlayTask = StartLivePlayCore();
+    }
+
+    private async Task<bool> StartLivePlayCore()
+    {
+        if (!await BuildAsync(false) || LastBuiltAssemblyPath == null || IsClosing || cancelRequested) return false;
+        IsBusy = true;
+        try { return await LivePlay.StartAsync(LastBuiltAssemblyPath); }
+        finally { IsBusy = false; session.HotReload?.ResumePendingChanges(); }
     }
 
     public ICommandBase BuildProjectCommand { get; }
@@ -47,7 +71,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     public ICommandBase CancelBuildCommand { get; }
     public bool IsBusy { get => isBusy; private set => SetValue(ref isBusy, value, UpdateCommands); }
     public bool IsClosing { get => isClosing; set => SetValue(ref isClosing, value, UpdateCommands); }
-    public bool CanSelectProject => !IsDestroyed && !IsBusy && !IsClosing && session.HotReload?.IsBusy != true;
+    public bool CanSelectProject => !IsDestroyed && !IsBusy && !IsClosing && session.HotReload?.IsBusy != true && !LivePlay.IsRunning;
     public string? LastBuiltAssemblyPath { get; private set; }
     public int? LastStartedProcessId { get; private set; }
 
@@ -55,7 +79,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
     {
         Dispatcher.EnsureAccess();
         var project = session.CurrentProject;
-        if (IsDestroyed || IsClosing || IsBusy || session.HotReload?.IsBusy == true || project == null || !session.Projects.Contains(project) || run && !CanRun(project))
+        if (IsDestroyed || IsClosing || IsBusy || LivePlay.IsRunning || session.HotReload?.IsBusy == true || project == null || !session.Projects.Contains(project) || run && !CanRun(project))
             return Task.FromResult(false);
         cancelRequested = false;
         IsBusy = true;
@@ -64,14 +88,19 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
 
     public async Task CancelAndWaitAsync()
     {
-        if (!IsBusy) return;
-        Cancel();
-        if (buildTask != null) await buildTask;
+        LivePlay.Stop();
+        if (IsBusy)
+        {
+            Cancel();
+            if (buildTask != null) await buildTask;
+        }
+        if (livePlayTask != null) await livePlayTask;
     }
 
     public override void Destroy()
     {
         Cancel();
+        LivePlay.Destroy();
         session.PropertyChanged -= SessionChanged;
         if (session.HotReload != null) session.HotReload.PropertyChanged -= HotReloadChanged;
         session.OutputLog.RemoveLogger(logger);
@@ -206,6 +235,7 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
         if (!IsBusy || cancelRequested) return;
         cancelRequested = true;
         currentBuild?.Cancel();
+        LivePlay.Stop();
         logger.Info("Cancelling build...");
         UpdateCommands();
     }
@@ -233,6 +263,8 @@ internal sealed class ProjectBuildViewModel : DispatcherViewModel
         var project = session.CurrentProject;
         BuildProjectCommand.IsEnabled = CanSelectProject && project != null && session.Projects.Contains(project);
         RunProjectCommand.IsEnabled = BuildProjectCommand.IsEnabled && CanRun(project!);
+        LivePlayCommand.IsEnabled = RunProjectCommand.IsEnabled;
+        StopLivePlayCommand.IsEnabled = !IsDestroyed && LivePlay.IsRunning;
         CancelBuildCommand.IsEnabled = !IsDestroyed && IsBusy && !cancelRequested;
         OnPropertyChanged(nameof(CanSelectProject));
     }

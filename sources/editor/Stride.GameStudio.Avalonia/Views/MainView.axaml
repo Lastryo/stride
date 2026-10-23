@@ -207,6 +207,10 @@
         <MenuItem x:Name="RunProjectMenuItem" Header="Run project"
                   Command="{Binding ProjectBuild?.RunProjectCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"
                   HotKey="F5" InputGesture="{Binding $self.HotKey, Mode=OneTime}"/>
+        <MenuItem x:Name="LivePlayMenuItem" Header="LivePlay"
+                  Command="{Binding ProjectBuild?.LivePlayCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"/>
+        <MenuItem Header="Stop LivePlay"
+                  Command="{Binding ProjectBuild?.StopLivePlayCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"/>
         <MenuItem x:Name="ReloadAssembliesMenuItem" Header="Reload assemblies"
                   Command="{Binding Session?.HotReload?.ReloadCommand, TargetNullValue={x:Static cpc:DisabledCommand.Instance}}"/>
         <MenuItem Header="Automatically reload assemblies" ToggleType="CheckBox"

@@ -10,18 +10,18 @@ namespace Stride.Debugger.Target
     [Serializable]
     public struct DebugAssembly : IEquatable<DebugAssembly>
     {
-        private int id;
+        public int Id { get; set; }
 
         public static readonly DebugAssembly Empty = new DebugAssembly(0);
 
         internal DebugAssembly(int id)
         {
-            this.id = id;
+            Id = id;
         }
 
         public bool Equals(DebugAssembly other)
         {
-            return id == other.id;
+            return Id == other.Id;
         }
 
         public override bool Equals(object obj)
@@ -32,7 +32,7 @@ namespace Stride.Debugger.Target
 
         public override int GetHashCode()
         {
-            return id;
+            return Id;
         }
     }
 }
