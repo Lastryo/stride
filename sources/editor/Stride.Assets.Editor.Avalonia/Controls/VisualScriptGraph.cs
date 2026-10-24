@@ -185,7 +185,8 @@ public sealed class VisualScriptGraph : Grid
         var hover = slot.Kind == SlotKind.Execution ? "#EBEBEB" : "#ADFF25";
         var port = new Ellipse { Width = 15, Height = 15, StrokeThickness = 4, Stroke = Brush.Parse(connected ? color : disconnected), Fill = connected ? Brush.Parse(color) : Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center, Tag = slot };
         ports[slot] = port;
-        ToolTip.SetTip(port, slot.Name + (slot.Type == null ? "" : " (" + slot.Type + ")"));
+        var name = string.IsNullOrWhiteSpace(slot.Name) ? $"{slot.Direction} ({slot.Kind})" : slot.Name;
+        ToolTip.SetTip(port, name + (string.IsNullOrWhiteSpace(slot.Type) ? "" : " (" + slot.Type + ")"));
         port.PointerEntered += (_, _) => { port.Stroke = Brush.Parse(hover); if (connected) port.Fill = port.Stroke; };
         port.PointerExited += (_, _) => { port.Stroke = Brush.Parse(connected ? color : disconnected); if (connected) port.Fill = port.Stroke; };
         port.PointerPressed += (_, e) =>
@@ -222,7 +223,7 @@ public sealed class VisualScriptGraph : Grid
             var diagnostics = editor.Diagnostics.Where(d => d.LinkId == link.Id).ToArray();
             var color = diagnostics.Length > 0 ? "#C05050" : link.Source.Kind == SlotKind.Execution ? "#C5C5C5" : "#82DF40";
             var path = MakeLink(PortPosition(link.Source), PortPosition(link.Target), editor.SelectedLinks.Contains(link) ? "#3699B8" : color);
-            ToolTip.SetTip(path, string.Join(Environment.NewLine, diagnostics.Select(d => d.Message)));
+            if (diagnostics.Length > 0) ToolTip.SetTip(path, string.Join(Environment.NewLine, diagnostics.Select(d => d.Message)));
             path.PointerEntered += (_, _) => path.Stroke = Brush.Parse(diagnostics.Length > 0 ? "#F06060" : link.Source.Kind == SlotKind.Execution ? "#EBEBEB" : "#ADFF25");
             path.PointerExited += (_, _) => path.Stroke = Brush.Parse(editor.SelectedLinks.Contains(link) ? "#3699B8" : color);
             path.PointerPressed += (_, e) =>

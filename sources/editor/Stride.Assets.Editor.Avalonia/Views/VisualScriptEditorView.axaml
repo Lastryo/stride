@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:Avalonia.Data.Converters"
              xmlns:vm="using:Stride.Assets.Editor.ViewModels" xmlns:controls="using:Stride.Assets.Editor.Avalonia.Controls"
              x:Class="Stride.Assets.Editor.Avalonia.Views.VisualScriptEditorView" x:DataType="vm:VisualScriptEditorViewModel"
              KeyDown="EditorKeyDown">
@@ -88,9 +89,16 @@
     <GridSplitter Grid.Column="1" Width="5" VerticalAlignment="Stretch" ResizeDirection="Columns"/>
     <Grid Grid.Column="2">
       <controls:VisualScriptGraph x:Name="Graph"/>
-      <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Background="#C0303030" IsVisible="{Binding !!AnalysisError}">
-        <TextBlock Text="{Binding AnalysisError}" TextWrapping="Wrap" MaxWidth="600" Margin="6"/>
-      </Border>
+      <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" MaxWidth="600" MaxHeight="240">
+        <Border Background="#C0303030" IsVisible="{Binding AnalysisError, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+          <TextBlock Text="{Binding AnalysisError}" TextWrapping="Wrap" Margin="6"/>
+        </Border>
+        <Border Background="#C0303030" IsVisible="{Binding GlobalDiagnosticsText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+          <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+            <TextBlock x:Name="GlobalDiagnosticsText" Text="{Binding GlobalDiagnosticsText}" TextWrapping="Wrap" Margin="6"/>
+          </ScrollViewer>
+        </Border>
+      </StackPanel>
     </Grid>
   </Grid>
 </UserControl>

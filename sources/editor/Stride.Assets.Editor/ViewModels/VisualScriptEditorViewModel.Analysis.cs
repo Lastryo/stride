@@ -21,6 +21,9 @@ public sealed partial class VisualScriptEditorViewModel
     public string? GeneratedSource { get => generatedSource; private set => SetValue(ref generatedSource, value); }
     public string? AnalysisError { get => analysisError; private set => SetValue(ref analysisError, value); }
     public ObservableList<VisualScriptDiagnostic> Diagnostics { get; } = new();
+    public string GlobalDiagnosticsText => string.Join(Environment.NewLine, Diagnostics
+        .Where(d => d.BlockId == null && d.LinkId == null)
+        .Select(d => $"{d.Severity}: {d.Message}"));
     public ObservableList<IMethodSymbol> OverridableMethods { get; } = new();
     public async Task AnalyzeAsync()
     {
@@ -73,6 +76,7 @@ public sealed partial class VisualScriptEditorViewModel
             GeneratedSource = result.GeneratedSource;
             AnalysisError = null;
             Diagnostics.Clear(); Diagnostics.AddRange(analyzed.Diagnostics);
+            OnPropertyChanged(nameof(GlobalDiagnosticsText));
             OverridableMethods.Clear(); OverridableMethods.AddRange(analyzed.Overrides);
             RegenerateAllSlots();
             GraphChanged?.Invoke(this, EventArgs.Empty);
@@ -96,6 +100,7 @@ public sealed partial class VisualScriptEditorViewModel
     }
     private void RegenerateAllSlots(Block? editedBlock = null)
     {
+        if (!Asset.IsEditable || IsDestroyed) return;
         regenerating = true;
         try
         {

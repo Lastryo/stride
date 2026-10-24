@@ -137,6 +137,42 @@ internal static class EditorVisualScriptSmoke
         Require(code.Code == "System.Console.WriteLine(1);" && code.Slots.All(s => s.Name != "answer") && method.Links.Count == 1, "Code edit and derived slots did not undo together");
         var completions = await editor.CompleteBlockAsync(editor.SelectedMethod!.Blocks.Single(b => b.Block == code), "Entity.Transform.", "Entity.Transform.".Length, false, CancellationToken.None);
         Require(completions.Items.Any(i => i.Text == "Position"), "Project-aware block C# completion");
+        var instanceHelper = new Method("InstanceCompletionHelper") { ReturnType = "Stride.Core.Mathematics.Vector3" };
+        var staticHelper = new Method("StaticCompletionHelper") { IsStatic = true };
+        var staticProperty = new Property("int", "StaticCompletionValue") { IsStatic = true };
+        editor.Change("Add completion fixtures", () =>
+        {
+            editor.Node(data)[nameof(VisualScriptAsset.Methods)].Target.Add(instanceHelper);
+            editor.Node(data)[nameof(VisualScriptAsset.Methods)].Target.Add(staticHelper);
+            editor.Node(data)[nameof(VisualScriptAsset.Properties)].Target.Add(staticProperty);
+        });
+        try
+        {
+            var codeView = editor.SelectedMethod!.Blocks.Single(b => b.Block == code);
+            var instanceCompletion = await editor.CompleteBlockAsync(codeView, "", 0, false, CancellationToken.None);
+            Require(instanceCompletion.Items.Any(i => i.Text == instanceHelper.Name) && instanceCompletion.Items.Any(i => i.Text == staticHelper.Name), "Own methods missing from instance completion");
+            var helperText = instanceHelper.Name + "().";
+            var resultCompletion = await editor.CompleteBlockAsync(codeView, helperText, helperText.Length, true, CancellationToken.None);
+            Require(resultCompletion.Items.Any(i => i.Text == "X"), "Own method return type missing from expression completion");
+            editor.Update(method, nameof(Method.IsStatic), true);
+            foreach (var expression in new[] { false, true })
+            {
+                var staticCompletion = await editor.CompleteBlockAsync(codeView, "", 0, expression, CancellationToken.None);
+                Require(staticCompletion.Items.Any(i => i.Text == staticHelper.Name) && staticCompletion.Items.Any(i => i.Text == staticProperty.Name), "Static members missing from completion");
+                Require(staticCompletion.Items.All(i => i.Text != instanceHelper.Name && !(i.Text == "Entity" && i.Item.Tags.Contains("Property")) && i.Text != editor.Properties.First().Name), "Instance member offered in static completion");
+            }
+        }
+        finally
+        {
+            editor.Update(method, nameof(Method.IsStatic), false);
+            editor.Change("Remove completion fixtures", () =>
+            {
+                var methodNode = editor.Node(data)[nameof(VisualScriptAsset.Methods)].Target;
+                methodNode.Remove(instanceHelper, new Stride.Core.Quantum.NodeIndex(data.Methods.IndexOf(instanceHelper)));
+                methodNode.Remove(staticHelper, new Stride.Core.Quantum.NodeIndex(data.Methods.IndexOf(staticHelper)));
+                editor.Node(data)[nameof(VisualScriptAsset.Properties)].Target.Remove(staticProperty, new Stride.Core.Quantum.NodeIndex(data.Properties.IndexOf(staticProperty)));
+            });
+        }
         var symbols = await editor.SearchMethodsAsync("System.Console.WriteLine", CancellationToken.None);
         Require(symbols.Any(s => s.Name == "WriteLine"), "Roslyn method search");
         editor.AddMethodCall(symbols.First(s => s.Parameters.Length == 1 && s.Parameters[0].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32), new Int2(512, 320));
@@ -148,6 +184,17 @@ internal static class EditorVisualScriptSmoke
         await Wait(() => editor.Diagnostics.Any(d => d.BlockId == code.Id && d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error), "Compiler diagnostic did not map to block: " + editor.AnalysisError + "; " + string.Join(";", editor.Diagnostics.Select(d => d.Message + " [" + d.BlockId + "]")));
         editor.Update(code, nameof(CustomCodeBlock.Code), "System.Console.WriteLine(1);"); await editor.AnalyzeAsync();
         await Wait(() => editor.Diagnostics.All(d => d.Severity != Microsoft.CodeAnalysis.DiagnosticSeverity.Error), "Diagnostics did not clear");
+        var originalGlobalDiagnostics = editor.GlobalDiagnosticsText;
+        editor.BaseType = "MissingVisualScriptBaseType";
+        await editor.AnalyzeAsync();
+        await Wait(() => editor.GlobalDiagnosticsText.Contains("MissingVisualScriptBaseType", StringComparison.Ordinal), "Global compiler diagnostic was not exposed");
+        Require(editor.AnalysisError == null, "Compiler error was treated as an analysis failure");
+        var globalDiagnostics = view.FindControl<TextBlock>("GlobalDiagnosticsText")!;
+        await Wait(() => globalDiagnostics.Text == editor.GlobalDiagnosticsText && globalDiagnostics.GetVisualAncestors().OfType<Border>().First().IsVisible, "Global compiler diagnostic was not displayed");
+        editor.BaseType = "Stride.Engine.SyncScript";
+        await editor.AnalyzeAsync();
+        await Wait(() => editor.GlobalDiagnosticsText == originalGlobalDiagnostics && globalDiagnostics.Text == originalGlobalDiagnostics
+            && globalDiagnostics.GetVisualAncestors().OfType<Border>().First().IsVisible == (originalGlobalDiagnostics.Length > 0), "Resolved global compiler diagnostic remained visible: " + editor.GlobalDiagnosticsText);
         var getter = new VariableGet { Name = editor.Properties.Single().Name };
         getter.GenerateSlots(getter.Slots, new SlotGeneratorContext()); getter.ValueSlot.Type = "int"; getter.ValueSlot.Value = "42";
         editor.AddBlock(getter, new Int2(256, 240));
@@ -193,6 +240,34 @@ internal static class EditorVisualScriptSmoke
             await Wait(() => legacyEditor.Model.GeneratedSource != null || legacyEditor.Model.AnalysisError != null, "Legacy initial compilation");
             Require(legacyEditor.Model.GeneratedSource != null && legacyEditor.Model.AnalysisError == null, "Legacy graph does not compile: " + legacyEditor.Model.AnalysisError);
         }
+        var readOnlyData = new VisualScriptAsset { BaseType = "Stride.Engine.SyncScript" };
+        var readOnlyMethod = new Method("Update") { VirtualModifier = VirtualModifier.Override };
+        var readOnlyStart = new FunctionStartBlock();
+        var readOnlyCode = new CustomCodeBlock { Code = "System.Console.WriteLine(1);" };
+        readOnlyStart.GenerateSlots(readOnlyStart.Slots, new SlotGeneratorContext());
+        readOnlyCode.GenerateSlots(readOnlyCode.Slots, new SlotGeneratorContext());
+        readOnlyMethod.Blocks.Add(readOnlyStart); readOnlyMethod.Blocks.Add(readOnlyCode);
+        var readOnlyLink = new Link { Source = readOnlyStart.Slots.Single(), Target = readOnlyCode.Slots.First(s => s.Direction == SlotDirection.Input) };
+        readOnlyMethod.Links.Add(readOnlyLink); readOnlyData.Methods.Add(readOnlyMethod);
+        // Simulate a stored graph whose slots need regeneration after a source change.
+        readOnlyCode.Code = "var readOnlyValue = 1;";
+        var readOnlyItem = new AssetItem("VisualScriptReadOnly_" + Guid.NewGuid().ToString("N"), readOnlyData);
+        AssetCollectionItemIdHelper.GenerateMissingItemIds(readOnlyData);
+        session.GraphContainer.InitializeAsset(readOnlyItem, new Stride.Core.Diagnostics.LoggerResult());
+        var readOnlyAsset = new ReadOnlyVisualScriptViewModel(new(readOnlyItem, source.Directory, false));
+        readOnlyAsset.Initialize();
+        var originalSlots = readOnlyCode.Slots.ToArray();
+        var originalDirty = readOnlyAsset.IsDirty;
+        using (var readOnlyEditor = new EditorScope(new VisualScriptEditorViewModel(readOnlyAsset)))
+        {
+            await readOnlyEditor.Model.AnalysisTask.WaitAsync(TimeSpan.FromSeconds(60));
+            Require(readOnlyEditor.Model.GeneratedSource != null && readOnlyEditor.Model.AnalysisError == null, "Read-only visual script analysis failed");
+            Require(readOnlyCode.Slots.SequenceEqual(originalSlots) && readOnlyMethod.Links.Values.Single() == readOnlyLink
+                && ReferenceEquals(readOnlyLink.Source, readOnlyStart.Slots.Single()) && ReferenceEquals(readOnlyLink.Target, originalSlots[0])
+                && readOnlyAsset.IsDirty == originalDirty, "Read-only analysis changed slots, links or dirty state");
+        }
+        using (history.CreateTransaction()) readOnlyAsset.IsDeleted = true;
+        readOnlyAsset.Destroy();
         var template = session.FindTemplates(TemplateScope.Asset).OfType<TemplateAssetDescription>().Single(t => t.AssetTypeName == nameof(VisualScriptAsset));
         var created = (VisualScriptViewModel)(await session.CreateAssetFromTemplate(template, source.Directory))!;
         Require(created.Asset.BaseType == "Stride.Engine.SyncScript" && created.Asset.Methods.Single().Blocks.Values.Single() is FunctionStartBlock, "Visual script creation template");
@@ -204,6 +279,10 @@ internal static class EditorVisualScriptSmoke
         }
         Console.WriteLine("PASS: Visual Script tab, variables/functions/parameters, block factories, routed connections, mismatch/duplicate rejection, moves, deletion with links, Undo/Redo, project Roslyn compilation/search/diagnostics, code inspector and .sdvs round trip.");
         static Stride.Assets.Scripts.Accessibility ScriptsAccessibility() => Stride.Assets.Scripts.Accessibility.Private;
+    }
+    private sealed class ReadOnlyVisualScriptViewModel(Stride.Core.Assets.Presentation.ViewModels.AssetViewModel.ConstructorParameters parameters) : VisualScriptViewModel(parameters)
+    {
+        public override bool IsEditable => false;
     }
     private sealed class EditorScope(VisualScriptEditorViewModel model) : IDisposable
     {

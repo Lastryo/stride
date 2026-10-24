@@ -21,8 +21,10 @@ public sealed partial class VisualScriptEditorViewModel
         var ns = Asset.Asset.Namespace ?? Asset.AssetItem.Package.RootNamespace;
         if (!string.IsNullOrWhiteSpace(ns)) prefix += "namespace " + ns + ";\n";
         prefix += "class __VisualScriptSnippet_" + block.Block.Id.ToString("N") + (string.IsNullOrWhiteSpace(BaseType) ? "" : " : " + BaseType) + " {\n";
-        prefix += string.Join("\n", Properties.Select(p => "public " + p.Type + " " + p.Name + ";"));
-        prefix += "\n" + (expression ? "object" : method.ReturnType) + " __Snippet(" + string.Join(", ", method.Parameters.Select(p => (p.RefKind == ParameterRefKind.None ? "" : p.RefKind.ToString().ToLowerInvariant() + " ") + p.Type + " " + p.Name)) + ") {\n";
+        prefix += string.Join("\n", Asset.Asset.Properties.Select(p => "public " + (p.IsStatic ? "static " : "") + p.Type + " " + p.Name + ";"));
+        prefix += "\n" + string.Join("\n", Asset.Asset.Methods.Select(m => "public " + (m.IsStatic ? "static " : "") + m.ReturnType + " " + m.Name
+            + "(" + CompletionParameters(m) + ") { throw new System.NotImplementedException(); }"));
+        prefix += "\n" + (method.IsStatic ? "static " : "") + (expression ? "object" : method.ReturnType) + " __Snippet(" + CompletionParameters(method) + ") {\n";
         if (expression) prefix += "return (";
         // The snippet lives only in this immutable project fork, never in the workspace or on disk.
         var snippet = document.Project.AddDocument("VisualScriptSnippet.cs", prefix + text + (expression ? ");" : "") + "\n} }");
@@ -36,6 +38,9 @@ public sealed partial class VisualScriptEditorViewModel
         }, token);
         return (items, prefix.Length);
     }
+    private static string CompletionParameters(Method method) => string.Join(", ", method.Parameters.Select(p =>
+        (p.RefKind == ParameterRefKind.None ? "" : p.RefKind.ToString().ToLowerInvariant() + " ") + p.Type + " " + p.Name));
+
     public IReadOnlyList<string> GetVariableNames(VisualScriptMethodViewModel method)
     {
         var names = Properties.Select(p => p.Name).Concat(method.Parameters.Select(p => p.Name)).ToList();
